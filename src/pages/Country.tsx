@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Users, DollarSign, Languages, Flag } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import CategoryCard from "@/components/CategoryCard";
+import CategoryCard from "@/components/cards/CategoryCard";
 
 const Country = () => {
   const { slug } = useParams();

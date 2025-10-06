@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Shuffle, MapPin } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import SearchBar from "@/components/SearchBar";
+import SearchBar from "@/components/common/SearchBar";
 
 const Quiz = () => {
   const [quizType, setQuizType] = useState<"country" | "random" | null>(null);

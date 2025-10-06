@@ -1,7 +1,7 @@
 import { Dog, FlaskConical, Scroll, Apple, Trophy, Mountain, Sparkles } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import CategoryCard from "@/components/CategoryCard";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import CategoryCard from "@/components/cards/CategoryCard";
 
 const FunFacts = () => {
   const categories = [

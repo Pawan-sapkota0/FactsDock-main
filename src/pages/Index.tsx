@@ -1,9 +1,9 @@
 import { Sparkles, Globe2, Brain } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import SearchBar from "@/components/SearchBar";
-import CountryCard from "@/components/CountryCard";
-import FeatureCard from "@/components/FeatureCard";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import SearchBar from "@/components/common/SearchBar";
+import CountryCard from "@/components/cards/CountryCard";
+import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-globe.jpg";
 
