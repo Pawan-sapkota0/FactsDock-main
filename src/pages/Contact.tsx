@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -6,12 +7,43 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare, Send } from "lucide-react";
+import emailjs from '@emailjs/browser';
+import { useToast } from "@/hooks/use-toast";
 
 const Contact = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted");
-    // Form handling will be implemented later
+    setIsSubmitting(true);
+
+    try {
+      const result = await emailjs.sendForm(
+        'service_tyqwinp',
+        'template_xinynen',
+        e.currentTarget,
+        'aWhW2bMG4NThrK5h5'
+      );
+
+      console.log('Email sent successfully:', result.text);
+      toast({
+        title: "Message sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
+      });
+      
+      // Reset form
+      e.currentTarget.reset();
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -44,7 +76,8 @@ const Contact = () => {
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input 
-                      id="name" 
+                      id="name"
+                      name="user_name"
                       placeholder="Your name"
                       required
                     />
@@ -53,7 +86,8 @@ const Contact = () => {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input 
-                      id="email" 
+                      id="email"
+                      name="user_email"
                       type="email"
                       placeholder="your@email.com"
                       required
@@ -63,16 +97,23 @@ const Contact = () => {
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
                     <Textarea 
-                      id="message" 
+                      id="message"
+                      name="message"
                       placeholder="How can we help you?"
                       rows={6}
                       required
                     />
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full">
+                  <Button 
+                    type="submit" 
+                    variant="hero" 
+                    size="lg" 
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
                     <Send className="h-4 w-4 mr-2" />
-                    Send Message
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
               </CardContent>
@@ -85,10 +126,10 @@ const Contact = () => {
                   <div>
                     <p className="font-semibold text-foreground">Email us directly</p>
                     <a 
-                      href="mailto:hello@worldfacts.com" 
+                      href="mailto:pawansapkota06@gmail.com" 
                       className="text-primary hover:text-primary-hover transition-colors"
                     >
-                      hello@worldfacts.com
+                      pawansapkota06@gmail.com
                     </a>
                   </div>
                 </div>

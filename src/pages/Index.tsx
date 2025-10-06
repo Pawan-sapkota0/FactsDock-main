@@ -5,7 +5,7 @@ import SearchBar from "@/components/common/SearchBar";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/hero-globe.jpg";
+import Globe3D from "@/components/Globe3D";
 
 const Index = () => {
   const trendingCountries = [
@@ -51,11 +51,7 @@ const Index = () => {
               </div>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl"></div>
-                <img 
-                  src={heroImage} 
-                  alt="World Globe" 
-                  className="relative rounded-3xl shadow-2xl w-full"
-                />
+                <Globe3D />
               </div>
             </div>
           </div>
