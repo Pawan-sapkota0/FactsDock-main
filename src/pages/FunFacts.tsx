@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Dog, FlaskConical, Scroll, Apple, Trophy, Mountain, Sparkles, Loader2, X } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -6,11 +8,12 @@ import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const FunFacts = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -67,6 +70,15 @@ const FunFacts = () => {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate(-1)}
+              className="mb-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold mb-4">
                 <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
@@ -88,6 +100,15 @@ const FunFacts = () => {
                 />
               ))}
             </div>
+
+            {/* Quiz CTA */}
+            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 mt-8">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Test Your Knowledge!</h3>
+                <p className="text-muted-foreground mb-6">Take a quiz based on fun facts and topics you like.</p>
+                <Button variant="hero" size="lg" onClick={() => navigate('/quiz')}>Play Quiz</Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>
@@ -126,6 +147,13 @@ const FunFacts = () => {
                 >
                   Generate More Facts
                 </Button>
+              )}
+              {facts.length > 0 && (
+                <div className="pt-4">
+                  <Button variant="secondary" className="w-full" onClick={() => navigate(`/quiz?topic=${encodeURIComponent(selectedCategory)}`)}>
+                    Play Quiz
+                  </Button>
+                </div>
               )}
             </div>
           )}

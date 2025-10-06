@@ -15,13 +15,30 @@ function RotatingGlobe() {
   });
 
   return (
-    <Sphere ref={globeRef} args={[2.5, 64, 64]}>
-      <meshStandardMaterial
-        map={texture}
-        metalness={0.1}
-        roughness={0.8}
-      />
-    </Sphere>
+    <>
+      <Sphere ref={globeRef} args={[2.5, 64, 64]}>
+        <meshStandardMaterial
+          map={texture}
+          metalness={0.1}
+          roughness={0.8}
+        />
+      </Sphere>
+
+      {/* outer atmosphere layer */}
+      <Sphere args={[2.62, 64, 64]}> {/* slightly larger than main globe */}
+        <meshStandardMaterial
+          color={new THREE.Color(0x86a8e7)}
+          transparent={true}
+          opacity={0.12}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          roughness={1}
+          metalness={0}
+          emissive={new THREE.Color(0x86a8e7)}
+          emissiveIntensity={0.2}
+        />
+      </Sphere>
+    </>
   );
 }
 
