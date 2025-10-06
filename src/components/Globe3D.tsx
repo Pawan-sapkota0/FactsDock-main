@@ -27,16 +27,16 @@ function RotatingGlobe() {
 
 const Globe3D = () => {
   return (
-    <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-secondary/5">
+    <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 animate-pulse"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent blur-2xl"></div>
       <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 3, 5]} intensity={1.2} />
         <pointLight position={[-5, -3, -5]} intensity={0.4} color="#4169E1" />
         <RotatingGlobe />
         <OrbitControls 
-          enableZoom={true}
-          minDistance={4}
-          maxDistance={10}
+          enableZoom={false}
           autoRotate
           autoRotateSpeed={0.8}
           enablePan={false}

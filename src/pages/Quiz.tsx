@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Shuffle, MapPin } from "lucide-react";
+import { Shuffle, MapPin, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import SearchBar from "@/components/common/SearchBar";
 
 const Quiz = () => {
+  const navigate = useNavigate();
   const [quizType, setQuizType] = useState<"country" | "random" | null>(null);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
@@ -25,6 +27,15 @@ const Quiz = () => {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto space-y-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate(-1)}
+              className="mb-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+            
             <div className="text-center">
               <h1 className="text-5xl font-bold mb-4">
                 <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
