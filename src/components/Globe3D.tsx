@@ -1,10 +1,12 @@
 import { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
+import earthTexture from '@/assets/earth-texture.png';
 
 function RotatingGlobe() {
   const globeRef = useRef<THREE.Mesh>(null);
+  const texture = useLoader(THREE.TextureLoader, earthTexture);
 
   useFrame(() => {
     if (globeRef.current) {
@@ -13,13 +15,11 @@ function RotatingGlobe() {
   });
 
   return (
-    <Sphere ref={globeRef} args={[2, 64, 64]}>
+    <Sphere ref={globeRef} args={[2.5, 64, 64]}>
       <meshStandardMaterial
-        color="#4169E1"
-        metalness={0.4}
-        roughness={0.6}
-        wireframe={true}
-        wireframeLinewidth={2}
+        map={texture}
+        metalness={0.1}
+        roughness={0.8}
       />
     </Sphere>
   );
@@ -27,16 +27,19 @@ function RotatingGlobe() {
 
 const Globe3D = () => {
   return (
-    <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden">
-      <Canvas camera={{ position: [0, 0, 6] }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
-        <pointLight position={[-10, -10, -5]} intensity={0.5} />
+    <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-secondary/5">
+      <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 3, 5]} intensity={1.2} />
+        <pointLight position={[-5, -3, -5]} intensity={0.4} color="#4169E1" />
         <RotatingGlobe />
         <OrbitControls 
-          enableZoom={false}
+          enableZoom={true}
+          minDistance={4}
+          maxDistance={10}
           autoRotate
-          autoRotateSpeed={0.5}
+          autoRotateSpeed={0.8}
+          enablePan={false}
         />
       </Canvas>
     </div>
