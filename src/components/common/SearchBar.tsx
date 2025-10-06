@@ -32,7 +32,7 @@ const COUNTRIES = [
   "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-const SearchBar = ({ placeholder = "Search for a country...", onChange }: SearchBarProps) => {
+const SearchBar = ({ placeholder = "Search for a country...", onChange, onSelect }: SearchBarProps) => {
   const [searchValue, setSearchValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<string[]>([]);
