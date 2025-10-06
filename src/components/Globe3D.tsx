@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
-import earthTexture from '@/assets/earth-texture.png';
+import earthTexture from '@/assets/earth-realistic.jpg';
 
 function RotatingGlobe() {
   const globeRef = useRef<THREE.Mesh>(null);
