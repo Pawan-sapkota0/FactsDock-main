@@ -1,12 +1,22 @@
-import { Mountain, Scroll, FlaskConical, Users, Newspaper, BarChart, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Mountain, Scroll, FlaskConical, Users, Newspaper, BarChart, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
 
 const WorldFacts = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [facts, setFacts] = useState<any[]>([]);
   
   const categories = [
     { title: "Geography", icon: Mountain },
@@ -16,6 +26,40 @@ const WorldFacts = () => {
     { title: "Current Events", icon: Newspaper },
     { title: "National Data", icon: BarChart },
   ];
+
+  const handleCategoryClick = async (categoryTitle: string) => {
+    setSelectedCategory(categoryTitle);
+    setIsOpen(true);
+    setIsLoading(true);
+    setFacts([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          type: 'world-facts',
+          category: categoryTitle
+        }
+      });
+
+      if (error) throw error;
+
+      setFacts(data.data);
+      toast({
+        title: "Facts Loaded!",
+        description: `Generated ${data.data.length} world facts about ${categoryTitle}.`,
+      });
+    } catch (error) {
+      console.error('Error generating facts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate facts. Please try again.",
+        variant: "destructive",
+      });
+      setIsOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -50,13 +94,53 @@ const WorldFacts = () => {
                   key={category.title}
                   title={category.title}
                   icon={category.icon}
-                  onClick={() => console.log(`Selected category: ${category.title}`)}
+                  onClick={() => handleCategoryClick(category.title)}
                 />
               ))}
             </div>
           </div>
         </div>
       </main>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">World Facts: {selectedCategory}</DialogTitle>
+            <DialogDescription>
+              Educational facts about our world
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Generating world facts...</span>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {facts.map((fact, index) => (
+                <Card key={index} className="p-6">
+                  <h3 className="text-lg font-semibold mb-2 text-primary">
+                    {fact.title}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {fact.description}
+                  </p>
+                </Card>
+              ))}
+              {facts.length > 0 && (
+                <Button 
+                  onClick={() => handleCategoryClick(selectedCategory)} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  Generate More Facts
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

@@ -1,23 +1,66 @@
-import { useState } from "react";
-import { Shuffle, MapPin, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Shuffle, MapPin, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/common/SearchBar";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Quiz = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [quizType, setQuizType] = useState<"country" | "random" | null>(null);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const questionOptions = [10, 20, 30, 40, 50];
 
-  const handleStartQuiz = () => {
-    console.log("Starting quiz:", { quizType, selectedCountry, questionCount });
-    // Quiz logic will be implemented later
+  const handleStartQuiz = async () => {
+    if (quizType === "country" && !selectedCountry) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a country first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          type: 'quiz',
+          country: quizType === "country" ? selectedCountry : 'world geography',
+          questionCount: questionCount
+        }
+      });
+
+      if (error) throw error;
+
+      console.log("Quiz generated:", data);
+      
+      toast({
+        title: "Quiz Ready!",
+        description: `Generated ${data.data.length} questions successfully.`,
+      });
+
+      // Store quiz data for future use
+      localStorage.setItem('currentQuiz', JSON.stringify(data.data));
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate quiz. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -126,8 +169,16 @@ const Quiz = () => {
                   size="lg"
                   onClick={handleStartQuiz}
                   className="px-12"
+                  disabled={isGenerating}
                 >
-                  Start Quiz
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating Quiz...
+                    </>
+                  ) : (
+                    "Start Quiz"
+                  )}
                 </Button>
               </div>
             )}

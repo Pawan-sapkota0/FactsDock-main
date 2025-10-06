@@ -1,0 +1,67 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { countryName, allCountries } = await req.json();
+    console.log('Fetching country data:', { countryName, allCountries });
+
+    let url: string;
+    
+    if (allCountries) {
+      // Fetch all countries
+      url = 'https://restcountries.com/v3.1/all';
+    } else if (countryName) {
+      // Fetch specific country
+      url = `https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`;
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Please provide countryName or set allCountries to true' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error('REST Countries API error:', response.status);
+      return new Response(
+        JSON.stringify({ error: 'Country not found' }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const data = await response.json();
+    console.log('Successfully fetched country data');
+
+    return new Response(
+      JSON.stringify({ data }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  } catch (error) {
+    console.error('Error in fetch-country-data function:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});
