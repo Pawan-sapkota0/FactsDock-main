@@ -11,14 +11,9 @@ const Footer = () => {
           </div>
           <p className="text-sm text-muted-foreground text-center">
             Developed by{" "}
-            <a 
-              href="https://lovable.dev" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary-hover transition-colors font-medium"
-            >
-              Your Name
-            </a>
+            <span className="text-primary font-semibold">
+              PAWAN SAPKOTA
+            </span>
           </p>
           <p className="text-xs text-muted-foreground">
             © 2025 World Facts. All rights reserved.
