@@ -16,6 +16,12 @@ const Quiz = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [autoQuiz, setAutoQuiz] = useState<any[] | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [showResults, setShowResults] = useState(false);
+  const [lastScore, setLastScore] = useState<number | null>(null);
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
 
   const questionOptions = [10, 20, 30, 40, 50];
 
@@ -51,6 +57,8 @@ const Quiz = () => {
 
       // Store quiz data for future use
       localStorage.setItem('currentQuiz', JSON.stringify(data.data));
+      // navigate to runner and auto-start
+      navigate('/quiz?autoStart=1');
     } catch (error) {
       console.error('Error generating quiz:', error);
       toast({
@@ -61,6 +69,77 @@ const Quiz = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Try to auto-start quiz if currentQuiz exists or autoStart flag present
+  useEffect(() => {
+    // react to query changes so navigation to /quiz?autoStart=1 triggers auto-run
+    const params = new URLSearchParams(window.location.search);
+    const autoStart = params.get('autoStart');
+    const stored = localStorage.getItem('currentQuiz');
+    if ((autoStart === '1' || stored) && !autoQuiz) {
+      try {
+        let parsed = stored ? JSON.parse(stored) : null;
+        // support shape { data: [...] }
+        if (parsed && parsed.data && Array.isArray(parsed.data)) parsed = parsed.data;
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+          // normalize quiz items: if backend returned correctAnswer as index, convert to answer string
+          const normalized = parsed.map((q: any) => {
+            if (q.answer) return q;
+            if (typeof q.correctAnswer === 'number' && Array.isArray(q.options)) {
+              return { ...q, answer: q.options[q.correctAnswer] };
+            }
+            // support 'correctAnswer' as index or string
+            if (typeof q.correctAnswer === 'string') return { ...q, answer: q.correctAnswer };
+            return q;
+          });
+          setAutoQuiz(normalized);
+        }
+      } catch (e) {
+        console.error('Invalid stored quiz:', e);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [window.location.search]);
+
+  useEffect(() => {
+    if (autoQuiz && autoQuiz.length > 0) {
+      // reset runner state
+      setCurrentIndex(0);
+      setAnswers({});
+      setShowResults(false);
+    }
+  }, [autoQuiz]);
+
+  const handleAnswer = (choice: string) => {
+    setAnswers((prev) => ({ ...prev, [currentIndex]: choice }));
+    setSelectedChoice(choice);
+    // auto-advance after a short delay to show feedback
+    setTimeout(() => {
+      setSelectedChoice(null);
+      nextQuestion();
+    }, 800);
+  };
+
+  const nextQuestion = () => {
+    if (!autoQuiz) return;
+    if (currentIndex < autoQuiz.length - 1) setCurrentIndex((i) => i + 1);
+    else {
+      // compute score
+      let correct = 0;
+      autoQuiz.forEach((q, idx) => {
+        const ans = answers[idx];
+        if (!ans && idx === currentIndex) return; // skip
+        if (ans && q.answer && ans === q.answer) correct++;
+      });
+      setShowResults(true);
+      setLastScore(correct);
+      try { localStorage.setItem('lastQuizScore', JSON.stringify({ total: autoQuiz.length, correct })); } catch (e) {}
+    }
+  };
+
+  const prevQuestion = () => {
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
   return (
@@ -90,8 +169,61 @@ const Quiz = () => {
               </p>
             </div>
 
-            {/* Quiz Type Selection */}
-            <div className="grid md:grid-cols-2 gap-6">
+            {/* If autoQuiz is present, render the quiz runner; otherwise show the quiz type cards */}
+            {autoQuiz ? (
+              !showResults ? (
+                <div className="space-y-6">
+                  <Card className="p-6">
+                    <CardHeader>
+                      <CardTitle>Question {currentIndex + 1} of {autoQuiz.length}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">{autoQuiz[currentIndex].question}</p>
+                      <div className="grid gap-3">
+                        {(autoQuiz[currentIndex].options || []).map((opt: string, i: number) => {
+                          const isSelected = answers[currentIndex] === opt || selectedChoice === opt;
+                          const isCorrect = autoQuiz[currentIndex].answer === opt;
+                          const variant = selectedChoice ? (isCorrect ? 'default' : (isSelected ? 'destructive' : 'outline')) : (answers[currentIndex] === opt ? 'default' : 'outline');
+                          return (
+                            <Button
+                              key={i}
+                              variant={variant as any}
+                              onClick={() => handleAnswer(opt)}
+                              disabled={!!selectedChoice}
+                            >
+                              {opt}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={prevQuestion} disabled={currentIndex === 0}>Previous</Button>
+                    <Button onClick={nextQuestion}>{currentIndex < autoQuiz.length - 1 ? 'Next' : 'Finish'}</Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Results</h2>
+                  <p className="mb-4">Score: {lastScore ?? 0} / {autoQuiz.length}</p>
+                  <div className="space-y-4">
+                    {autoQuiz.map((q, idx) => (
+                      <Card key={idx} className="p-4">
+                        <div className="font-semibold mb-2">Q{idx + 1}: {q.question}</div>
+                        <div className="text-sm text-muted-foreground">Your answer: {answers[idx] ?? '—'}</div>
+                        <div className="text-sm text-primary">Correct answer: {q.answer}</div>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="pt-4">
+                    <Button onClick={() => { localStorage.removeItem('currentQuiz'); setAutoQuiz(null); navigate('/') }}>Done</Button>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
               <Card 
                 className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
                   quizType === "country" ? "border-primary border-2" : ""
@@ -130,6 +262,7 @@ const Quiz = () => {
                 </CardHeader>
               </Card>
             </div>
+            )}
 
             {/* Country Selection (if country-wise) */}
             {quizType === "country" && (

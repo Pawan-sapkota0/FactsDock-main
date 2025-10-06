@@ -8,6 +8,8 @@ import Country from "./pages/Country";
 import FunFacts from "./pages/FunFacts";
 import WorldFacts from "./pages/WorldFacts";
 import Quiz from "./pages/Quiz";
+import Facts from "./pages/Facts";
+import QuizCountry from "./pages/QuizCountry";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/fun-facts" element={<FunFacts />} />
           <Route path="/world-facts" element={<WorldFacts />} />
           <Route path="/quiz" element={<Quiz />} />
+          <Route path="/quiz/:slug" element={<QuizCountry />} />
+          <Route path="/facts/:category" element={<Facts />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

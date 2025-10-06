@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface SearchBarProps {
   placeholder?: string;
   onChange?: (value: string) => void;
+  onSelect?: (value: string) => void;
 }
 
 const COUNTRIES = [
@@ -68,6 +69,12 @@ const SearchBar = ({ placeholder = "Search for a country...", onChange }: Search
   const handleCountrySelect = (country: string) => {
     setSearchValue(country);
     onChange?.(country);
+    onSelect?.(country);
+    // fallback: if parent didn't handle select, navigate directly to country page
+    if (!onSelect) {
+      const slug = country.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      window.location.href = `/country/${slug}`;
+    }
     setIsOpen(false);
   };
 

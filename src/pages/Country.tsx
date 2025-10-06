@@ -8,6 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchFactsByCategory } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import CountryHeader from '@/components/country/CountryHeader';
+import CountryStats from '@/components/country/CountryStats';
+import CategoryTabs from '@/components/country/CategoryTabs';
+import NewsSection from '@/components/country/NewsSection';
+import QuizButton from '@/components/country/QuizButton';
 
 const Country = () => {
   const { slug } = useParams();
@@ -74,6 +81,10 @@ const Country = () => {
     { title: "Current Events", icon: DollarSign },
   ];
 
+  const [factsOpen, setFactsOpen] = useState(false);
+  const [factsList, setFactsList] = useState<any[]>([]);
+  const [factsLoading, setFactsLoading] = useState(false);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -113,102 +124,47 @@ const Country = () => {
       
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </Button>
-
           <div className="max-w-5xl mx-auto space-y-8">
-            {/* Country Header */}
-            <div className="text-center space-y-4">
-              <img 
-                src={countryData.flagImage} 
-                alt={`${countryData.name} flag`}
-                className="w-48 h-32 object-cover mx-auto rounded-lg shadow-lg"
-              />
-              <h1 className="text-5xl font-bold text-foreground">{countryData.name}</h1>
-              <p className="text-muted-foreground text-lg">
-                {countryData.region} • {countryData.subregion}
-              </p>
-            </div>
+            <CountryHeader name={countryData.name} onBack={() => navigate(-1)} />
+            <CountryStats
+              flag={countryData.flagImage}
+              capital={countryData.capital}
+              population={countryData.population}
+              currency={countryData.currency}
+              languages={countryData.languages}
+            />
 
-            {/* Main Facts */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Main Facts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-primary mt-1" />
-                    <div>
-                      <p className="font-semibold text-foreground">Capital</p>
-                      <p className="text-muted-foreground">{countryData.capital}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-primary mt-1" />
-                    <div>
-                      <p className="font-semibold text-foreground">Population</p>
-                      <p className="text-muted-foreground">{countryData.population}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="h-5 w-5 text-primary mt-1" />
-                    <div>
-                      <p className="font-semibold text-foreground">Currency</p>
-                      <p className="text-muted-foreground">
-                        {countryData.currency} {countryData.currencySymbol && `(${countryData.currencySymbol})`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Languages className="h-5 w-5 text-primary mt-1" />
-                    <div>
-                      <p className="font-semibold text-foreground">Languages</p>
-                      <p className="text-muted-foreground">{countryData.languages}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CategoryTabs country={countryData.name} />
 
-            {/* Categories */}
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-foreground">Explore Categories</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {categories.map((category) => (
-                  <CategoryCard
-                    key={category.title}
-                    title={category.title}
-                    icon={category.icon}
-                    onClick={() => console.log(`Selected category: ${category.title}`)}
-                  />
-                ))}
-              </div>
+              <QuizButton country={countryData.name} />
             </div>
 
-            {/* Quiz CTA */}
-            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20">
-              <CardContent className="p-8 text-center">
-                <h3 className="text-2xl font-bold mb-4 text-foreground">
-                  Test Your Knowledge!
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Take a quiz about {countryData.name} and see how much you know
-                </p>
-                <Button variant="hero" size="lg" onClick={() => navigate(`/quiz?country=${slug}`)}>
-                  Play Quiz for {countryData.name}
-                </Button>
-              </CardContent>
-            </Card>
+            <NewsSection country={countryData.name} />
           </div>
         </div>
       </main>
+
+      <Dialog open={factsOpen} onOpenChange={setFactsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Facts</DialogTitle>
+            <DialogDescription>Facts about the selected category</DialogDescription>
+          </DialogHeader>
+          {factsLoading ? (
+            <div className="p-6">Loading...</div>
+          ) : (
+            <div className="space-y-4 p-4">
+              {factsList.map((f, i) => (
+                <Card key={i} className="p-4">
+                  <h3 className="font-semibold">{f.title || f}</h3>
+                  <p className="text-muted-foreground">{f.description || f.fact || ''}</p>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

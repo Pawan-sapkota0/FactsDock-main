@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import { generateQuiz } from '@/lib/quiz';
 
 const WorldFacts = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const WorldFacts = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [facts, setFacts] = useState<any[]>([]);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   
   const categories = [
     { title: "Geography", icon: Mountain },
@@ -98,6 +100,24 @@ const WorldFacts = () => {
                 />
               ))}
             </div>
+
+            {/* Quiz CTA */}
+            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 mt-8">
+              <div className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Test Your Knowledge!</h3>
+                <p className="text-muted-foreground mb-6">Take a quiz based on world facts and topics you like.</p>
+                <Button variant="hero" size="lg" onClick={async () => {
+                  try {
+                    const questions = await generateQuiz(undefined, 10);
+                    localStorage.setItem('currentQuiz', JSON.stringify(questions));
+                    // start quiz immediately
+                    navigate('/quiz?autoStart=1');
+                  } catch (e) {
+                    console.error('Failed to generate quiz:', e);
+                  }
+                }}>Play Quiz</Button>
+              </div>
+            </Card>
           </div>
         </div>
       </main>
@@ -136,6 +156,32 @@ const WorldFacts = () => {
                 >
                   Generate More Facts
                 </Button>
+              )}
+              {facts.length > 0 && (
+                <div className="pt-4">
+                  <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={async () => {
+                        setIsGeneratingQuiz(true);
+                        try {
+                          toast({ title: 'Generating quiz', description: `Generating quiz for ${selectedCategory}...` });
+                          const questions = await generateQuiz(selectedCategory, 10);
+                          localStorage.setItem('currentQuiz', JSON.stringify(questions));
+                          navigate('/quiz?autoStart=1');
+                          toast({ title: 'Quiz ready', description: 'Quiz generated and starting now.' });
+                        } catch (e) {
+                          console.error('Failed to generate quiz:', e);
+                          toast({ title: 'Error', description: 'Failed to generate quiz. Try again.', variant: 'destructive' });
+                        } finally {
+                          setIsGeneratingQuiz(false);
+                        }
+                      }}
+                      disabled={isGeneratingQuiz}
+                    >
+                      {isGeneratingQuiz ? 'Generating...' : 'Play Quiz'}
+                    </Button>
+                </div>
               )}
             </div>
           )}

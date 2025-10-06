@@ -2,6 +2,7 @@ import { Sparkles, Globe2, Brain } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
+import { useNavigate } from 'react-router-dom';
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
@@ -40,9 +41,17 @@ const Index = () => {
     { name: "Brazil", slug: "brazil", flag: "🇧🇷" },
   ];
 
+  const navigate = useNavigate();
+
   const handleSearch = (value: string) => {
+    // Keep console log for debugging
     console.log("Searching for:", value);
-    // Search functionality will be added later
+  };
+
+  const handleSelect = (country: string) => {
+    // navigate to the country page using slugified name
+    const slug = country.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    navigate(`/country/${slug}`);
   };
 
   return (
@@ -90,7 +99,7 @@ const Index = () => {
         {/* Search Section */}
         <section className="py-12 bg-card/30">
           <div className="container mx-auto px-4">
-            <SearchBar onChange={handleSearch} />
+            <SearchBar onChange={handleSearch} onSelect={handleSelect} />
           </div>
         </section>
 
