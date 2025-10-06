@@ -1,0 +1,32 @@
+import { Globe } from "lucide-react";
+
+const Footer = () => {
+  return (
+    <footer className="bg-card border-t border-border mt-20">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-foreground">World Facts</span>
+          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Developed by{" "}
+            <a 
+              href="https://lovable.dev" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary-hover transition-colors font-medium"
+            >
+              Your Name
+            </a>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            © 2025 World Facts. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
