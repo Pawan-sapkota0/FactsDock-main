@@ -26,10 +26,10 @@ const Index = () => {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">
+        <section className="relative overflow-hidden bg-gradient-to-b from-background via-primary/5 to-background py-12">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6 z-10">
                 <h1 className="text-5xl md:text-6xl font-bold leading-tight">
                   <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Know the world
@@ -49,8 +49,7 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl"></div>
+              <div className="relative -mr-4 md:-mr-12">
                 <Globe3D />
               </div>
             </div>
