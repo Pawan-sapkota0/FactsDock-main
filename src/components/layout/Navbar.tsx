@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Globe } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   const location = useLocation();
