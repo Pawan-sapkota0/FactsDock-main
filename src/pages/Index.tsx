@@ -5,6 +5,32 @@ import SearchBar from "@/components/common/SearchBar";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
+import * as THREE from 'three';
+
+function RotatingGlobe() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(() => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += 0.005;
+      meshRef.current.rotation.x += 0.001;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[2, 32, 32]} />
+      <meshStandardMaterial
+        color="#6366f1"
+        wireframe
+        emissive="#4f46e5"
+        emissiveIntensity={0.3}
+      />
+    </mesh>
+  );
+}
 
 const Index = () => {
   const trendingCountries = [
@@ -27,24 +53,35 @@ const Index = () => {
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center space-y-6">
-              <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Know the world
-                </span>
-                <br />
-                <span className="text-foreground">in one glance</span>
-              </h1>
-              <p className="text-xl text-muted-foreground">
-                Discover the world while playing quizzes
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button variant="hero" size="lg">
-                  Get Started
-                </Button>
-                <Button variant="outline" size="lg">
-                  Learn More
-                </Button>
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+              <div className="text-center lg:text-left space-y-6">
+                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    Know the world
+                  </span>
+                  <br />
+                  <span className="text-foreground">in one glance</span>
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                  Discover the world while playing quizzes
+                </p>
+                <div className="flex gap-4 justify-center lg:justify-start">
+                  <Button variant="hero" size="lg">
+                    Get Started
+                  </Button>
+                  <Button variant="outline" size="lg">
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="h-[400px] w-full">
+                <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+                  <ambientLight intensity={0.5} />
+                  <directionalLight position={[5, 5, 5]} intensity={1} />
+                  <pointLight position={[-5, -5, -5]} intensity={0.5} color="#8b5cf6" />
+                  <RotatingGlobe />
+                </Canvas>
               </div>
             </div>
           </div>
