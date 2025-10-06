@@ -5,7 +5,6 @@ import SearchBar from "@/components/common/SearchBar";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
-import Globe3D from "@/components/Globe3D";
 
 const Index = () => {
   const trendingCountries = [
@@ -28,30 +27,24 @@ const Index = () => {
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Know the world
-                  </span>
-                  <br />
-                  <span className="text-foreground">in one glance</span>
-                </h1>
-                <p className="text-xl text-muted-foreground">
-                  Discover the world while playing quizzes
-                </p>
-                <div className="flex gap-4">
-                  <Button variant="hero" size="lg">
-                    Get Started
-                  </Button>
-                  <Button variant="outline" size="lg">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl"></div>
-                <Globe3D />
+            <div className="max-w-3xl mx-auto text-center space-y-6">
+              <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Know the world
+                </span>
+                <br />
+                <span className="text-foreground">in one glance</span>
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                Discover the world while playing quizzes
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button variant="hero" size="lg">
+                  Get Started
+                </Button>
+                <Button variant="outline" size="lg">
+                  Learn More
+                </Button>
               </div>
             </div>
           </div>
