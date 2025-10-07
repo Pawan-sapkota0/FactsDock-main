@@ -22,48 +22,55 @@ const About = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <div className="bg-primary/10 p-3 rounded-xl w-fit mx-auto mb-2">
-                    <Globe className="h-8 w-8 text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Card shared styles: rounded, padded, shadow, responsive */}
+              <div
+                onClick={() => (window.location.href = '/fun-facts')}
+                className="group cursor-pointer rounded-lg p-6 bg-gradient-to-br from-white/60 to-gray-50 border border-gray-200 shadow-sm hover:shadow-lg transform transition-all duration-300 ease-in-out hover:scale-103 md:hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 relative"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = '/fun-facts'; }}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="bg-muted p-3 rounded-2xl mb-4">
+                    <Globe className="h-8 w-8 text-blue-600" />
                   </div>
-                  <CardTitle className="text-center">Our Mission</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-center">
-                    To make learning about the world fun, interactive, and accessible to everyone.
-                  </p>
-                </CardContent>
-              </Card>
+                  <h3 className="text-lg font-semibold mb-2">Our Mission</h3>
+                  <p className="text-muted-foreground">To make learning about the world fun, interactive, and accessible to everyone.</p>
+                </div>
+                {/* border accent on hover (uses group hover to change border color) */}
+                <div className="absolute inset-0 rounded-lg pointer-events-none border-2 border-transparent group-hover:border-blue-500 transition-colors duration-300 ease-in-out" />
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <div className="bg-secondary/10 p-3 rounded-xl w-fit mx-auto mb-2">
-                    <Target className="h-8 w-8 text-secondary" />
+              <div
+                onClick={() => (window.location.href = '/world-facts')}
+                className="group cursor-pointer rounded-lg p-6 bg-gradient-to-br from-white/60 to-gray-50 border border-gray-200 shadow-sm hover:shadow-lg transform transition-all duration-300 ease-in-out hover:scale-103 md:hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 relative"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = '/world-facts'; }}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="bg-muted p-3 rounded-2xl mb-4">
+                    <Target className="h-8 w-8 text-purple-600" />
                   </div>
-                  <CardTitle className="text-center">Our Goal</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-center">
-                    To provide accurate, engaging facts and quizzes that spark curiosity about our world.
-                  </p>
-                </CardContent>
-              </Card>
+                  <h3 className="text-lg font-semibold mb-2">Our Goal</h3>
+                  <p className="text-muted-foreground">To provide accurate, engaging facts and quizzes that spark curiosity about our world.</p>
+                </div>
+                <div className="absolute inset-0 rounded-lg pointer-events-none border-2 border-transparent group-hover:border-purple-500 transition-colors duration-300 ease-in-out" />
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <div className="bg-accent/10 p-3 rounded-xl w-fit mx-auto mb-2">
+              <div
+                className="group cursor-default rounded-lg p-6 bg-gradient-to-br from-white/60 to-gray-50 border border-gray-200 shadow-sm hover:shadow-lg transform transition-all duration-300 ease-in-out hover:scale-103 md:hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent relative"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="bg-muted p-3 rounded-2xl mb-4">
                     <Users className="h-8 w-8 text-accent" />
                   </div>
-                  <CardTitle className="text-center">Our Community</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-center">
-                    Join thousands of curious minds exploring the world together.
-                  </p>
-                </CardContent>
-              </Card>
+                  <h3 className="text-lg font-semibold mb-2">Our Community</h3>
+                  <p className="text-muted-foreground">Join thousands of curious minds exploring the world together.</p>
+                </div>
+                <div className="absolute inset-0 rounded-lg pointer-events-none border-2 border-transparent group-hover:border-accent transition-colors duration-300 ease-in-out" />
+              </div>
             </div>
 
             <Card>

@@ -7,6 +7,7 @@ interface SearchBarProps {
   placeholder?: string;
   onChange?: (value: string) => void;
   onSelect?: (value: string) => void;
+  onSubmit?: (value: string) => void;
 }
 
 const COUNTRIES = [
@@ -32,7 +33,7 @@ const COUNTRIES = [
   "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-const SearchBar = ({ placeholder = "Search for a country...", onChange, onSelect }: SearchBarProps) => {
+const SearchBar = ({ placeholder = "Search for a country...", onChange, onSelect, onSubmit }: SearchBarProps) => {
   const [searchValue, setSearchValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<string[]>([]);
@@ -66,6 +67,18 @@ const SearchBar = ({ placeholder = "Search for a country...", onChange, onSelect
     onChange?.(value);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // If there's an exact match or at least one filtered result, select it.
+      if (filteredCountries.length > 0) {
+        handleCountrySelect(filteredCountries[0]);
+      } else {
+        onSubmit?.(searchValue);
+        setIsOpen(false);
+      }
+    }
+  };
+
   const handleCountrySelect = (country: string) => {
     setSearchValue(country);
     onChange?.(country);
@@ -86,6 +99,7 @@ const SearchBar = ({ placeholder = "Search for a country...", onChange, onSelect
         placeholder={placeholder}
         value={searchValue}
         onChange={(e) => handleInputChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         onFocus={() => setIsOpen(true)}
         className="pl-12 pr-12 py-6 text-lg rounded-2xl border-2 focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md"
       />

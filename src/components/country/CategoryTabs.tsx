@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { generateQuiz } from '@/lib/quiz';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchFactsByCategory } from '@/lib/api';
 
 type Props = {
   country?: string;
@@ -21,11 +20,8 @@ export default function CategoryTabs({ country }: Props) {
     setActive(category);
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: { type: 'world-facts', category }
-      });
-      if (error) throw error;
-      setFacts(data.data || []);
+      const result = await fetchFactsByCategory('world-facts', category);
+      setFacts(result || []);
     } catch (e) {
       console.error(e);
       toast({ title: 'Error', description: 'Failed to load facts', variant: 'destructive' });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/common/SearchBar";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { generateQuizForTopic } from '@/lib/api';
 
 const Quiz = () => {
   const navigate = useNavigate();
@@ -38,34 +38,20 @@ const Quiz = () => {
     setIsGenerating(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          type: 'quiz',
-          country: quizType === "country" ? selectedCountry : 'world geography',
-          questionCount: questionCount
-        }
-      });
+      const topic = quizType === 'country' ? selectedCountry : undefined;
+      const questions = await generateQuizForTopic(topic, questionCount);
 
-      if (error) throw error;
+      if (!questions || questions.length === 0) {
+        throw new Error('No questions generated');
+      }
 
-      console.log("Quiz generated:", data);
-      
-      toast({
-        title: "Quiz Ready!",
-        description: `Generated ${data.data.length} questions successfully.`,
-      });
-
-      // Store quiz data for future use
-      localStorage.setItem('currentQuiz', JSON.stringify(data.data));
-      // navigate to runner and auto-start
+      toast({ title: 'Quiz Ready!', description: `Generated ${questions.length} questions.` });
+      // store normalized quiz array
+      localStorage.setItem('currentQuiz', JSON.stringify(questions));
       navigate('/quiz?autoStart=1');
     } catch (error) {
       console.error('Error generating quiz:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate quiz. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to generate quiz. Please try again.', variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -80,20 +66,10 @@ const Quiz = () => {
     if ((autoStart === '1' || stored) && !autoQuiz) {
       try {
         let parsed = stored ? JSON.parse(stored) : null;
-        // support shape { data: [...] }
+        // support shape { data: [...] } or raw array
         if (parsed && parsed.data && Array.isArray(parsed.data)) parsed = parsed.data;
-        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-          // normalize quiz items: if backend returned correctAnswer as index, convert to answer string
-          const normalized = parsed.map((q: any) => {
-            if (q.answer) return q;
-            if (typeof q.correctAnswer === 'number' && Array.isArray(q.options)) {
-              return { ...q, answer: q.options[q.correctAnswer] };
-            }
-            // support 'correctAnswer' as index or string
-            if (typeof q.correctAnswer === 'string') return { ...q, answer: q.correctAnswer };
-            return q;
-          });
-          setAutoQuiz(normalized);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAutoQuiz(parsed.map((q: any) => ({ ...q })));
         }
       } catch (e) {
         console.error('Invalid stored quiz:', e);

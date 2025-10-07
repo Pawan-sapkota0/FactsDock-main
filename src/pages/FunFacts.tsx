@@ -6,7 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchFactsByCategory } from '@/lib/api';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { generateQuiz } from '@/lib/quiz';
@@ -33,24 +33,16 @@ const FunFacts = () => {
 
   const handleCategoryClick = async (categoryTitle: string) => {
     setSelectedCategory(categoryTitle);
-    setIsOpen(true);
+    // Render inline instead of forcing navigation — open modal for details only
     setIsLoading(true);
     setFacts([]);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          type: 'fun-facts',
-          category: categoryTitle
-        }
-      });
-
-      if (error) throw error;
-
-      setFacts(data.data);
+      const result = await fetchFactsByCategory('fun-facts', categoryTitle, { force: true });
+  setFacts(result || []);
       toast({
         title: "Facts Loaded!",
-        description: `Generated ${data.data.length} fun facts about ${categoryTitle}.`,
+        description: `Generated ${result?.length || (Array.isArray(facts) ? facts.length : 0)} fun facts about ${categoryTitle}.`,
       });
     } catch (error) {
       console.error('Error generating facts:', error);
@@ -59,7 +51,7 @@ const FunFacts = () => {
         description: "Failed to generate facts. Please try again.",
         variant: "destructive",
       });
-      setIsOpen(false);
+      // keep inline state
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +94,25 @@ const FunFacts = () => {
                 />
               ))}
             </div>
+
+            {/* Inline Facts */}
+            {selectedCategory && (
+              <div className="mt-8">
+                <h2 className="text-2xl font-bold mb-4">{selectedCategory} — Fun Facts</h2>
+                {isLoading ? (
+                  <div className="flex items-center gap-3"><Loader2 className="animate-spin" /> Generating facts...</div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {facts.map((fact, idx) => (
+                      <Card key={idx} className="p-4">
+                        <h3 className="font-semibold">{fact.title}</h3>
+                        <p className="text-muted-foreground">{fact.fact}</p>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Quiz CTA */}
             <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 mt-8">

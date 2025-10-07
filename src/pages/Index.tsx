@@ -99,7 +99,11 @@ const Index = () => {
         {/* Search Section */}
         <section className="py-12 bg-card/30">
           <div className="container mx-auto px-4">
-            <SearchBar onChange={handleSearch} onSelect={handleSelect} />
+            <SearchBar onChange={handleSearch} onSelect={handleSelect} onSubmit={(value) => {
+              if (!value) return;
+              const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+              navigate(`/country/${slug}`);
+            }} />
           </div>
         </section>
 
