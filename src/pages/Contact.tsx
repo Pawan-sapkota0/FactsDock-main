@@ -12,34 +12,52 @@ import { useToast } from "@/hooks/use-toast";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    let emailResponse;
 
     try {
-      const result = await emailjs.sendForm(
+      // Store the response so we can inspect it
+      emailResponse = await emailjs.sendForm(
         'service_tyqwinp',
         'template_xinynen',
         e.currentTarget,
         'aWhW2bMG4NThrK5h5'
       );
 
-      console.log('Email sent successfully:', result.text);
-      toast({
-        title: "Message sent!",
-        description: "Thank you for contacting us. We'll get back to you soon.",
-      });
+      console.log('📧 EmailJS Response:', emailResponse);
       
-      // Reset form
-      e.currentTarget.reset();
+      // EmailJS successful response has status: 200
+      if (emailResponse?.status === 200) {
+        console.log("✅ Email confirmed sent! Status:", emailResponse.status);
+        const successText = "Email sent successfully!";
+        setSuccessMsg(successText);
+        setErrorMsg(null);
+        toast({
+          title: successText,
+          description: "Thank you for contacting us. We'll get back to you soon.",
+        });
+        e.currentTarget.reset();
+      } else {
+        console.warn("⚠️ Unexpected EmailJS response:", emailResponse);
+        throw new Error('Unexpected response from email service');
+      }
     } catch (error) {
-      console.error('Email sending failed:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
+      console.error("🚨 Email sending failed.", { error, response: emailResponse });
+      const err = "Failed to send email, please try again.";
+      setErrorMsg(err);
+      setSuccessMsg(null);
+      toast({ 
+        title: "Error", 
+        description: err, 
+        variant: "destructive" 
       });
     } finally {
       setIsSubmitting(false);
@@ -73,6 +91,24 @@ const Contact = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Inline alerts */}
+                  {successMsg ? (
+                    <div className="p-4 rounded-md bg-green-50 border border-green-200 text-green-800">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">{successMsg}</div>
+                        <button type="button" onClick={() => setSuccessMsg(null)} className="text-green-700 hover:text-green-900">×</button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {errorMsg ? (
+                    <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-800">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">{errorMsg}</div>
+                        <button type="button" onClick={() => setErrorMsg(null)} className="text-red-700 hover:text-red-900">×</button>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input 

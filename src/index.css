@@ -112,3 +112,40 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Smooth scroll fallback for browsers that support CSS smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animated pastel gradient for hero */
+.hero-gradient {
+  background: linear-gradient(135deg, rgba(124,131,255,0.12), rgba(255,200,180,0.12) 40%, rgba(180,220,255,0.12));
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Floating icons */
+.floating-icon {
+  position: absolute;
+  opacity: 0.18;
+  filter: drop-shadow(0 6px 18px rgba(99,102,241,0.06));
+  transform-origin: center;
+}
+
+.floating-1 { top: 8%; left: 10%; animation: floatSlow 8s ease-in-out infinite; }
+.floating-2 { top: 22%; right: 8%; animation: floatSlow 10s ease-in-out infinite; }
+.floating-3 { bottom: 12%; left: 18%; animation: floatSlow 9s ease-in-out infinite; }
+.floating-4 { bottom: 22%; right: 20%; animation: floatSlow 11s ease-in-out infinite; }
+
+@keyframes floatSlow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(6deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
