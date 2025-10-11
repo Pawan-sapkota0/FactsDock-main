@@ -1,4 +1,4 @@
-import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud } from "lucide-react";
+import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud, ChevronDown } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
@@ -7,7 +7,7 @@ import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from 'react';
-import HeroIllustration from '@/components/illustration/HeroIllustration';
+import Globe3D from '@/components/Globe3D';
 
 // Illustration-based hero visual (framer-motion animated SVG)
 
@@ -83,17 +83,14 @@ const Index = () => {
               </div>
               
               <div className="h-[400px] w-full relative flex items-center justify-center">
-                <div className="w-full max-w-xl mx-auto">
-                  <HeroIllustration />
-                </div>
-                {/* Floating icons positioned absolutely */}
-                <div className="pointer-events-none">
-                  <Plane className="floating-icon floating-1 h-6 w-6 text-primary" />
-                  <MapPin className="floating-icon floating-2 h-5 w-5 text-secondary" />
-                  <Cloud className="floating-icon floating-3 h-7 w-7 text-accent" />
-                  <Globe2 className="floating-icon floating-4 h-6 w-6 text-primary" />
-                </div>
+                <Globe3D />
               </div>
+            </div>
+            
+            {/* Scroll Indicator */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in">
+              <p className="text-sm text-muted-foreground">Scroll to explore 🌏</p>
+              <ChevronDown className="h-6 w-6 text-primary animate-bounce" />
             </div>
           </div>
         </section>

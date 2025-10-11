@@ -14,26 +14,23 @@ function RotatingGlobe() {
 
   return (
     <>
-      <Sphere ref={globeRef} args={[2.5, 64, 64]}>
+      <Sphere ref={globeRef} args={[2.5, 32, 32]}>
         <meshStandardMaterial
-          color={new THREE.Color(0x2563eb)}
-          metalness={0.4}
-          roughness={0.6}
+          color={new THREE.Color(0x8b5cf6)}
+          wireframe={true}
+          emissive={new THREE.Color(0x6366f1)}
+          emissiveIntensity={0.3}
         />
       </Sphere>
 
-      {/* outer atmosphere layer */}
-      <Sphere args={[2.62, 64, 64]}> {/* slightly larger than main globe */}
+      {/* outer glow layer */}
+      <Sphere args={[2.65, 32, 32]}>
         <meshStandardMaterial
-          color={new THREE.Color(0x86a8e7)}
+          color={new THREE.Color(0x8b5cf6)}
           transparent={true}
-          opacity={0.12}
+          opacity={0.15}
+          wireframe={true}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          roughness={1}
-          metalness={0}
-          emissive={new THREE.Color(0x86a8e7)}
-          emissiveIntensity={0.2}
         />
       </Sphere>
     </>
@@ -42,9 +39,8 @@ function RotatingGlobe() {
 
 const Globe3D = () => {
   return (
-    <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 animate-pulse"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent blur-2xl"></div>
+    <div className="w-full h-full">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent blur-3xl"></div>
       <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 3, 5]} intensity={1.2} />
