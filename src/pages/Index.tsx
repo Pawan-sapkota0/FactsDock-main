@@ -7,8 +7,7 @@ import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from 'react';
-import Globe3D from '@/components/Globe3D';
-import { ChevronDown } from 'lucide-react';
+import HeroIllustration from '@/components/illustration/HeroIllustration';
 
 // Illustration-based hero visual (framer-motion animated SVG)
 
@@ -84,21 +83,18 @@ const Index = () => {
               </div>
               
               <div className="h-[400px] w-full relative flex items-center justify-center">
-                <div className="w-full h-full relative">
-                  {/* Purple/neon glow effect */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-[300px] h-[300px] rounded-full bg-primary/20 blur-3xl animate-pulse" />
-                  </div>
-                  <Globe3D />
+                <div className="w-full max-w-xl mx-auto">
+                  <HeroIllustration />
+                </div>
+                {/* Floating icons positioned absolutely */}
+                <div className="pointer-events-none">
+                  <Plane className="floating-icon floating-1 h-6 w-6 text-primary" />
+                  <MapPin className="floating-icon floating-2 h-5 w-5 text-secondary" />
+                  <Cloud className="floating-icon floating-3 h-7 w-7 text-accent" />
+                  <Globe2 className="floating-icon floating-4 h-6 w-6 text-primary" />
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in">
-            <span className="text-sm text-muted-foreground font-medium">Scroll to explore 🌏</span>
-            <ChevronDown className="h-6 w-6 text-primary animate-bounce" />
           </div>
         </section>
 
