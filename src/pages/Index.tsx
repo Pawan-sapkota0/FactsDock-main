@@ -76,8 +76,8 @@ const Index = () => {
 
           <div className="container mx-auto px-4 flex-1 flex items-center justify-center">
             <div className="text-center space-y-6 relative z-10 max-w-4xl">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold leading-relaxed space-y-2">
-                <span className="bg-gradient-to-r from-[#9333EA] via-[#A78BFA] to-[#C084FC] bg-clip-text text-transparent block">
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.3] space-y-2">
+                <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
                   Know the world
                 </span>
                 <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
