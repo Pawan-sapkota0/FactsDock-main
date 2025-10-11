@@ -8,6 +8,7 @@ import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from 'react';
 import Globe3D from '@/components/Globe3D';
+import HeroIllustration from '@/components/illustration/HeroIllustration';
 
 // Illustration-based hero visual (framer-motion animated SVG)
 
@@ -82,8 +83,8 @@ const Index = () => {
                 </div>
               </div>
               
-              <div className="h-[400px] w-full relative flex items-center justify-center">
-                <Globe3D />
+              <div className="h-[420px] w-full relative flex items-center justify-center">
+                <HeroIllustration />
               </div>
             </div>
             
