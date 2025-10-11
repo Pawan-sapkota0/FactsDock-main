@@ -44,18 +44,27 @@ const Index = () => {
   <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-              <div className="text-center lg:text-left space-y-6">
-                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+              <div className="relative text-center lg:text-left space-y-6">
+                {/* Floating background icons on the left */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <Plane className="floating-icon floating-1 h-8 w-8 text-primary/20" />
+                  <Sparkles className="floating-icon floating-2 h-7 w-7 text-secondary/20" />
+                  <Cloud className="floating-icon floating-3 h-9 w-9 text-accent/20" />
+                  <MapPin className="floating-icon floating-4 h-6 w-6 text-primary/20" />
+                  <Globe2 className="floating-icon h-10 w-10 text-secondary/20" style={{ top: '60%', left: '5%', animation: 'floatSlow 12s ease-in-out infinite' }} />
+                </div>
+                
+                <h1 className="relative text-5xl md:text-6xl font-bold leading-tight z-10">
                   <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Know the world
                   </span>
                   <br />
-                  <span className="text-foreground">in one glance</span>
+                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">in one glance</span>
                 </h1>
-                <p className="text-xl text-muted-foreground">
+                <p className="relative text-xl text-muted-foreground z-10">
                   Discover the world while playing quizzes
                 </p>
-                <div className="flex gap-4 justify-center lg:justify-start">
+                <div className="relative flex gap-4 justify-center lg:justify-start z-10">
                   <Button
                     variant="hero"
                     size="lg"
