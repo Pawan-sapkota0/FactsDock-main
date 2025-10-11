@@ -1,4 +1,4 @@
-import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud } from "lucide-react";
+import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud, Star, ChevronDown } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
@@ -7,7 +7,7 @@ import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from 'react';
-import HeroIllustration from '@/components/illustration/HeroIllustration';
+import heroGlobe from '@/assets/hero-globe.png';
 
 // Illustration-based hero visual (framer-motion animated SVG)
 
@@ -41,16 +41,22 @@ const Index = () => {
       
       <main className="flex-1">
   {/* Hero Section */}
-  <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
-          <div className="container mx-auto px-4">
-            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-              <div className="text-center lg:text-left space-y-6">
+  <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient min-h-[90vh] flex flex-col">
+          {/* Floating background icons on the left */}
+          <div className="absolute left-0 top-0 bottom-0 w-1/3 pointer-events-none overflow-hidden">
+            <Plane className="floating-icon floating-1 h-8 w-8 text-primary/20 absolute" style={{ top: '15%', left: '10%' }} />
+            <Star className="floating-icon floating-2 h-6 w-6 text-secondary/20 absolute" style={{ top: '40%', left: '20%' }} />
+            <Globe2 className="floating-icon floating-3 h-10 w-10 text-accent/20 absolute" style={{ top: '65%', left: '5%' }} />
+            <MapPin className="floating-icon floating-4 h-7 w-7 text-primary/20 absolute" style={{ top: '80%', left: '25%' }} />
+          </div>
+
+          <div className="container mx-auto px-4 flex-1 flex items-center">
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto w-full">
+              <div className="text-center lg:text-left space-y-6 relative z-10">
                 <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Know the world
+                  <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+                    Know the world in one glance
                   </span>
-                  <br />
-                  <span className="text-foreground">in one glance</span>
                 </h1>
                 <p className="text-xl text-muted-foreground">
                   Discover the world while playing quizzes
@@ -74,18 +80,19 @@ const Index = () => {
               </div>
               
               <div className="h-[400px] w-full relative flex items-center justify-center">
-                <div className="w-full max-w-xl mx-auto">
-                  <HeroIllustration />
-                </div>
-                {/* Floating icons positioned absolutely */}
-                <div className="pointer-events-none">
-                  <Plane className="floating-icon floating-1 h-6 w-6 text-primary" />
-                  <MapPin className="floating-icon floating-2 h-5 w-5 text-secondary" />
-                  <Cloud className="floating-icon floating-3 h-7 w-7 text-accent" />
-                  <Globe2 className="floating-icon floating-4 h-6 w-6 text-primary" />
-                </div>
+                <img 
+                  src={heroGlobe} 
+                  alt="3D Globe of Earth" 
+                  className="w-full h-full object-contain animate-fade-in"
+                />
               </div>
             </div>
+          </div>
+
+          {/* Scroll Down Indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 scroll-indicator animate-fade-in">
+            <span className="text-sm text-muted-foreground font-medium">Scroll Down</span>
+            <ChevronDown className="h-5 w-5 text-muted-foreground" />
           </div>
         </section>
 
