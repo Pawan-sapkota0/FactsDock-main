@@ -40,68 +40,61 @@ const Index = () => {
       <main className="flex-1">
   {/* Hero Section */}
   <section className="relative overflow-hidden py-20 hero-gradient min-h-[90vh] flex flex-col">
-          {/* Background cartoonish globe - center-right, blurred */}
-          <img 
-            src={heroGlobeCartoon} 
-            alt="Decorative globe illustration" 
-            className="hero-globe-bg"
-          />
-
-          {/* Floating animated icons scattered around */}
+          {/* Floating animated icons at corners */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Plane - top left */}
-            <Plane className="floating-icon floating-1 h-10 w-10 absolute" style={{ top: '12%', left: '8%', color: '#A78BFA' }} />
+            {/* Top Left - Plane */}
+            <Plane className="floating-icon floating-1 h-10 w-10 absolute" style={{ top: '10%', left: '5%', color: '#A78BFA' }} />
             
-            {/* Twinkling star - top right */}
-            <Star className="floating-icon floating-2 twinkle h-8 w-8 absolute" style={{ top: '20%', right: '15%', color: '#FBBF24' }} />
+            {/* Top Right - Star */}
+            <Star className="floating-icon floating-2 twinkle h-8 w-8 absolute" style={{ top: '10%', right: '5%', color: '#FBBF24' }} />
             
-            {/* Globe icon - middle left */}
-            <Globe2 className="floating-icon floating-3 h-12 w-12 absolute" style={{ top: '45%', left: '5%', color: '#60A5FA' }} />
+            {/* Bottom Left - Cloud */}
+            <Cloud className="floating-icon floating-3 h-10 w-10 absolute" style={{ bottom: '10%', left: '5%', color: '#CBD5E1' }} />
             
-            {/* Location pin - bottom left */}
-            <MapPin className="floating-icon floating-4 h-9 w-9 absolute" style={{ bottom: '25%', left: '12%', color: '#F59E0B' }} />
-            
-            {/* Navigation arrow - bottom right */}
-            <Navigation className="floating-icon floating-5 h-8 w-8 absolute" style={{ bottom: '30%', right: '10%', color: '#EC4899' }} />
-            
-            {/* Cloud - top center */}
-            <Cloud className="floating-icon floating-6 h-10 w-10 absolute" style={{ top: '15%', left: '45%', color: '#CBD5E1' }} />
-            
-            {/* Additional star - middle right */}
-            <Star className="floating-icon floating-1 twinkle h-6 w-6 absolute" style={{ top: '55%', right: '25%', color: '#FBBF24' }} />
-            
-            {/* Additional cloud - bottom center */}
-            <Cloud className="floating-icon floating-2 h-9 w-9 absolute" style={{ bottom: '20%', left: '35%', color: '#E2E8F0' }} />
+            {/* Bottom Right - Navigation Arrow */}
+            <Navigation className="floating-icon floating-4 h-8 w-8 absolute" style={{ bottom: '10%', right: '5%', color: '#EC4899' }} />
           </div>
 
-          <div className="container mx-auto px-4 flex-1 flex items-center justify-center">
-            <div className="text-center space-y-6 relative z-10 max-w-4xl">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.3] space-y-2">
-                <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
-                  Know the world
-                </span>
-                <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
-                  in one glance
-                </span>
-              </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground">
-                Discover the world while playing quizzes
-              </p>
-              <div className="flex gap-4 justify-center pt-4">
-                <Button
-                  variant="hero"
-                  size="lg"
-                  onClick={() => searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                >
-                  Get Started
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => trendingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                >
-                  Learn More
-                </Button>
+          <div className="container mx-auto px-4 flex-1 flex items-center">
+            <div className="grid md:grid-cols-2 gap-8 items-center w-full">
+              {/* Left Side - Text Content */}
+              <div className="space-y-6 relative z-10">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.3] space-y-2">
+                  <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
+                    Know the world
+                  </span>
+                  <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
+                    in one glance
+                  </span>
+                </h1>
+                <p className="text-xl md:text-2xl text-muted-foreground">
+                  Discover the world while playing quizzes
+                </p>
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    onClick={() => searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    Get Started
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => trendingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right Side - Globe */}
+              <div className="relative flex items-center justify-center">
+                <img 
+                  src={heroGlobeCartoon} 
+                  alt="Decorative globe illustration" 
+                  className="w-full max-w-md md:max-w-lg lg:max-w-xl floating-icon floating-2 opacity-90"
+                />
               </div>
             </div>
           </div>
