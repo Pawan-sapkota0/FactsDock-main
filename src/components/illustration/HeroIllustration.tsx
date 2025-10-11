@@ -8,7 +8,7 @@ export default function HeroIllustration({ className }: { className?: string }) 
   return (
     <div className={(className ?? 'relative flex justify-center items-center') + ' w-full max-w-4xl'}>
       {/* Background panel with purple->orange pastel gradient */}
-      <div className="relative w-full h-[420px] rounded-2xl overflow-hidden bg-gradient-to-br from-[#E9D5FF] via-[#FDE68A] to-[#FFEDE0]">
+      <div className="relative w-full h-[420px] rounded-2xl overflow-hidden bg-gradient-to-br from-[#F1E5FF] via-[#FFF2B3] to-[#FFF4EA]">
         {/* decorative icons removed to keep globe area clean */}
 
         {/* Central layout: text left, globe right */}

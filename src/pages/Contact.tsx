@@ -17,51 +17,50 @@ const Contact = () => {
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSuccessMsg(null);
-    setErrorMsg(null);
-    let emailResponse;
+  e.preventDefault();
+  setIsSubmitting(true);
+  setErrorMsg(null);
+  setSuccessMsg(null);
 
-    try {
-      // Store the response so we can inspect it
-      emailResponse = await emailjs.sendForm(
-        'service_tyqwinp',
-        'template_xinynen',
-        e.currentTarget,
-        'aWhW2bMG4NThrK5h5'
-      );
+  try {
+    const formElement = e.currentTarget; // Save form before async call
 
-      console.log('📧 EmailJS Response:', emailResponse);
-      
-      // EmailJS successful response has status: 200
-      if (emailResponse?.status === 200) {
-        console.log("✅ Email confirmed sent! Status:", emailResponse.status);
-        const successText = "Email sent successfully!";
-        setSuccessMsg(successText);
-        setErrorMsg(null);
-        toast({
-          title: successText,
-          description: "Thank you for contacting us. We'll get back to you soon.",
-        });
-        e.currentTarget.reset();
-      } else {
-        console.warn("⚠️ Unexpected EmailJS response:", emailResponse);
-        throw new Error('Unexpected response from email service');
-      }
-    } catch (error) {
-      console.error("🚨 Email sending failed.", { error, response: emailResponse });
-      const err = "Failed to send email, please try again.";
-      setErrorMsg(err);
-      setSuccessMsg(null);
-      toast({ 
-        title: "Error", 
-        description: err, 
-        variant: "destructive" 
+    const emailResponse = await emailjs.sendForm(
+      'service_tyqwinp',
+      'template_xinynen',
+      formElement,
+      'aWhW2bMG4NThrK5h5'
+    );
+
+    console.log('📧 EmailJS Response:', emailResponse);
+
+    if (emailResponse?.status === 200 || emailResponse?.text === 'OK') {
+      console.log("✅ Email confirmed sent!");
+      const successText = "Email sent successfully!";
+      setSuccessMsg(successText);
+      toast({
+        title: successText,
+        description: "Thank you for contacting us. We'll get back to you soon.",
       });
-    } finally {
-      setIsSubmitting(false);
+      formElement.reset(); // ✅ Reset safely here
+    } else {
+      throw new Error('Unexpected response from email service');
     }
+  } catch (error) {
+    console.error("🚨 Email sending failed.", error);
+    const err = "Failed to send email, please try again.";
+    setErrorMsg(err);
+    toast({
+      title: "Error",
+      description: err,
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+
+
+
   };
 
   return (
