@@ -46,12 +46,12 @@ const Index = () => {
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
               <div className="relative text-center lg:text-left space-y-6">
                 {/* Floating background icons on the left */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <Plane className="floating-icon floating-1 h-8 w-8 text-primary/20" />
-                  <Sparkles className="floating-icon floating-2 h-7 w-7 text-secondary/20" />
-                  <Cloud className="floating-icon floating-3 h-9 w-9 text-accent/20" />
-                  <MapPin className="floating-icon floating-4 h-6 w-6 text-primary/20" />
-                  <Globe2 className="floating-icon h-10 w-10 text-secondary/20" style={{ top: '60%', left: '5%', animation: 'floatSlow 12s ease-in-out infinite' }} />
+                <div className="absolute inset-0 pointer-events-none overflow-visible">
+                  <Plane className="absolute h-8 w-8 text-primary/30" style={{ top: '10%', left: '5%', animation: 'floatSlow 8s ease-in-out infinite' }} />
+                  <Sparkles className="absolute h-7 w-7 text-secondary/30" style={{ top: '15%', right: '10%', animation: 'floatSlow 10s ease-in-out infinite' }} />
+                  <Cloud className="absolute h-9 w-9 text-accent/30" style={{ bottom: '20%', left: '8%', animation: 'floatSlow 9s ease-in-out infinite' }} />
+                  <MapPin className="absolute h-6 w-6 text-primary/30" style={{ bottom: '30%', right: '15%', animation: 'floatSlow 11s ease-in-out infinite' }} />
+                  <Globe2 className="absolute h-10 w-10 text-secondary/30" style={{ top: '50%', left: '2%', animation: 'floatSlow 12s ease-in-out infinite' }} />
                 </div>
                 
                 <h1 className="relative text-5xl md:text-6xl font-bold leading-tight z-10">
