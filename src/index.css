@@ -120,7 +120,7 @@ html {
 
 /* Animated pastel gradient for hero */
 .hero-gradient {
-  background: linear-gradient(135deg, rgba(124,131,255,0.12), rgba(255,200,180,0.12) 40%, rgba(180,220,255,0.12));
+  background: linear-gradient(135deg, #FFF8F0 0%, #FFF5E6 50%, #FFFAF0 100%);
   background-size: 400% 400%;
   animation: gradientShift 12s ease infinite;
 }
@@ -134,20 +134,46 @@ html {
 /* Floating icons */
 .floating-icon {
   position: absolute;
-  opacity: 0.18;
-  filter: drop-shadow(0 6px 18px rgba(99,102,241,0.06));
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
   transform-origin: center;
 }
 
-.floating-1 { top: 8%; left: 10%; animation: floatSlow 8s ease-in-out infinite; }
-.floating-2 { top: 22%; right: 8%; animation: floatSlow 10s ease-in-out infinite; }
-.floating-3 { bottom: 12%; left: 18%; animation: floatSlow 9s ease-in-out infinite; }
-.floating-4 { bottom: 22%; right: 20%; animation: floatSlow 11s ease-in-out infinite; }
+.floating-1 { animation: floatSlow 8s ease-in-out infinite; }
+.floating-2 { animation: floatSlow 10s ease-in-out infinite; }
+.floating-3 { animation: floatSlow 9s ease-in-out infinite; }
+.floating-4 { animation: floatSlow 11s ease-in-out infinite; }
+.floating-5 { animation: floatSlow 7s ease-in-out infinite; }
+.floating-6 { animation: floatSlow 12s ease-in-out infinite; }
 
 @keyframes floatSlow {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(6deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
   100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* Twinkling star animation */
+.twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+/* Background globe */
+.hero-globe-bg {
+  position: absolute;
+  right: -10%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 600px;
+  height: 600px;
+  opacity: 0.15;
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes bounce {
