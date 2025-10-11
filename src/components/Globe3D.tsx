@@ -1,12 +1,10 @@
 import { useRef } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
-import earthTexture from '@/assets/earth-realistic.jpg';
 
 function RotatingGlobe() {
   const globeRef = useRef<THREE.Mesh>(null);
-  const texture = useLoader(THREE.TextureLoader, earthTexture);
 
   useFrame(() => {
     if (globeRef.current) {
@@ -18,9 +16,9 @@ function RotatingGlobe() {
     <>
       <Sphere ref={globeRef} args={[2.5, 64, 64]}>
         <meshStandardMaterial
-          map={texture}
-          metalness={0.1}
-          roughness={0.8}
+          color={new THREE.Color(0x2563eb)}
+          metalness={0.4}
+          roughness={0.6}
         />
       </Sphere>
 
