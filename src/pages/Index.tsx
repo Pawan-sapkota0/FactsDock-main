@@ -1,4 +1,4 @@
-import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud, Star, ChevronDown, Navigation } from "lucide-react";
+import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
@@ -7,7 +7,9 @@ import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from 'react';
-import heroGlobeCartoon from '@/assets/hero-globe-cartoon.png';
+import HeroIllustration from '@/components/illustration/HeroIllustration';
+
+// Illustration-based hero visual (framer-motion animated SVG)
 
 const Index = () => {
   const trendingCountries = [
@@ -39,23 +41,21 @@ const Index = () => {
       
       <main className="flex-1">
   {/* Hero Section */}
-  <section className="relative overflow-hidden py-20 hero-gradient min-h-[90vh] flex flex-col">
-          <div className="container mx-auto px-4 flex-1 flex items-center">
-            <div className="grid md:grid-cols-2 gap-8 items-center w-full">
-              {/* Left Side - Text Content */}
-              <div className="space-y-6 relative z-10">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.3] space-y-2">
-                  <span className="bg-gradient-to-r from-[#9333EA] via-[#A78BFA] to-[#C084FC] bg-clip-text text-transparent block">
+  <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
+          <div className="container mx-auto px-4">
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+              <div className="text-center lg:text-left space-y-6">
+                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Know the world
                   </span>
-                  <span className="bg-gradient-to-r from-[#9333EA] via-[#A78BFA] to-[#C084FC] bg-clip-text text-transparent block">
-                    in one glance
-                  </span>
+                  <br />
+                  <span className="text-foreground">in one glance</span>
                 </h1>
-                <p className="text-xl md:text-2xl text-muted-foreground">
+                <p className="text-xl text-muted-foreground">
                   Discover the world while playing quizzes
                 </p>
-                <div className="flex gap-4 pt-4">
+                <div className="flex gap-4 justify-center lg:justify-start">
                   <Button
                     variant="hero"
                     size="lg"
@@ -72,37 +72,20 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-
-              {/* Right Side - Globe with floating icons */}
-              <div className="relative flex items-center justify-center">
-                {/* Floating animated icons around globe */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Plane - top left of globe */}
-                  <Plane className="floating-icon floating-1 h-10 w-10 absolute" style={{ top: '10%', left: '10%', color: '#A78BFA' }} />
-                  
-                  {/* Star - top right of globe */}
-                  <Star className="floating-icon floating-2 twinkle h-8 w-8 absolute" style={{ top: '15%', right: '10%', color: '#FBBF24' }} />
-                  
-                  {/* Cloud - bottom left of globe */}
-                  <Cloud className="floating-icon floating-3 h-10 w-10 absolute" style={{ bottom: '15%', left: '15%', color: '#CBD5E1' }} />
-                  
-                  {/* Navigation Arrow - bottom right of globe */}
-                  <Navigation className="floating-icon floating-4 h-8 w-8 absolute" style={{ bottom: '10%', right: '15%', color: '#EC4899' }} />
+              
+              <div className="h-[400px] w-full relative flex items-center justify-center">
+                <div className="w-full max-w-xl mx-auto">
+                  <HeroIllustration />
                 </div>
-
-                <img 
-                  src={heroGlobeCartoon} 
-                  alt="Decorative globe illustration" 
-                  className="w-full max-w-md md:max-w-lg lg:max-w-xl floating-icon floating-2 opacity-90"
-                />
+                {/* Floating icons positioned absolutely */}
+                <div className="pointer-events-none">
+                  <Plane className="floating-icon floating-1 h-6 w-6 text-primary" />
+                  <MapPin className="floating-icon floating-2 h-5 w-5 text-secondary" />
+                  <Cloud className="floating-icon floating-3 h-7 w-7 text-accent" />
+                  <Globe2 className="floating-icon floating-4 h-6 w-6 text-primary" />
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Scroll Down Indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 scroll-indicator animate-fade-in">
-            <span className="text-sm text-muted-foreground font-medium">Scroll Down</span>
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
           </div>
         </section>
 
