@@ -40,30 +40,15 @@ const Index = () => {
       <main className="flex-1">
   {/* Hero Section */}
   <section className="relative overflow-hidden py-20 hero-gradient min-h-[90vh] flex flex-col">
-          {/* Floating animated icons at corners */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Top Left - Plane */}
-            <Plane className="floating-icon floating-1 h-10 w-10 absolute" style={{ top: '10%', left: '5%', color: '#A78BFA' }} />
-            
-            {/* Top Right - Star */}
-            <Star className="floating-icon floating-2 twinkle h-8 w-8 absolute" style={{ top: '10%', right: '5%', color: '#FBBF24' }} />
-            
-            {/* Bottom Left - Cloud */}
-            <Cloud className="floating-icon floating-3 h-10 w-10 absolute" style={{ bottom: '10%', left: '5%', color: '#CBD5E1' }} />
-            
-            {/* Bottom Right - Navigation Arrow */}
-            <Navigation className="floating-icon floating-4 h-8 w-8 absolute" style={{ bottom: '10%', right: '5%', color: '#EC4899' }} />
-          </div>
-
           <div className="container mx-auto px-4 flex-1 flex items-center">
             <div className="grid md:grid-cols-2 gap-8 items-center w-full">
               {/* Left Side - Text Content */}
               <div className="space-y-6 relative z-10">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.3] space-y-2">
-                  <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.3] space-y-2">
+                  <span className="bg-gradient-to-r from-[#9333EA] via-[#A78BFA] to-[#C084FC] bg-clip-text text-transparent block">
                     Know the world
                   </span>
-                  <span className="bg-gradient-to-r from-[#A78BFA] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent block">
+                  <span className="bg-gradient-to-r from-[#9333EA] via-[#A78BFA] to-[#C084FC] bg-clip-text text-transparent block">
                     in one glance
                   </span>
                 </h1>
@@ -88,8 +73,23 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Right Side - Globe */}
+              {/* Right Side - Globe with floating icons */}
               <div className="relative flex items-center justify-center">
+                {/* Floating animated icons around globe */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Plane - top left of globe */}
+                  <Plane className="floating-icon floating-1 h-10 w-10 absolute" style={{ top: '10%', left: '10%', color: '#A78BFA' }} />
+                  
+                  {/* Star - top right of globe */}
+                  <Star className="floating-icon floating-2 twinkle h-8 w-8 absolute" style={{ top: '15%', right: '10%', color: '#FBBF24' }} />
+                  
+                  {/* Cloud - bottom left of globe */}
+                  <Cloud className="floating-icon floating-3 h-10 w-10 absolute" style={{ bottom: '15%', left: '15%', color: '#CBD5E1' }} />
+                  
+                  {/* Navigation Arrow - bottom right of globe */}
+                  <Navigation className="floating-icon floating-4 h-8 w-8 absolute" style={{ bottom: '10%', right: '15%', color: '#EC4899' }} />
+                </div>
+
                 <img 
                   src={heroGlobeCartoon} 
                   alt="Decorative globe illustration" 
