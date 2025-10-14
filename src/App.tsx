@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import Country from "./pages/Country";
 import FunFacts from "./pages/FunFacts";
 import WorldFacts from "./pages/WorldFacts";
+import CategoryView from "./pages/CategoryView";
+import CountryCategoryPage from "./pages/CountryCategoryPage";
 import Quiz from "./pages/Quiz";
 import Facts from "./pages/Facts";
 import QuizCountry from "./pages/QuizCountry";
@@ -26,7 +28,10 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/country/:slug" element={<Country />} />
           <Route path="/fun-facts" element={<FunFacts />} />
+          <Route path="/fun-facts/:slug" element={<CategoryView />} />
           <Route path="/world-facts" element={<WorldFacts />} />
+          <Route path="/world-facts/:slug" element={<CategoryView />} />
+          <Route path="/countries/:country/:category" element={<CountryCategoryPage />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/:slug" element={<QuizCountry />} />
           <Route path="/facts/:category" element={<Facts />} />

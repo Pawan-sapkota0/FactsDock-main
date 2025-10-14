@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_AVAILABLE } from '@/integrations/supabase/client';
+import { generateMockFacts, generateMockQuiz } from './mockData';
 
 // Simple in-memory cache for the current session
 const memoryCache = new Map<string, { ts: number; value: any }>();
@@ -49,13 +50,26 @@ export function getLocalCacheMeta(prefix: string, key: string) {
 }
 
 async function callGenerateContent(body: Record<string, any>) {
+  if (!SUPABASE_AVAILABLE) {
+    // Return deterministic mock data for local development. Use the request body type to decide.
+    const t = (body.type || 'fun-facts').toLowerCase();
+    if (t === 'quiz') {
+      const cnt = body.questionCount || 10;
+      return generateMockQuiz(body.country || body.topic || 'General', cnt as number);
+    }
+    // for 'fun-facts' or 'world-facts'
+    const category = body.category || 'General';
+    // return a modest number of items so paging works
+    return generateMockFacts(category, 60);
+  }
+
   try {
     const res = await supabase.functions.invoke('generate-content', { body });
     if (res.error) throw res.error;
     return res.data?.data || [];
   } catch (e) {
-    console.warn('Supabase function failed, falling back if possible', e);
-    throw e;
+    console.warn('Supabase function failed or unreachable - returning empty result', e);
+    return [];
   }
 }
 
@@ -107,6 +121,30 @@ export async function fetchFactsByCategory(type: 'fun-facts' | 'world-facts', ca
 
   const body = { type, category };
   const result = await callGenerateContent(body);
+  memoryCache.set(key, { ts: Date.now(), value: result });
+  setLocalCache('facts', key, result, opts?.ttl || 86400);
+  return result;
+}
+
+/**
+ * Fetch facts for a specific country and category. This composes a category label
+ * that includes the country so generators receive contextual info. It caches under
+ * a country-specific key to avoid collisions with global category pages.
+ */
+export async function fetchFactsForCountry(country: string, category: string, opts?: { ttl?: number; force?: boolean }) {
+  const label = `${category} of ${country}`;
+  const key = `country:${country.toLowerCase().trim()}: ${category.toLowerCase().trim()}`;
+  if (!opts?.force) {
+    const mem = memoryCache.get(key);
+    if (mem) return mem.value;
+    const local = getLocalCache('facts', key);
+    if (local) {
+      memoryCache.set(key, { ts: Date.now(), value: local });
+      return local;
+    }
+  }
+
+  const result = await fetchFactsByCategory('world-facts', label, opts);
   memoryCache.set(key, { ts: Date.now(), value: result });
   setLocalCache('facts', key, result, opts?.ttl || 86400);
   return result;

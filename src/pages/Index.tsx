@@ -177,14 +177,14 @@ const Index = () => {
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <FeatureCard
                 title="Fun Facts"
-                description="Different categories like animal, people, fruits, history"
+                description="Learn the funniest and mind-blowing facts"
                 icon={Sparkles}
                 link="/fun-facts"
                 iconColor="text-secondary"
               />
               <FeatureCard
                 title="World Facts"
-                description="Different categories like animal, people, fruits, history"
+                description="Travel the world through facts"
                 icon={Globe2}
                 link="/world-facts"
                 iconColor="text-primary"

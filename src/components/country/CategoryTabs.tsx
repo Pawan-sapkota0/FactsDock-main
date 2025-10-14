@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { fetchFactsByCategory } from '@/lib/api';
+import { fetchFactsByCategory, fetchFactsForCountry } from '@/lib/api';
 
 type Props = {
   country?: string;
@@ -20,7 +20,9 @@ export default function CategoryTabs({ country }: Props) {
     setActive(category);
     setLoading(true);
     try {
-      const result = await fetchFactsByCategory('world-facts', category);
+      const result = country
+        ? await fetchFactsForCountry(country, category)
+        : await fetchFactsByCategory('world-facts', category);
       setFacts(result || []);
     } catch (e) {
       console.error(e);

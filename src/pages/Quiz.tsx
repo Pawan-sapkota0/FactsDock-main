@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Shuffle, MapPin, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import SearchBar from "@/components/common/SearchBar";
 import { useToast } from "@/hooks/use-toast";
 import { generateQuizForTopic } from '@/lib/api';
+
+const QuizModal = React.lazy(() => import('@/components/QuizModal'));
 
 const Quiz = () => {
   const navigate = useNavigate();
@@ -22,6 +24,11 @@ const Quiz = () => {
   const [showResults, setShowResults] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+
+  // inline modal state
+  const [openInline, setOpenInline] = useState(false);
+  const [inlineTopic, setInlineTopic] = useState<string | undefined>(undefined);
+  const [inlineCount, setInlineCount] = useState<number>(10);
 
   const questionOptions = [10, 20, 30, 40, 50];
 
@@ -39,19 +46,14 @@ const Quiz = () => {
 
     try {
       const topic = quizType === 'country' ? selectedCountry : undefined;
-      const questions = await generateQuizForTopic(topic, questionCount);
-
-      if (!questions || questions.length === 0) {
-        throw new Error('No questions generated');
-      }
-
-      toast({ title: 'Quiz Ready!', description: `Generated ${questions.length} questions.` });
-      // store normalized quiz array
-      localStorage.setItem('currentQuiz', JSON.stringify(questions));
-      navigate('/quiz?autoStart=1');
+      // open inline quiz modal instead of navigating
+      setInlineTopic(topic || undefined);
+      setInlineCount(questionCount);
+      setOpenInline(true);
+      toast({ title: 'Quiz Ready!', description: `Starting quiz ${topic ? `for ${topic}` : 'random'}` });
     } catch (error) {
-      console.error('Error generating quiz:', error);
-      toast({ title: 'Error', description: 'Failed to generate quiz. Please try again.', variant: 'destructive' });
+      console.error('Error preparing quiz:', error);
+      toast({ title: 'Error', description: 'Failed to prepare quiz. Please try again.', variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -247,6 +249,7 @@ const Quiz = () => {
                 <SearchBar 
                   placeholder="Search and select a country..."
                   onChange={(value) => setSelectedCountry(value)}
+                  onSelect={(value) => setSelectedCountry(value)}
                 />
               </div>
             )}
@@ -270,7 +273,7 @@ const Quiz = () => {
               </div>
             )}
 
-            {/* Start Quiz Button */}
+            {/* Start Quiz Button (starts inline modal) */}
             {quizType && (quizType === "random" || selectedCountry) && (
               <div className="text-center pt-4">
                 <Button 
@@ -289,6 +292,15 @@ const Quiz = () => {
                     "Start Quiz"
                   )}
                 </Button>
+                {/* When a country is selected, provide a separate explicit action to view details */}
+                {quizType === 'country' && selectedCountry && (
+                  <div className="mt-3">
+                    <Button variant="outline" onClick={() => {
+                      const slug = selectedCountry.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      navigate(`/country/${slug}`);
+                    }}>View Country Details</Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -296,6 +308,10 @@ const Quiz = () => {
       </main>
 
       <Footer />
+
+      <React.Suspense fallback={<div />}>
+        <QuizModal open={openInline} onOpenChange={setOpenInline} topic={inlineTopic} questionCount={inlineCount} />
+      </React.Suspense>
     </div>
   );
 };

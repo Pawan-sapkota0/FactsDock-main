@@ -11,7 +11,7 @@ import { fetchCountryByName, fetchFactsByCategory, getLocalCacheMeta } from '@/l
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import CountryHeader from '@/components/country/CountryHeader';
 import CountryStats from '@/components/country/CountryStats';
-import CategoryTabs from '@/components/country/CategoryTabs';
+// CategoryTabs removed in favor of main category cards
 import NewsSection from '@/components/country/NewsSection';
 import QuizButton from '@/components/country/QuizButton';
 
@@ -248,10 +248,15 @@ const Country = () => {
   };
 
   const categories = [
-    { title: "Geography", icon: MapPin },
-    { title: "History", icon: Flag },
-    { title: "Culture", icon: Users },
-    { title: "Current Events", icon: DollarSign },
+    { title: "Geography & Nature", icon: MapPin },
+    { title: "Culture & Tradition", icon: Users },
+    { title: "History & Heritage", icon: Flag },
+    { title: "Economy & Industry", icon: DollarSign },
+    { title: "Tourism & Landmarks", icon: Globe },
+    { title: "Education & Innovation", icon: MapPin },
+    { title: "Sports & Achievements", icon: Users },
+    { title: "Fun & Interesting Facts", icon: Flag },
+    { title: "Global Presence", icon: Globe },
   ];
 
   const [factsOpen, setFactsOpen] = useState(false);
@@ -315,7 +320,19 @@ const Country = () => {
               </div>
             ) : null}
 
-            <CategoryTabs country={countryData.name} />
+            {/* previous category button removed; main category cards shown below */}
+
+            {/* Main categories cards for the country */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {categories.map((c) => (
+                <CategoryCard
+                  key={c.title}
+                  title={c.title}
+                  icon={c.icon}
+                  onClick={() => navigate(`/countries/${slug}/${c.title.toLowerCase().replace(/\s+/g, '-')}`)}
+                />
+              ))}
+            </div>
 
             <div>
               <QuizButton country={countryData.name} />
