@@ -1,18 +1,35 @@
-import React from 'react';
-import { Sparkles, Globe2, Brain, Plane, MapPin, Cloud, ChevronDown, Compass, Rocket, Puzzle, Search, Sun, Moon } from "lucide-react";
+import React from "react";
+import {
+  Sparkles,
+  Globe2,
+  Brain,
+  Plane,
+  MapPin,
+  Cloud,
+  ChevronDown,
+  Compass,
+  Rocket,
+  Puzzle,
+  Search,
+  Sun,
+  Moon,
+} from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
-import { useRef } from 'react';
-import Globe3D from '@/components/Globe3D';
-import HeroIllustration from '@/components/illustration/HeroIllustration';
+import { useRef } from "react";
+import Globe3D from "@/components/Globe3D";
+import HeroIllustration from "@/components/illustration/HeroIllustration";
 
 // Local ErrorBoundary to catch runtime errors in hero and show a helpful message
-class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, { hasError: boolean; error?: any }> {
+class ErrorBoundary extends React.Component<
+  { children?: React.ReactNode },
+  { hasError: boolean; error?: any }
+> {
   constructor(props: any) {
     super(props);
     this.state = { hasError: false };
@@ -24,7 +41,7 @@ class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, { ha
 
   componentDidCatch(error: any) {
     // log to console for now; could be sent to telemetry
-    console.error('Error in HeroIllustration:', error);
+    console.error("Error in HeroIllustration:", error);
   }
 
   render() {
@@ -62,38 +79,78 @@ const Index = () => {
 
   const handleSelect = (country: string) => {
     // navigate to the country page using slugified name
-    const slug = country.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = country
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
     navigate(`/country/${slug}`);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1">
-  {/* Hero Section */}
-  <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
               <div className="relative text-center lg:text-left space-y-6">
                 {/* Floating background icons on the left */}
-                <div className="absolute inset-0 pointer-events-none overflow-visible">
+                <div className="absolute inset-0 pointer-events-none overflow-visible hidden md:block">
                   {/* existing decorative floats */}
-                  <Plane className="absolute h-8 w-8 text-primary/30" style={{ top: '10%', left: '5%', animation: 'floatSlow 8s ease-in-out infinite' }} />
-                  <Sparkles className="absolute h-7 w-7 text-secondary/30" style={{ top: '15%', right: '10%', animation: 'floatSlow 10s ease-in-out infinite' }} />
-                  <Cloud className="absolute h-9 w-9 text-accent/30" style={{ bottom: '17%', left: '25%', animation: 'floatSlow 9s ease-in-out infinite' }} />
-                  <MapPin className="absolute h-6 w-6 text-primary/30" style={{ bottom: '30%', right: '15%', animation: 'floatSlow 11s ease-in-out infinite' }} />
-                  <Globe2 className="absolute h-10 w-10 text-secondary/30" style={{ top: '50%', left: '2%', animation: 'floatSlow 12s ease-in-out infinite' }} />
+                  <Plane
+                    className="absolute h-8 w-8 text-primary/30"
+                    style={{
+                      top: "10%",
+                      left: "5%",
+                      animation: "floatSlow 8s ease-in-out infinite",
+                    }}
+                  />
+                  <Sparkles
+                    className="absolute h-7 w-7 text-secondary/30"
+                    style={{
+                      top: "15%",
+                      right: "10%",
+                      animation: "floatSlow 10s ease-in-out infinite",
+                    }}
+                  />
+                  <Cloud
+                    className="absolute h-9 w-9 text-accent/30"
+                    style={{
+                      bottom: "17%",
+                      left: "25%",
+                      animation: "floatSlow 9s ease-in-out infinite",
+                    }}
+                  />
+                  <MapPin
+                    className="absolute h-6 w-6 text-primary/30"
+                    style={{
+                      bottom: "30%",
+                      right: "15%",
+                      animation: "floatSlow 11s ease-in-out infinite",
+                    }}
+                  />
+                  <Globe2
+                    className="absolute h-10 w-10 text-secondary/30"
+                    style={{
+                      top: "50%",
+                      left: "2%",
+                      animation: "floatSlow 12s ease-in-out infinite",
+                    }}
+                  />
 
                   {/* corner icons removed from text-area overlay; they will be positioned at the hero section corners instead */}
                 </div>
-                
+
                 <h1 className="relative text-5xl md:text-6xl font-bold leading-tight z-10">
                   <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Know the world
                   </span>
                   <br />
-                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">in one glance</span>
+                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    in one glance
+                  </span>
                 </h1>
                 <p className="relative text-xl text-muted-foreground z-10">
                   Discover the world while playing quizzes
@@ -102,21 +159,31 @@ const Index = () => {
                   <Button
                     variant="hero"
                     size="lg"
-                    onClick={() => searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onClick={() =>
+                      searchRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
+                    }
                   >
                     Get Started
                   </Button>
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => trendingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onClick={() =>
+                      trendingRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
+                    }
                   >
                     Learn More
                   </Button>
                 </div>
               </div>
-              
-              <div className="h-[420px] w-full relative flex items-center justify-center">
+
+              <div className="h-auto md:h-[420px] w-full relative flex items-start md:items-center justify-center">
                 {/* ErrorBoundary to surface runtime errors from HeroIllustration */}
                 <ErrorBoundary>
                   <HeroIllustration />
@@ -126,22 +193,64 @@ const Index = () => {
 
             {/* Corner icons positioned relative to the hero section (below the navbar) */}
             <div className="pointer-events-none absolute inset-0">
-              <Plane className="absolute h-8 w-8 text-primary/30" style={{ top: '10px', left: '12px', animation: 'floatSlow 8s ease-in-out infinite' }} />
-              <Compass className="absolute h-8 w-8 text-secondary/30" style={{ top: '10px', right: '12px', animation: 'floatSlow 10s ease-in-out infinite' }} />
-              <Puzzle className="absolute h-8 w-8 text-primary/30" style={{ bottom: '10px', left: '12px', animation: 'floatSlow 11s ease-in-out infinite' }} />
-              <Rocket className="absolute h-8 w-8 text-accent/30" style={{ bottom: '10px', right: '12px', animation: 'floatSlow 9s ease-in-out infinite' }} />
+              <Plane
+                className="absolute h-8 w-8 text-primary/30"
+                style={{
+                  top: "10px",
+                  left: "12px",
+                  animation: "floatSlow 8s ease-in-out infinite",
+                }}
+              />
+              <Compass
+                className="absolute h-8 w-8 text-secondary/30"
+                style={{
+                  top: "10px",
+                  right: "12px",
+                  animation: "floatSlow 10s ease-in-out infinite",
+                }}
+              />
+              <Puzzle
+                className="absolute h-8 w-8 text-primary/30"
+                style={{
+                  bottom: "10px",
+                  left: "12px",
+                  animation: "floatSlow 11s ease-in-out infinite",
+                }}
+              />
+              <Rocket
+                className="absolute h-8 w-8 text-accent/30"
+                style={{
+                  bottom: "10px",
+                  right: "12px",
+                  animation: "floatSlow 9s ease-in-out infinite",
+                }}
+              />
             </div>
 
             {/* full page-right icon stack removed; icons are anchored around the globe and near the text inside the hero component */}
 
             {/* Scroll Indicator */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in">
-              {/* moved container further down (bottom-2) and increased translate for a slightly lower position */}
-              <p className="text-sm text-muted-foreground flex items-center gap-3 mt-1 translate-y-2 animate-bounce" style={{ animationDuration: '1.6s', animationTimingFunction: 'cubic-bezier(.2,.8,.2,1)', animationDelay: '0s' }}>
+            <div className="absolute bottom-2 inset-x-0 flex justify-center items-center flex-col gap-0.5 animate-fade-in">
+              {/* centered horizontally using inset-x-0 + justify-center */}
+              <p
+                className="text-sm text-muted-foreground flex items-center gap-3 mt-1 translate-y-2 animate-bounce"
+                style={{
+                  animationDuration: "1.6s",
+                  animationTimingFunction: "cubic-bezier(.2,.8,.2,1)",
+                  animationDelay: "0s",
+                }}
+              >
                 <span>Scroll to explore</span>
               </p>
               {/* arrow keeps the bounce animation but slightly delayed for a gentle follow */}
-              <ChevronDown className="h-6 w-6 text-primary animate-bounce mt-1 translate-y-2" style={{ animationDuration: '1.6s', animationTimingFunction: 'cubic-bezier(.2,.8,.2,1)', animationDelay: '0.12s' }} />
+              <ChevronDown
+                className="h-6 w-6 text-primary animate-bounce mt-1 translate-y-2"
+                style={{
+                  animationDuration: "1.6s",
+                  animationTimingFunction: "cubic-bezier(.2,.8,.2,1)",
+                  animationDelay: "0.12s",
+                }}
+              />
             </div>
           </div>
         </section>
@@ -149,16 +258,23 @@ const Index = () => {
         {/* Search Section */}
         <section ref={searchRef} className="py-12 bg-card/30">
           <div className="container mx-auto px-4">
-            <SearchBar onChange={handleSearch} onSelect={handleSelect} onSubmit={(value) => {
-              if (!value) return;
-              const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-              navigate(`/country/${slug}`);
-            }} />
+            <SearchBar
+              onChange={handleSearch}
+              onSelect={handleSelect}
+              onSubmit={(value) => {
+                if (!value) return;
+                const slug = value
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/(^-|-$)/g, "");
+                navigate(`/country/${slug}`);
+              }}
+            />
           </div>
         </section>
 
-  {/* Trending Countries */}
-  <section ref={trendingRef} className="py-16">
+        {/* Trending Countries */}
+        <section ref={trendingRef} className="py-16">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-10 text-foreground">
               Trending Countries

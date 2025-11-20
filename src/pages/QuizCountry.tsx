@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
-const QuizModal = React.lazy(() => import('@/components/QuizModal'));
+const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
 const QuizCountry = () => {
   const { slug } = useParams();
@@ -19,19 +19,31 @@ const QuizCountry = () => {
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">Go Back</Button>
+          {/* Back button removed per request */}
           <h1 className="text-3xl font-bold mb-6">Quiz: {slug}</h1>
           <Card className="p-6 text-center">
             <p className="mb-4">Start a quiz about {slug}</p>
             <div className="flex gap-4 justify-center">
-              <Button variant="hero" onClick={() => setOpen(true)}>Play Quiz</Button>
-              <Button variant="outline" onClick={() => navigate(`/country/${slug}`)}>View Country Details</Button>
+              <Button variant="hero" onClick={() => setOpen(true)}>
+                Play Quiz
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/country/${slug}`)}
+              >
+                View Country Details
+              </Button>
             </div>
           </Card>
         </div>
       </main>
       <React.Suspense fallback={<div />}>
-        <QuizModal open={open} onOpenChange={setOpen} topic={slug} sourceType="country" />
+        <QuizModal
+          open={open}
+          onOpenChange={setOpen}
+          topic={slug}
+          sourceType="country"
+        />
       </React.Suspense>
       <Footer />
     </div>

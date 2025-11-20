@@ -91,3 +91,42 @@ Example:
 2. Fill in values from your Supabase project and AI provider.
 
 Note: never commit real API keys into source control. Keep server-side keys (LOVABLE_API_KEY) configured only in the server/functions environment.
+
+## Cache invalidation and publish workflow
+
+This project uses an event-based cache invalidation system so that when admins create, update, or approve facts/quizzes the public site updates automatically without a full redeploy.
+
+- Admins generate content using server-side functions (Supabase Edge Functions) which persist generated items as drafts in the `facts` or `quizzes` tables.
+- When an admin publishes or approves a draft, the admin UI calls the helper in `src/lib/api.ts` that clears local caches and dispatches a browser event named `wf:facts-updated`.
+- Public pages listen for `wf:facts-updated` and will re-fetch the currently-selected category/subcategory (or country) automatically so newly-approved content appears immediately to visitors.
+
+Key implementation notes:
+
+- The cache helpers live in `src/lib/api.ts`. They expose `clearFactsCacheAll()` and `clearFactsCacheForKey(key)` which both dispatch the `wf:facts-updated` CustomEvent after clearing in-memory/localStorage caches.
+- Public listing pages (examples: `src/pages/FunFacts.tsx`, `src/pages/WorldFacts.tsx`, `src/pages/CategoryView.tsx`, `src/pages/CountryCategoryPage.tsx`) attach an event listener for `wf:facts-updated`. When fired they re-query the currently-selected view (category/subcategory or country) so the UI refreshes without a full reload.
+- The public frontend intentionally does NOT call AI generation endpoints — it only reads approved/published content from the database. Admins are the only ones allowed to invoke server-side AI functions which run with server-side secrets and can persist draft records.
+
+Small code example (public page listener):
+
+```ts
+useEffect(() => {
+  const handler = async () => {
+    if (selectedCategory && selectedSub) {
+      await handleSubClick(selectedCategory, selectedSub);
+      return;
+    }
+    if (selectedCategory) {
+      await handleMainFetch(selectedCategory);
+      return;
+    }
+    // fallback: clear caches/state
+    clearFactsCacheAll();
+    setFacts([]);
+  };
+  window.addEventListener("wf:facts-updated", handler as EventListener);
+  return () =>
+    window.removeEventListener("wf:facts-updated", handler as EventListener);
+}, [selectedCategory, selectedSub]);
+```
+
+If you prefer a different UX (for example automatically opening the category panel or showing a temporary toast when new content appears), update the event handlers in the pages above — they are intentionally small and easy to extend.

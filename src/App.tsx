@@ -15,6 +15,16 @@ import QuizCountry from "./pages/QuizCountry";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import FactsAdmin from "./pages/admin/FactsAdmin";
+import FactsEdit from "./pages/admin/FactsEdit";
+import QuizzesAdmin from "@/pages/admin/QuizzesAdmin";
+import CategoriesAdmin from "@/pages/admin/CategoriesAdmin";
+import CategoryEdit from "@/pages/admin/CategoryEdit";
+import QuizEdit from "@/pages/admin/QuizEdit";
+import AdminGuard from "@/pages/admin/AdminGuard";
+import Login from "./pages/admin/Login";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +47,21 @@ const App = () => (
           <Route path="/facts/:category" element={<Facts />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<Login />} />
+          <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
+            <Route index element={<Dashboard />} />
+            <Route path="facts" element={<FactsAdmin />} />
+            <Route path="quizzes" element={<QuizzesAdmin />} />
+            <Route path="categories" element={<CategoriesAdmin />} />
+            <Route path="categories/new" element={<CategoryEdit />} />
+            <Route path="categories/:id/edit" element={<CategoryEdit />} />
+            <Route path="quizzes/new" element={<QuizEdit />} />
+            <Route path="quizzes/:id/edit" element={<QuizEdit />} />
+            <Route path="facts/new" element={<FactsEdit />} />
+            <Route path="facts/:id/edit" element={<FactsEdit />} />
+          </Route>
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
