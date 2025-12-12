@@ -19,10 +19,9 @@ serve(async (req) => {
   const body = await req.json().catch(()=>({}));
   const { country, category, questionCount = 10, fact_type_slug } = body || {};
 
-    const GITHUB_AI_TOKEN = Deno.env.get('GITHUB_AI_TOKEN');
-    if (!GITHUB_AI_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Server not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+    // Gemini key is not required for this function (no AI calls here),
+    // but we read the env var to keep parity with other functions.
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
     // This function supports three modes: random, fact_type, country
     // Use the Supabase service role REST API to query facts and insert quizzes

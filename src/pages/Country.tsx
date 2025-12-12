@@ -175,6 +175,7 @@ const Country = () => {
             subregion: country?.subregion || "N/A",
 
             lastUpdated: cacheMeta?.ts || Date.now(),
+            capitalTimezone: null,
           };
 
           setCountryData(newData);
@@ -369,6 +370,7 @@ const Country = () => {
         callingCode: callingCodeVal || "N/A",
         subregion: country?.subregion || "N/A",
         lastUpdated: cacheMeta?.ts || null,
+        capitalTimezone: null,
       });
     } catch (error) {
       console.error("Error fetching country:", error);
@@ -513,6 +515,7 @@ const Country = () => {
         continent: continentVal || "N/A",
         subregion: country?.subregion || "N/A",
         lastUpdated: cacheMeta?.ts || Date.now(),
+        capitalTimezone: null,
       });
     } catch (error) {
       console.error("Error refreshing country data:", error);
@@ -599,6 +602,8 @@ const Country = () => {
             wind_kph: data?.current?.wind_kph,
             humidity: data?.current?.humidity,
           },
+          capitalTimezone:
+            data?.location?.tz_id || prev?.capitalTimezone || null,
         }));
       } catch (e) {
         console.debug("[Weather] fetch error", e);
@@ -658,6 +663,7 @@ const Country = () => {
               callingCode={countryData.callingCode}
               languages={countryData.languages}
               timezones={countryData.timezones}
+              capitalTimezone={countryData.capitalTimezone}
               area={countryData.area}
               continent={countryData.continent}
               weather={countryData.weather}

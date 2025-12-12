@@ -16,10 +16,11 @@ To find a user's id, check the Supabase Auth users list or query `auth.users`.
 
 3. Set function secrets
 
-   Set `GITHUB_AI_TOKEN` using the Supabase CLI:
+   Set `GEMINI_API_KEY` using the Supabase CLI:
 
 ```bash
-supabase secrets set GITHUB_AI_TOKEN="ghp_..." --project-ref <your-ref>
+supabase secrets set GEMINI_API_KEY="your_key" --project-ref <your-ref>
+supabase secrets set GEMINI_MODEL="gemini-2.5-flash" --project-ref <your-ref>
 ```
 
 4. Test admin login

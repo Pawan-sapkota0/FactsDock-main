@@ -10,6 +10,7 @@ import { fetchFactsByCategory } from "@/lib/facts";
 import { useToast } from "@/hooks/use-toast";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import LazyFactCard from "@/components/cards/LazyFactCard";
+import ResolveDebugPanel from "@/components/dev/ResolveDebugPanel";
 
 function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -488,6 +489,7 @@ const CountryCategoryPage: React.FC = () => {
               </Card>
             )}
 
+            <ResolveDebugPanel />
             {(() => {
               const showingSub = !!(
                 currentCategoryKey && currentCategoryKey.split(":").length >= 3

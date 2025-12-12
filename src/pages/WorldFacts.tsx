@@ -247,9 +247,24 @@ const WorldFacts = () => {
         return;
       }
 
+      // Ensure the numeric fact_type id is resolved so we pass it explicitly
+      // to fetchFactsByCategory. This avoids permissive cross-type matches
+      // when the UI intends to only show 'world-facts' rows.
+      if (!factTypeIdRef.current) {
+        try {
+          const r: any = await supabase
+            .from("fact_types")
+            .select("id")
+            .ilike("slug", "world-facts")
+            .maybeSingle();
+          factTypeIdRef.current = r?.data?.id || null;
+        } catch (err) {
+          // ignore — we'll continue without an explicit id
+        }
+      }
+
       const promise = (async () => {
-        const opts: any = { force: true };
-        if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
+        const opts: any = { force: true, fact_type_id: factTypeIdRef.current };
         const res = await fetchFactsByCategory("world-facts", key, opts);
         subCacheRef.set(key, res || []);
         pendingRef.delete(key);
@@ -302,9 +317,24 @@ const WorldFacts = () => {
         });
         return;
       }
+      // Ensure the numeric fact_type id is resolved so we pass it explicitly
+      // to fetchFactsByCategory. This avoids permissive cross-type matches
+      // when the UI intends to only show 'world-facts' rows.
+      if (!factTypeIdRef.current) {
+        try {
+          const r: any = await supabase
+            .from("fact_types")
+            .select("id")
+            .ilike("slug", "world-facts")
+            .maybeSingle();
+          factTypeIdRef.current = r?.data?.id || null;
+        } catch (err) {
+          // ignore — we'll continue without an explicit id
+        }
+      }
+
       const promise = (async () => {
-        const opts: any = { force: true };
-        if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
+        const opts: any = { force: true, fact_type_id: factTypeIdRef.current };
         const res = await fetchFactsByCategory("world-facts", key, opts);
         subCacheRef.set(key, res || []);
         pendingRef.delete(key);

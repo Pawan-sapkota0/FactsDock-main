@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
+  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -33,6 +34,7 @@ const FactsAdmin: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   // local map to keep optimistic status updates for facts (id -> status)
   const [statusMap, setStatusMap] = useState<Record<string, string>>({});
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const fetchFacts = async ({ pageParam = page }: { pageParam?: number }) => {
     const from = (pageParam - 1) * PAGE_SIZE;
@@ -83,8 +85,8 @@ const FactsAdmin: React.FC = () => {
       return supabase.from("facts").update({ status: "approved" }).eq("id", id);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "facts"] });
-      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+      qc.invalidateQueries({ queryKey: ["admin", "facts"], exact: false });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"], exact: false });
       // clear frontend facts caches so category pages refetch DB-backed facts
       try {
         clearFactsCacheAll();
@@ -164,11 +166,12 @@ const FactsAdmin: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return supabase.from("facts").delete().eq("id", id);
+      // return deleted rows to make result clearer and ensure supabase executed
+      return supabase.from("facts").delete().eq("id", id).select();
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "facts"] });
-      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+      qc.invalidateQueries({ queryKey: ["admin", "facts"], exact: false });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"], exact: false });
       try {
         clearFactsCacheAll();
       } catch (e) {
@@ -187,6 +190,8 @@ const FactsAdmin: React.FC = () => {
     setDeletingId(id);
     setActionLoading(id);
     try {
+      setLastError(null);
+      console.debug("[Admin] removing fact", id);
       // read metadata so we can invalidate the affected cache after deletion
       let meta: any = null;
       try {
@@ -200,7 +205,17 @@ const FactsAdmin: React.FC = () => {
         /* ignore */
       }
 
-      await deleteMutation.mutateAsync(id);
+      const res: any = await deleteMutation.mutateAsync(id);
+      console.debug("[Admin] delete result", res);
+      // Supabase responses are { data, error }; handle error explicitly so UI isn't silent
+      if (res && res.error) {
+        const message =
+          res.error?.message || "Failed to delete fact (server error).";
+        console.error("[Admin] delete error", res.error);
+        setLastError(message);
+        toast({ title: "Error", description: message, variant: "destructive" });
+        return;
+      }
 
       // targeted cache clear
       try {
@@ -229,6 +244,11 @@ const FactsAdmin: React.FC = () => {
       } catch (e) {
         console.warn("Failed to clear targeted facts cache", e);
       }
+    } catch (e: any) {
+      const message = e?.message || String(e);
+      console.error("[Admin] remove caught error", e);
+      setLastError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setDeletingId(null);
       setActionLoading(null);
@@ -259,6 +279,22 @@ const FactsAdmin: React.FC = () => {
           <Button onClick={startNew}>New Fact</Button>
         </div>
       </div>
+
+      {lastError ? (
+        <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-800">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <strong>Delete error:</strong>
+              <div className="mt-1 text-sm break-words">{lastError}</div>
+            </div>
+            <div>
+              <Button variant="ghost" onClick={() => setLastError(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div>Loading...</div>
@@ -320,17 +356,19 @@ const FactsAdmin: React.FC = () => {
                   })()
                 }
                 <AlertDialog>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDeletingId(f.id)}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading === f.id ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      "Delete"
-                    )}
-                  </Button>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeletingId(f.id)}
+                      disabled={!!actionLoading}
+                    >
+                      {actionLoading === f.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        "Delete"
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete fact?</AlertDialogTitle>

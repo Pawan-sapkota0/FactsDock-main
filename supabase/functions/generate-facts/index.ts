@@ -1,27 +1,35 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Use the official Google Generative AI SDK for Deno (npm compatibility)
+import { GoogleGenerativeAI } from 'npm:@google/generative-ai';
 
-// This Edge Function is a template for generating facts via a server-side AI API
-// It expects a server-side secret GITHUB_AI_TOKEN (or other provider) to be set.
+// This Edge Function generates facts via Google Gemini API.
+// It expects a server-side secret GEMINI_API_KEY to be set.
+
+const allowedOrigin = 'http://localhost:8080'; // or '*' in dev, restrict in production
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, Authorization',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   try {
   const body = await req.json();
   const { country, category, category_id, subcategory, subcategory_id, type = 'world-facts', fact_type_id, fact_type_name, count = 5 } = body;
 
-    // Load secret server-side token
-    const GITHUB_AI_TOKEN = Deno.env.get('GITHUB_AI_TOKEN');
-    if (!GITHUB_AI_TOKEN) {
+    // Load Gemini secret server-side token
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+    if (!GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: 'Server not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -47,37 +55,26 @@ serve(async (req) => {
   // const UPSTASH_REDIS_REST_URL = Deno.env.get('UPSTASH_REDIS_REST_URL');
   // const UPSTASH_REDIS_REST_TOKEN = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
 
-    // Prepare AI request. Allow API URL and model to be configured via env vars.
-    const AI_API_URL = Deno.env.get('AI_API_URL') || Deno.env.get('OPENROUTER_API_URL') || 'https://api.openrouter.ai/v1/chat/completions';
-    const AI_MODEL = Deno.env.get('AI_MODEL') || 'gpt-4o-mini';
-
-    // Example: call OpenRouter (GitHub AI via OpenRouter). The token is provided
-    // in the environment as GITHUB_AI_TOKEN (server-side secret).
-    const response = await fetch(AI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_AI_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 1200
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI API error', response.status, errorText);
+    // Use Google Gemini (gemini-2.5-flash) via the official SDK.
+    let generated: string | null = null;
+    try {
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY as string);
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+      // Use the same prompt text; SDK returns an object with response text.
+      const gres: any = await model.generateContent(prompt);
+      // SDK compatibility: try to extract a textual response.
+      if (gres?.response && typeof gres.response.text === 'function') {
+        generated = await gres.response.text();
+      } else if (gres?.output && Array.isArray(gres.output) && gres.output[0]?.content) {
+        // Fallback extraction pattern
+        generated = gres.output.map((o:any)=> (o.content || []).map((c:any)=> c.text || '').join('')).join('\n');
+      } else if (typeof gres === 'string') {
+        generated = gres;
+      }
+    } catch (e) {
+      console.error('Gemini generation error', e);
       return new Response(JSON.stringify({ error: 'AI generation failed' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-
-    const ai = await response.json();
-    // OpenRouter/chat-style responses typically have choices[0].message.content
-    let generated: string | null = null;
-    if (ai?.choices && ai.choices[0]) generated = ai.choices[0]?.message?.content || ai.choices[0]?.text || null;
-    if (!generated && ai?.result) generated = ai.result;
 
     // Helper: strip markdown code fences and attempt to find JSON substring
     const stripCodeFences = (s: string) => s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -94,7 +91,7 @@ serve(async (req) => {
     };
 
     if (!generated) {
-      console.error('AI response missing content', ai);
+      console.error('AI response missing content');
       return new Response(JSON.stringify({ error: 'AI returned no content' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -143,7 +140,13 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ data: parsed }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ data: parsed }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+      },
+    });
   } catch (err) {
     console.error('generate-facts error', err);
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

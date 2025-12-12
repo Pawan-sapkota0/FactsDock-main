@@ -8,7 +8,8 @@ This file documents steps to set up the Supabase backend for the Admin Dashboard
   - VITE_SUPABASE_URL
   - VITE_SUPABASE_ANON_KEY
 - For serverless functions (Supabase Functions):
-  - GITHUB_AI_TOKEN (server-only secret used to call OpenRouter/GitHub-compatible AI API)
+  - GEMINI_API_KEY (server-only secret used to call Google Gemini API)
+  - GEMINI_MODEL (optional, e.g. `gemini-2.5-flash`)
 - Optional server-only secret:
   - SUPABASE_SERVICE_ROLE (use only for privileged server logic; never exposed to browser)
 
@@ -19,7 +20,9 @@ This file documents steps to set up the Supabase backend for the Admin Dashboard
    - `supabase functions deploy generate-facts --project-ref <your-ref>`
    - `supabase functions deploy generate-quiz --project-ref <your-ref>`
 3. Add secrets via:
-   - `supabase secrets set GITHUB_AI_TOKEN="your_token" --project-ref <your-ref>`
+
+- `supabase secrets set GEMINI_API_KEY="your_key" --project-ref <your-ref>`
+- `supabase secrets set GEMINI_MODEL="gemini-2.5-flash" --project-ref <your-ref>`
 
 ## Database migrations
 
@@ -40,5 +43,5 @@ This file documents steps to set up the Supabase backend for the Admin Dashboard
 
 ## Notes
 
-- Functions call `https://api.openrouter.ai/v1/chat/completions` as an example. Replace with your AI provider endpoint if needed.
+- Functions now use Google Gemini via the official SDK. Set `GEMINI_API_KEY` and optionally `GEMINI_MODEL` in your function secrets.
 - Always validate AI responses before persisting to the DB.

@@ -1,7 +1,8 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Users, DollarSign, Globe, Phone } from "lucide-react";
-
+import { DateTime } from "luxon";
+import { useState, useEffect } from "react";
 type Props = {
   flag?: string;
   capital?: string;
@@ -12,6 +13,7 @@ type Props = {
   timezones?: string;
   area?: string;
   continent?: string;
+  capitalTimezone?: string | null;
   weather?: {
     temp_c?: number;
     condition?: { text?: string; icon?: string };
@@ -28,6 +30,7 @@ export default function CountryStats({
   callingCode,
   languages,
   timezones,
+  capitalTimezone,
   area,
   continent,
   weather,
@@ -113,12 +116,52 @@ export default function CountryStats({
           <CardHeader className="p-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="h-5 w-5 text-primary" />
-              Timezones
+              Timezones {capital ? `: ${capital}` : ""}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-2 text-foreground">
-            {timezones || "N/A"}
-          </CardContent>
+  {(() => {
+    const TimeDisplay = () => {
+      const [time, setTime] = React.useState("N/A");
+
+      React.useEffect(() => {
+        const updateTime = () => {
+          try {
+            if (capitalTimezone) {
+              setTime(
+                DateTime.now()
+                  .setZone(capitalTimezone)
+                  .toFormat("hh:mm a '(UTC'ZZ')'")
+              );
+            } else if (timezones) {
+              const first = String(timezones).split(",")[0].trim();
+              setTime(
+                first
+                  ? DateTime.now()
+                      .setZone(first)
+                      .toFormat("hh:mm a '(UTC'ZZ')'")
+                  : "N/A"
+              );
+            } else {
+              setTime("N/A");
+            }
+          } catch {
+            setTime("N/A");
+          }
+        };
+
+        updateTime(); // initial render
+        const interval = setInterval(updateTime, 60000); // update every minute
+        return () => clearInterval(interval);
+      }, [capitalTimezone, timezones]);
+
+      return <>{time}</>;
+    };
+
+    return <TimeDisplay />;
+  })()}
+</CardContent>
+
         </Card>
 
         <Card className="p-4">

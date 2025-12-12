@@ -11,7 +11,8 @@ INSERT INTO admins (id, email, role) VALUES ('<supabase-user-uuid>', 'admin@exam
 3. Set function secrets:
 
 ```
-supabase secrets set GITHUB_AI_TOKEN="<token>" --project-ref <ref>
+supabase secrets set GEMINI_API_KEY="<your_gemini_api_key>" --project-ref <ref>
+supabase secrets set GEMINI_MODEL="gemini-2.5-flash" --project-ref <ref>
 supabase secrets set SUPABASE_SERVICE_ROLE="<service-role>" --project-ref <ref>
 supabase secrets set SUPABASE_URL="https://your-project.supabase.co" --project-ref <ref>
 ```

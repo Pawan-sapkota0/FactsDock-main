@@ -350,6 +350,70 @@ export async function fetchFactsForCountry(country: string, category: string, op
     }
   }
 
+  // For country-scoped fetches we should prefer resolving the category in
+  // the `country-facts` fact_type context and then fetch facts tied to that
+  // category (avoids accidental cross-type matches).
+  try {
+    // try to resolve a category under the `country-facts` fact_type
+    const ftResp: any = await supabase.from('fact_types').select('id').eq('slug', 'country-facts').maybeSingle();
+    const countryFactTypeId = ftResp?.data?.id || opts?.fact_type_id || null;
+    if (countryFactTypeId) {
+      // Attempt to find the category by name under the country fact_type
+      let resolvedCategoryName: string | null = null;
+      try {
+        const catExact: any = await supabase.from('categories').select('id,name').eq('fact_type_id', countryFactTypeId).eq('name', category).maybeSingle();
+        if (catExact?.data?.id) resolvedCategoryName = catExact.data.name;
+      } catch (e) {
+        // ignore
+      }
+      // try ilike if exact didn't match
+      if (!resolvedCategoryName) {
+        try {
+          const catLike: any = await supabase.from('categories').select('id,name').eq('fact_type_id', countryFactTypeId).ilike('name', category).maybeSingle();
+          if (catLike?.data?.id) resolvedCategoryName = catLike.data.name;
+        } catch (e) {
+          // ignore
+        }
+      }
+      // fallback: normalized search limited to this fact_type
+      if (!resolvedCategoryName) {
+        try {
+          const candidates: any = await supabase.from('categories').select('id,name').eq('fact_type_id', countryFactTypeId);
+          const list = candidates?.data || [];
+          const normalize = (s = '') =>
+            String(s)
+              .toLowerCase()
+              .replace(/&/g, 'and')
+              .replace(/[^a-z0-9\s]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+          const target = normalize(category || '');
+          let found = list.find((c: any) => normalize(c.name) === target);
+          if (!found) {
+            const slugify = (s: string) => normalize(s).replace(/\s+/g, '-');
+            const targetSlug = slugify(category || '');
+            found = list.find((c: any) => slugify(c.name) === targetSlug || normalize(c.name).includes(target) || target.includes(normalize(c.name)));
+          }
+          if (found) resolvedCategoryName = found.name;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      if (resolvedCategoryName) {
+        // Use fetchCountryFacts (which itself enforces strict resolution) to
+        // fetch the facts tied to the resolved category name for the requested country.
+        const res = await fetchCountryFacts(country, { ...opts, category: resolvedCategoryName });
+        memoryCache.set(key, { ts: Date.now(), value: res });
+        setLocalCache('facts', key, res, opts?.ttl || 86400);
+        return res;
+      }
+    }
+  } catch (e) {
+    // If resolver fails, fall back to the old generator-oriented strategy
+  }
+
+  // fallback: label approach (keeps existing generator behavior)
   const result = await fetchFactsByCategory('world-facts', label, opts);
   memoryCache.set(key, { ts: Date.now(), value: result });
   setLocalCache('facts', key, result, opts?.ttl || 86400);
@@ -386,6 +450,23 @@ export async function fetchCountryFacts(
   }
 
   try {
+    // Resolve the authoritative fact_type_id for country-scoped categories
+    // We always prefer the 'country-facts' slug when trying to resolve
+    // categories/subcategories for country-specific queries so we can
+    // restrict lookups to the correct fact_type.
+    const ftResp: any = await supabase.from('fact_types').select('id,slug,name').eq('slug', 'country-facts').maybeSingle();
+    const countryFactTypeId = ftResp?.data?.id || null;
+    if (!countryFactTypeId) {
+      // If we can't resolve a country fact_type row, return empty (do not
+      // attempt name-only matches across unrelated fact types).
+      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        try { console.debug('[fetchCountryFacts] cannot find fact_type for slug country-facts'); } catch (e) {}
+      }
+      const empty: any[] = [];
+      memoryCache.set(key, { ts: Date.now(), value: empty });
+      setLocalCache('facts', key, empty, opts?.ttl || 300);
+      return empty;
+    }
   // fetch candidate facts by country and status (server-side filtering is cheaper than fetching all)
   // Be permissive on country matching: allow partial matches and case-insensitive compare
   const countryPattern = String(country || '').trim();
@@ -402,7 +483,13 @@ export async function fetchCountryFacts(
 
         if (categoryName) {
           try {
-            const catResp: any = await supabase.from('categories').select('id,name').eq('name', categoryName).maybeSingle();
+            // Require that category match is scoped to the country fact_type
+            const catResp: any = await supabase
+              .from('categories')
+              .select('id,name')
+              .eq('fact_type_id', countryFactTypeId)
+              .eq('name', categoryName)
+              .maybeSingle();
             categoryId = catResp?.data?.id || null;
           } catch (e) {
             categoryId = null;
@@ -411,7 +498,13 @@ export async function fetchCountryFacts(
 
         if (!categoryId && categoryName) {
           try {
-            const catResp2: any = await supabase.from('categories').select('id,name').ilike('name', categoryName).maybeSingle();
+            // ilike but scoped to the country fact_type
+            const catResp2: any = await supabase
+              .from('categories')
+              .select('id,name')
+              .eq('fact_type_id', countryFactTypeId)
+              .ilike('name', categoryName)
+              .maybeSingle();
             categoryId = catResp2?.data?.id || null;
           } catch (e) {
             categoryId = null;
@@ -420,7 +513,8 @@ export async function fetchCountryFacts(
 
         if (!categoryId && categoryName) {
           try {
-            const candidates: any = await supabase.from('categories').select('id,name');
+            // Only look up candidates inside the country fact_type
+            const candidates: any = await supabase.from('categories').select('id,name').eq('fact_type_id', countryFactTypeId);
             const list = candidates?.data || [];
             const normalize = (s = '') =>
               String(s)
@@ -442,7 +536,7 @@ export async function fetchCountryFacts(
           }
         }
 
-        // If we couldn't resolve the requested category, return no results
+        // If we couldn't resolve the requested category (within country fact_type), return no results
         if (!categoryId) {
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
             try { console.debug('[fetchCountryFacts] category resolution failed, returning empty', { requestedCategory: opts.category }); } catch (e) {}
@@ -462,6 +556,9 @@ export async function fetchCountryFacts(
         if (requestedSubName) {
           // resolve subcategory id strictly and filter to it
           try {
+            // When resolving subcategories make sure we query only subcategories
+            // that belong to the resolved category id (which is already scoped
+            // to the country fact_type).
             const subResp: any = await supabase.from('subcategories').select('id,name').eq('category_id', categoryId).ilike('name', String(requestedSubName)).maybeSingle();
             const subId = subResp?.data?.id || null;
             if (subId) {
@@ -600,6 +697,26 @@ export async function fetchCountryFacts(
       country: r.country || null,
     }));
 
+    // Dev-only: emit resolved identifiers so the UI debug panel can display them
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      try {
+        const resolvedCategoryId = (normalized && normalized[0] && normalized[0].category_id) || null;
+        const resolvedSubcategoryId = (normalized && normalized[0] && normalized[0].subcategory_id) || null;
+        const payload = {
+          source: 'fetchCountryFacts',
+          country,
+          requestedCategory: opts?.category || null,
+          requestedSubcategory: opts?.subcategory || null,
+          resolvedFactTypeId: countryFactTypeId || null,
+          resolvedCategoryId,
+          resolvedSubcategoryId,
+          rowsCount: (normalized || []).length,
+          ts: Date.now(),
+        };
+        (window as any).__wf_last_resolve = payload;
+        window.dispatchEvent(new CustomEvent('wf:resolve', { detail: payload }));
+      } catch (e) {}
+    }
     memoryCache.set(key, { ts: Date.now(), value: normalized });
     setLocalCache('facts', key, normalized, opts?.ttl || 86400);
     // Additional debug: compare each row's category/subcategory ids to requested values

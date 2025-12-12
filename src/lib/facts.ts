@@ -32,16 +32,65 @@ export async function fetchFactsByCategory(
     if (opts?.fact_type_id) {
       factTypeId = opts.fact_type_id;
     } else {
-      const { data: typeRow, error: typeErr } = await supabase
-        .from('fact_types')
-        .select('id')
-        .ilike('slug', String(factType || ''))
-        .maybeSingle();
-      if (typeErr) throw typeErr;
+      // try direct slug match first
+      let typeRow: any = null;
+      try {
+        const res: any = await supabase
+          .from('fact_types')
+          .select('id,slug,name')
+          .ilike('slug', String(factType || ''))
+          .maybeSingle();
+        if (res?.error) throw res.error;
+        typeRow = res?.data || null;
+      } catch (e) {
+        // ignore and continue to fallback attempts
+      }
+
+      // If not found, try some reasonable fallbacks to tolerate caller differences
+      if (!typeRow) {
+        try {
+          // 1) strip optional '-facts' suffix
+          const raw = String(factType || '');
+          const stripped = raw.replace(/[-_]?facts$/i, '');
+          if (stripped && stripped !== raw) {
+            const res2: any = await supabase
+              .from('fact_types')
+              .select('id,slug,name')
+              .ilike('slug', `${stripped}%`)
+              .maybeSingle();
+            if (!res2?.error && res2?.data) typeRow = res2.data;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // 2) try to match on the name column (e.g. 'World Facts')
+      if (!typeRow) {
+        try {
+          const res3: any = await supabase
+            .from('fact_types')
+            .select('id,slug,name')
+            .ilike('name', `%${String(factType || '')}%`)
+            .maybeSingle();
+          if (!res3?.error && res3?.data) typeRow = res3.data;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // assign id if we found a row
       factTypeId = typeRow?.id || null;
     }
 
     if (!factTypeId) {
+      // helpful debug output for local dev — list available fact types when missing
+      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        try {
+          const { data: all } = await supabase.from('fact_types').select('id,slug,name');
+          console.debug('[fetchFactsByCategory] available fact_types', all || []);
+        } catch (e) {}
+      }
       console.warn('[fetchFactsByCategory] No fact type found for:', factType);
       return [];
     }
@@ -50,6 +99,15 @@ export async function fetchFactsByCategory(
     let categoryId: string | null = null;
     const base = String(category || '').trim();
     const tryNames = [base];
+    // If incoming base contains dashes (slug-style), also try variants that
+    // substitute the dash with a space, ampersand, or the word 'and' so
+    // slug -> title mismatches like `animals-wildlife` -> `Animals & Wildlife`
+    // are covered.
+    if (/[–—-]/.test(base)) {
+      tryNames.push(base.replace(/[–—-]/g, ' '));
+      tryNames.push(base.replace(/[–—-]/g, ' & '));
+      tryNames.push(base.replace(/[–—-]/g, ' and '));
+    }
     // try swapping 'and' <-> '&'
     tryNames.push(base.replace(/\band\b/gi, '&'));
     tryNames.push(base.replace(/&/g, 'and'));
@@ -116,6 +174,19 @@ export async function fetchFactsByCategory(
 
     // Fallback: fetch all categories for this fact type and try normalized matching
     if (!categoryId) {
+      // If the caller provided an explicit fact_type_id, do not attempt a
+      // permissive cross-type match. Silently adopting a category from a
+      // different fact_type can cause surprising results (e.g. showing
+      // 'fun-facts' rows in the 'world-facts' UI). When callers explicitly
+      // request a fact_type_id we treat that as authoritative and return no
+      // results when the category cannot be found under that type.
+      if (opts?.fact_type_id) {
+        if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          try { console.debug('[fetchFactsByCategory] category not found under explicit fact_type_id, skipping cross-type fallback', { category, factTypeId, opts }); } catch (e) {}
+        }
+        console.warn('[fetchFactsByCategory] category not found for explicit fact_type_id', { category, factTypeId });
+        return [];
+      }
       try {
         const { data: list } = await supabase.from('categories').select('id,name').eq('fact_type_id', factTypeId);
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
@@ -215,9 +286,32 @@ export async function fetchFactsByCategory(
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
             try { console.debug('[fetchFactsByCategory] fetched subcategories for fallback', { count: (subs || []).length }); } catch (err) {}
           }
-          const normalize = (s = '') => String(s).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          // More robust normalization for subcategory matching: handle
+          // ampersand/and, multiple dash types, curly quotes, and stray
+          // punctuation so minor differences don't block matches.
+          const normalize = (s = '') =>
+            String(s)
+              .toLowerCase()
+              .replace(/[’‘“”]/g, "'") // normalize smart quotes
+              .replace(/[–—-]/g, '-') // normalize dashes to simple dash
+              .replace(/&/g, ' and ')
+              .replace(/[^a-z0-9\s\-']/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+          const slugify = (s = '') => normalize(s).replace(/\s+/g, '-');
           const target = normalize(String(subcategory));
-          const found = (subs || []).find((s: any) => normalize(s.name) === target || normalize(s.name).includes(target) || target.includes(normalize(s.name)));
+          const targetSlug = slugify(String(subcategory));
+          const found = (subs || []).find((s: any) => {
+            const n = normalize(s.name || '');
+            if (n === target) return true;
+            if (n.includes(target) || target.includes(n)) return true;
+            const sl = slugify(s.name || '');
+            if (sl === targetSlug) return true;
+            if (sl.includes(targetSlug) || targetSlug.includes(sl)) return true;
+            // try loose wildcard-ish match
+            if (n.includes(target.split(' ').slice(0, 2).join(' '))) return true;
+            return false;
+          });
           if (found) {
             subcategoryId = found.id;
             if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
@@ -250,9 +344,10 @@ export async function fetchFactsByCategory(
     } else if (requireSubcategoryOnly) {
       // Caller asked for a subcategory but we couldn't resolve it: require any subcategory (NOT NULL)
       try {
-        query = (query as any).not('subcategory_id', 'is', null);
+        // prefer .neq which is broadly supported by PostgREST/Supabase
+        query = (query as any).neq('subcategory_id', null);
       } catch (e) {
-        // leave query as-is if .not unsupported
+        // leave query as-is if .neq unsupported
       }
     } else {
       // No specific subcategory requested: include both category-level facts
@@ -294,7 +389,14 @@ export async function fetchFactsByCategory(
       fact_type_id: r.fact_type_id || null,
     }));
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try { console.debug('[fetchFactsByCategory] returning', normalized.length, 'facts', { factType, category, subcategory, factTypeId, categoryId, subcategoryId }); } catch (e) {}
+      try {
+        console.debug('[fetchFactsByCategory] returning', normalized.length, 'facts', { factType, category, subcategory, factTypeId, categoryId, subcategoryId });
+      } catch (e) {}
+      try {
+        const payload = { source: 'fetchFactsByCategory', factType, category, subcategory, factTypeId, categoryId, subcategoryId, ts: Date.now() };
+        (window as any).__wf_last_resolve = payload;
+        window.dispatchEvent(new CustomEvent('wf:resolve', { detail: payload }));
+      } catch (e) {}
     }
     return normalized;
   } catch (e) {

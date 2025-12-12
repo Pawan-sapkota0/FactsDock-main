@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import ResolveDebugPanel from "@/components/dev/ResolveDebugPanel";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -51,10 +52,13 @@ const CategoryView: React.FC = () => {
   }, [slug, type]);
 
   useEffect(() => {
-    // resolve fact_type id for the current typeKey (fun/world)
+    // resolve fact_type id for the current route (world-facts vs fun-facts)
+    // Use `location.pathname` instead of the optional route 'type' param
+    // because routes are defined as '/world-facts/:slug' and '/fun-facts/:slug'.
     void (async () => {
       try {
-        const typeKey = type === "world" ? "world-facts" : "fun-facts";
+        const isWorld = location.pathname.startsWith("/world-facts");
+        const typeKey = isWorld ? "world-facts" : "fun-facts";
         const { data: ft } = await (
           await import("@/integrations/supabase/client")
         ).supabase
@@ -67,7 +71,8 @@ const CategoryView: React.FC = () => {
         factTypeIdRef.current = null;
       }
     })();
-  }, [type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Listen for global facts-updated events (clears) so this view can reload
   useEffect(() => {
@@ -95,7 +100,25 @@ const CategoryView: React.FC = () => {
           setPage(0);
           setHasMore(true);
         } catch (err) {
-          // ignore
+          // Ensure fact_type id resolved so the query is scoped properly
+          if (!factTypeIdRef.current) {
+            try {
+              // Determine the page type consistently (same logic used elsewhere)
+              const isWorld = location.pathname.startsWith("/world-facts");
+              const typeKey = isWorld ? "world-facts" : "fun-facts";
+              const supa = (await import("@/integrations/supabase/client"))
+                .supabase;
+              const { data: ft } = await supa
+                .from("fact_types")
+                .select("id")
+                .eq("slug", typeKey)
+                .maybeSingle();
+              factTypeIdRef.current = ft?.id || null;
+            } catch (err) {
+              // ignore – will call without explicit id if resolution fails
+            }
+          }
+          const opts: any = { fact_type_id: factTypeIdRef.current };
         }
       })();
     };
@@ -119,6 +142,23 @@ const CategoryView: React.FC = () => {
     const cacheKey = preferredKey;
     try {
       setIsLoading(true);
+      // Ensure we resolve the fact_type id for this page before fetching
+      // so that fetchFactsByCategory can operate strictly for the chosen type
+      // (avoid falling back to other fact types when an explicit type exists).
+      if (!factTypeIdRef.current) {
+        try {
+          const supa = (await import("@/integrations/supabase/client"))
+            .supabase;
+          const { data: ft } = await supa
+            .from("fact_types")
+            .select("id")
+            .eq("slug", typeKey)
+            .maybeSingle();
+          factTypeIdRef.current = ft?.id || null;
+        } catch (e) {
+          // ignore – we'll proceed without an explicit id if resolution fails
+        }
+      }
       // If we've cached a full list for this category, page through it locally
       if (cacheRef.current.has(cacheKey)) {
         const all = cacheRef.current.get(cacheKey) || [];
@@ -136,8 +176,7 @@ const CategoryView: React.FC = () => {
       // reconstruction when the initial fetch returns no items (avoids
       // misclassifying single hyphenated main-category slugs).
       let fetchCategory = cacheKey.split(":").slice(1).join(":");
-      const opts: any = {};
-      if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
+      const opts: any = { fact_type_id: factTypeIdRef.current };
       let res = await fetchFactsByCategory(typeKey, fetchCategory, opts);
       let items = res || [];
       if ((items || []).length === 0 && slug && slug.includes("-")) {
@@ -145,20 +184,30 @@ const CategoryView: React.FC = () => {
         const main = slugToTitle(parts[0] || "");
         const sub = slugToTitle(parts.slice(1).join("-") || "");
         if (main && sub) {
-          const altCategory = `${main} — ${sub}`;
-          try {
-            const altRes = await fetchFactsByCategory(
-              typeKey,
-              altCategory,
-              opts
-            );
-            if ((altRes || []).length > 0) {
-              items = altRes || [];
-              fetchCategory = altCategory;
-              res = altRes;
+          // Try multiple alt formats when slug includes dashes
+          const altCandidates = [
+            `${main} — ${sub}`,
+            `${main} - ${sub}`,
+            `${main} & ${sub}`,
+            `${main} and ${sub}`,
+            `${main} ${sub}`,
+          ];
+          for (const altCategory of altCandidates) {
+            try {
+              const altRes = await fetchFactsByCategory(
+                typeKey,
+                altCategory,
+                opts
+              );
+              if ((altRes || []).length > 0) {
+                items = altRes || [];
+                fetchCategory = altCategory;
+                res = altRes;
+                break;
+              }
+            } catch (e) {
+              // ignore and continue with next candidate
             }
-          } catch (e) {
-            // ignore and continue with original items
           }
         }
       }
@@ -336,8 +385,7 @@ const CategoryView: React.FC = () => {
         return;
       }
 
-      const opts: any = {};
-      if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
+      const opts: any = { fact_type_id: factTypeIdRef.current };
       const res = await fetchFactsByCategory(typeKey, category, opts);
       const items = res || [];
       // After loading the subcategory facts, push a new history entry so that
@@ -524,6 +572,8 @@ const CategoryView: React.FC = () => {
           sourceType={type === "world" ? "world" : "fun"}
         />
       </React.Suspense>
+      {/* dev-only debug panel to show resolved ids */}
+      <ResolveDebugPanel />
       <Footer />
     </div>
   );
