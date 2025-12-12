@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Use the official Google Generative AI SDK for Deno (npm compatibility)
-import { GoogleGenerativeAI } from 'npm:@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // This Edge Function generates facts via Google Gemini API.
 // It expects a server-side secret GEMINI_API_KEY to be set.
