@@ -1,14 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { generateQuizForTopic } from '@/lib/api';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { generateQuizForTopic } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   open: boolean;
   onOpenChange: (val: boolean) => void;
   topic?: string;
-  type?: 'fun' | 'world';
+  type?: "fun" | "world";
 };
 
 type Q = {
@@ -30,18 +35,26 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
     try {
       const res = await generateQuizForTopic(topic, count as any);
       // normalize
-      const qs = (res || []).map((q: any) => ({
-        question: q.question || q.title || 'Question',
-        options: q.options || q.choices || (q.answers ? q.answers : []),
-        answer: q.answer || q.correctAnswer || q.answerText || '',
-      } as Q));
+      const qs = (res || []).map(
+        (q: any) =>
+          ({
+            question: q.question || q.title || "Question",
+            options: q.options || q.choices || (q.answers ? q.answers : []),
+            answer:
+              q.answer ||
+              q.correctAnswer ||
+              q.answerText ||
+              q.correct_answer ||
+              "",
+          } as Q)
+      );
       setQuestions(qs);
       setIndex(0);
       setSelected(null);
       setScore(0);
       setFinished(false);
     } catch (e) {
-      console.error('Quiz fetch failed', e);
+      console.error("Quiz fetch failed", e);
     } finally {
       setLoading(false);
     }
@@ -57,7 +70,7 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
   const handleAnswer = (opt: string) => {
     if (selected) return; // prevent changing
     setSelected(opt);
-    if (opt === (current?.answer || '')) {
+    if (opt === (current?.answer || "")) {
       setScore((s) => s + 1);
     }
     // move to next after short delay
@@ -84,19 +97,33 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
 
         <div className="p-4">
           {loading && (
-            <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Generating questions...</div>
+            <div className="flex items-center gap-2">
+              <Loader2 className="animate-spin" /> Generating questions...
+            </div>
           )}
 
           {!loading && !finished && current && (
             <div>
-              <div className="mb-4 font-semibold">Q{index + 1}/{questions.length}: {current.question}</div>
+              <div className="mb-4 font-semibold">
+                Q{index + 1}/{questions.length}: {current.question}
+              </div>
               <div className="grid gap-2">
                 {current.options.map((o, i) => {
                   const correct = o === current.answer;
                   const isSelected = selected === o;
-                  const bg = selected ? (isSelected ? (correct ? 'bg-green-100' : 'bg-red-100') : 'bg-transparent') : 'bg-card';
+                  const bg = selected
+                    ? isSelected
+                      ? correct
+                        ? "bg-green-100"
+                        : "bg-red-100"
+                      : "bg-transparent"
+                    : "bg-card";
                   return (
-                    <button key={i} onClick={() => handleAnswer(o)} className={`text-left p-3 rounded border ${bg}`}>
+                    <button
+                      key={i}
+                      onClick={() => handleAnswer(o)}
+                      className={`text-left p-3 rounded border ${bg}`}
+                    >
                       {o}
                     </button>
                   );
@@ -107,11 +134,23 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
 
           {!loading && finished && (
             <div className="text-center">
-              <div className="text-2xl font-bold mb-2">You scored {score} / {questions.length}</div>
-              <div className="mb-4">{score >= Math.ceil(questions.length * 0.7) ? 'Great job!' : 'Nice try — practice more to improve.'}</div>
+              <div className="text-2xl font-bold mb-2">
+                You scored {score} / {questions.length}
+              </div>
+              <div className="mb-4">
+                {score === questions.length
+                  ? "🎉 Excellent! Perfect Score! 🎉"
+                  : score >= Math.ceil(questions.length * 0.8)
+                  ? "👏 Great job! Keep it up!"
+                  : score >= Math.ceil(questions.length * 0.6)
+                  ? "👍 Good effort! Practice more to improve."
+                  : "💪 Nice try — practice more to improve."}
+              </div>
               <div className="flex gap-2 justify-center">
                 <Button onClick={handlePlayAgain}>Play Again</Button>
-                <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
+                <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
               </div>
             </div>
           )}

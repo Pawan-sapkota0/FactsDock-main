@@ -36,7 +36,7 @@ const Quiz = () => {
   const [inlineTopic, setInlineTopic] = useState<string | undefined>(undefined);
   const [inlineCount, setInlineCount] = useState<number>(10);
 
-  const questionOptions = [10, 20, 30, 40, 50];
+  const questionOptions = [5, 10, 15, 20, 25, 30, 35];
 
   const countryRef = useRef<HTMLDivElement | null>(null);
   const countRef = useRef<HTMLDivElement | null>(null);
@@ -396,6 +396,7 @@ const Quiz = () => {
           open={openInline}
           onOpenChange={setOpenInline}
           topic={inlineTopic}
+          sourceType={quizType === "country" ? "country" : undefined}
           questionCount={inlineCount}
         />
       </React.Suspense>
