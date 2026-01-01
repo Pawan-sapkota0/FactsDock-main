@@ -1,3 +1,4 @@
+/// <reference path="../deno.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Use the official Google Generative AI SDK for Deno (npm compatibility)
 import { GoogleGenerativeAI } from "@google/generative-ai";

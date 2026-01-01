@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Compass,
   Rocket,
-  Puzzle,
+  Gamepad2,
   Search,
   Sun,
   Moon,
@@ -60,12 +60,94 @@ class ErrorBoundary extends React.Component<
 // Illustration-based hero visual (framer-motion animated SVG)
 
 const Index = () => {
-  const trendingCountries = [
+  const [trendingCountries, setTrendingCountries] = React.useState<
+    { name: string; slug: string; flag?: string }[]
+  >([
     { name: "United States", slug: "united-states", flag: "🇺🇸" },
-    { name: "Japan", slug: "japan", flag: "🇯🇵" },
-    { name: "France", slug: "france", flag: "🇫🇷" },
-    { name: "Brazil", slug: "brazil", flag: "🇧🇷" },
-  ];
+    { name: "Nepal", slug: "nepal", flag: "🇳🇵" },
+    { name: "India", slug: "india", flag: "🇮🇳" },
+    { name: "China", slug: "china", flag: "🇨🇳" },
+  ]);
+
+  // Load dynamic trending countries
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${
+            import.meta.env.VITE_SUPABASE_URL
+          }/functions/v1/trending-countries`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        if (!res.ok) {
+          // On network/error responses, fall back to the default 4 countries
+          setTrendingCountries([
+            { name: "United States", slug: "united-states", flag: "🇺🇸" },
+            { name: "Nepal", slug: "nepal", flag: "🇳🇵" },
+            { name: "India", slug: "india", flag: "🇮🇳" },
+            { name: "China", slug: "china", flag: "🇨🇳" },
+          ]);
+          return;
+        }
+        const payload = await res.json();
+        const data = payload?.data || [];
+        if (!mounted) return;
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Map to CountryCard props. We compute slug and attempt to fetch a flag image/emoji
+        const items: { name: string; slug: string; flag?: string }[] = [];
+        for (const d of data.slice(0, 4)) {
+          const name = d.name || d.country || "";
+          const slug = String(name)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+          const flag = d.flag || d.flags || undefined;
+          items.push({ name, slug, flag });
+        }
+
+        // Enrich with flag via fetch-country-data function for small list
+        for (let i = 0; i < items.length; i++) {
+          try {
+            const name = items[i].name;
+            const resp = await fetch(
+              `${
+                import.meta.env.VITE_SUPABASE_URL
+              }/functions/v1/fetch-country-data`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ countryName: name }),
+              }
+            );
+            if (!resp.ok) continue;
+            const p = await resp.json();
+            const cdata = p?.data?.data || p?.data || [];
+            const first = Array.isArray(cdata) ? cdata[0] : cdata;
+            if (first)
+              items[i].flag =
+                first.flag ||
+                first.flagImage ||
+                first.flags?.emoji ||
+                undefined;
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        if (items.length === 4) setTrendingCountries(items);
+      } catch (e) {
+        console.warn("Failed to load trending countries", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const navigate = useNavigate();
   // refs to target sections for smooth scrolling
@@ -209,7 +291,7 @@ const Index = () => {
                   animation: "floatSlow 10s ease-in-out infinite",
                 }}
               />
-              <Puzzle
+              <Gamepad2
                 className="absolute h-8 w-8 text-primary/30"
                 style={{
                   bottom: "10px",
@@ -290,13 +372,20 @@ const Index = () => {
         {/* Feature Cards */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
               <FeatureCard
                 title="Fun Facts"
                 description="Learn the funniest and mind-blowing facts"
                 icon={Sparkles}
                 link="/fun-facts"
                 iconColor="text-secondary"
+              />
+              <FeatureCard
+                title="Fun Zone"
+                description="Play, learn, and refresh your mind with interactive games"
+                icon={Gamepad2}
+                link="/fun-zone"
+                iconColor="text-primary"
               />
               <FeatureCard
                 title="World Facts"

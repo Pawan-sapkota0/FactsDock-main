@@ -10,7 +10,6 @@ import { fetchFactsByCategory } from "@/lib/facts";
 import { useToast } from "@/hooks/use-toast";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import LazyFactCard from "@/components/cards/LazyFactCard";
-import ResolveDebugPanel from "@/components/dev/ResolveDebugPanel";
 
 function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -489,7 +488,7 @@ const CountryCategoryPage: React.FC = () => {
               </Card>
             )}
 
-            <ResolveDebugPanel />
+            {/* ResolveDebugPanel removed */}
             {(() => {
               const showingSub = !!(
                 currentCategoryKey && currentCategoryKey.split(":").length >= 3
@@ -523,14 +522,7 @@ const CountryCategoryPage: React.FC = () => {
               ));
             })()}
 
-            {process.env.NODE_ENV !== "production" && (
-              <div className="mt-4 p-4 bg-muted/5 rounded">
-                <h4 className="font-semibold mb-2">Debug: facts state</h4>
-                <pre className="text-sm max-h-48 overflow-auto">
-                  {JSON.stringify(facts, null, 2)}
-                </pre>
-              </div>
-            )}
+            {/* debug panel removed */}
 
             {isLoading && (
               <div className="flex items-center gap-2">

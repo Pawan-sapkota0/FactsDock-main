@@ -697,7 +697,7 @@ export async function fetchCountryFacts(
       country: r.country || null,
     }));
 
-    // Dev-only: emit resolved identifiers so the UI debug panel can display them
+    // Dev-only: emit resolved identifiers for dev tools to consume
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
       try {
         const resolvedCategoryId = (normalized && normalized[0] && normalized[0].category_id) || null;
@@ -719,7 +719,7 @@ export async function fetchCountryFacts(
     }
     memoryCache.set(key, { ts: Date.now(), value: normalized });
     setLocalCache('facts', key, normalized, opts?.ttl || 86400);
-    // Additional debug: compare each row's category/subcategory ids to requested values
+    // Additional check: compare each row's category/subcategory ids to requested values
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
       try {
         const requestedCategory = opts?.category || null;
@@ -745,15 +745,18 @@ export async function fetchCountryFacts(
 export async function generateQuizForTopic(
   topic?: string,
   questionCount = 10,
-  opts?: { ttl?: number; sourceType?: string; fact_type_slug?: string }
+  opts?: { ttl?: number; sourceType?: string; fact_type_slug?: string; force?: boolean }
 ) {
   const key = `quiz:${(topic || 'world').toLowerCase()}:${questionCount}:${opts?.sourceType || opts?.fact_type_slug || ''}`;
-  const mem = memoryCache.get(key);
-  if (mem) return mem.value;
-  const local = getLocalCache('quiz', key);
-  if (local) {
-    memoryCache.set(key, { ts: Date.now(), value: local });
-    return local;
+  // Respect force flag to bypass cache when caller requests fresh data
+  if (!opts?.force) {
+    const mem = memoryCache.get(key);
+    if (mem) return mem.value;
+    const local = getLocalCache('quiz', key);
+    if (local) {
+      memoryCache.set(key, { ts: Date.now(), value: local });
+      return local;
+    }
   }
   // When Supabase is available, only return quizzes stored in the DB that are
   // approved/published and NOT random. Do NOT call AI generation from the public frontend.
@@ -807,11 +810,21 @@ export async function generateQuizForTopic(
       for (const r of rows) {
         const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
         for (const item of qs) allQuestions.push(item);
-        if (allQuestions.length >= questionCount) break;
       }
+      // Shuffle pool to emulate ORDER BY RANDOM() on the DB side
+      for (let i = allQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = allQuestions[i];
+        allQuestions[i] = allQuestions[j];
+        allQuestions[j] = tmp;
+      }
+
       const selected = allQuestions.slice(0, questionCount);
-      memoryCache.set(key, { ts: Date.now(), value: selected });
-      setLocalCache('quiz', key, selected, opts?.ttl || 3600);
+      // Cache only when not forcing fresh results
+      if (!opts?.force) {
+        memoryCache.set(key, { ts: Date.now(), value: selected });
+        setLocalCache('quiz', key, selected, opts?.ttl || 3600);
+      }
       return selected;
     } catch (e) {
       console.warn('Failed to load quizzes from DB, returning empty', e);
@@ -838,100 +851,32 @@ export async function generateQuizForTopic(
     return obj;
   });
 
-  memoryCache.set(key, { ts: Date.now(), value: normalized });
-  setLocalCache('quiz', key, normalized, opts?.ttl || 3600);
+  if (!opts?.force) {
+    memoryCache.set(key, { ts: Date.now(), value: normalized });
+    setLocalCache('quiz', key, normalized, opts?.ttl || 3600);
+  }
   return normalized;
 }
 
 /**
- * Fetch random quizzes from the database
- * Returns quizzes where is_random=true AND status='published'
- * Quizzes are selected randomly each time this is called
+ * Fetch random quizzes from the server-side Edge Function
+ * Uses SQL ORDER BY RANDOM() for efficient server-side selection
+ * Returns a fresh random set each time (no caching)
  */
-export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: number }) {
-  const key = `random-quiz:${questionCount}`;
-  const mem = memoryCache.get(key);
-  if (mem) return mem.value;
-  const local = getLocalCache('randomquiz', key);
-  if (local) {
-    memoryCache.set(key, { ts: Date.now(), value: local });
-    return local;
-  }
-  // When Supabase is available, fetch random quizzes
+export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: number; force?: boolean }) {
+  // When Supabase is available, use the server-side fetch-random-quiz function
   if (SUPABASE_AVAILABLE) {
     try {
-      // Fetch all published random quizzes from any fact type/country
-      let q = supabase.from('quizzes').select('id, questions, status, is_random');
-      q = q.eq('status', 'published');
-      q = q.eq('is_random', true);
-      const resp: any = await q.limit(1000);
-      const rows = resp?.data || [];
-      
-      // Flatten questions arrays from matching quizzes
-      const allQuestions: any[] = [];
-      for (const r of rows) {
-        const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
-        for (const item of qs) allQuestions.push(item);
+      const res = await supabase.functions.invoke('fetch-random-quiz', {
+        body: { count: questionCount },
+      });
+      if (res.error) {
+        console.warn('fetch-random-quiz error:', res.error);
+        return [];
       }
-
-      // If we don't have enough random questions, fetch published non-random quizzes
-      let pool = allQuestions.slice();
-      if (pool.length < questionCount) {
-        try {
-          let q2 = supabase.from('quizzes').select('id, questions, status, is_random').eq('status', 'published');
-          // include only non-random quizzes
-          q2 = q2.or('is_random.eq.false,is_random.is.null');
-          const resp2: any = await q2.limit(1000);
-          const rows2 = resp2?.data || [];
-          for (const r of rows2) {
-            const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
-            for (const item of qs) pool.push(item);
-          }
-        } catch (e) {
-          // ignore secondary fetch errors and proceed with what we have
-          console.warn('Failed to fetch fallback non-random quizzes', e);
-        }
-      }
-
-      // Deduplicate by question text (case-insensitive) and shuffle
-      const seen = new Set<string>();
-      const unique: any[] = [];
-      for (const it of pool) {
-        const text = String(it?.question || it?.q || '').trim().toLowerCase();
-        if (!text) continue;
-        if (seen.has(text)) continue;
-        seen.add(text);
-        unique.push(it);
-      }
-
-      // Shuffle unique array
-      for (let i = unique.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const tmp = unique[i];
-        unique[i] = unique[j];
-        unique[j] = tmp;
-      }
-
-      // Select up to requested count. If we don't have enough unique items,
-      // fill the remainder by sampling from the full pool (allowing repeats)
-      const selected: any[] = [];
-      for (let i = 0; i < Math.min(unique.length, questionCount); i++) selected.push(unique[i]);
-      const remaining = questionCount - selected.length;
-      if (remaining > 0 && pool.length > 0) {
-        for (let i = 0; i < remaining; i++) {
-          const pick = pool[Math.floor(Math.random() * pool.length)];
-          // shallow copy to avoid accidental shared refs
-          selected.push(JSON.parse(JSON.stringify(pick)));
-        }
-      }
-
-      memoryCache.set(key, { ts: Date.now(), value: selected });
-      setLocalCache('randomquiz', key, selected, opts?.ttl || 3600);
-      return selected;
+      return res.data?.data || [];
     } catch (e) {
-      console.warn('Failed to load random quizzes from DB, returning empty', e);
-      memoryCache.set(key, { ts: Date.now(), value: [] });
-      setLocalCache('randomquiz', key, [], opts?.ttl || 60);
+      console.warn('Failed to invoke fetch-random-quiz', e);
       return [];
     }
   }
@@ -953,7 +898,5 @@ export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: numb
     return obj;
   });
 
-  memoryCache.set(key, { ts: Date.now(), value: normalized });
-  setLocalCache('randomquiz', key, normalized, opts?.ttl || 3600);
   return normalized;
 }

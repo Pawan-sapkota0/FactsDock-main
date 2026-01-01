@@ -14,9 +14,13 @@ const Navbar = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-primary p-2 rounded-lg group-hover:scale-110 transition-transform duration-300">
-              <Globe className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <div className=" group-hover:scale-110 transition-transform duration-300">
+          <img
+          src="/favicon1.png"
+          alt="World Facts"
+         className="h-9 w-9"
+          />
+           </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               WORLD FACTS
             </span>

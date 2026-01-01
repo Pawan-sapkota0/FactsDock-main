@@ -29,11 +29,26 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [lastPlayedQuestions, setLastPlayedQuestions] = useState<Q[] | null>(
+    null
+  );
 
   const fetchQuestions = async (count = 10) => {
     setLoading(true);
     try {
-      const res = await generateQuizForTopic(topic, count as any);
+      let res: any;
+      if (topic) {
+        res = await generateQuizForTopic(
+          topic,
+          count as any,
+          { force: true } as any
+        );
+      } else {
+        // random quizzes should be freshly generated
+        // import generateRandomQuiz dynamically to avoid cycle
+        const mod = await import("@/lib/api");
+        res = await mod.generateRandomQuiz(count as any);
+      }
       // normalize
       const qs = (res || []).map(
         (q: any) =>
@@ -53,6 +68,7 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
       setSelected(null);
       setScore(0);
       setFinished(false);
+      setLastPlayedQuestions((prev) => prev ?? qs);
     } catch (e) {
       console.error("Quiz fetch failed", e);
     } finally {
@@ -76,6 +92,8 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
     // move to next after short delay
     setTimeout(() => {
       if (index + 1 >= questions.length) {
+        // save the completed quiz as last played
+        setLastPlayedQuestions(questions);
         setFinished(true);
       } else {
         setIndex((i) => i + 1);
@@ -85,7 +103,85 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
   };
 
   const handlePlayAgain = () => {
-    fetchQuestions(12);
+    // New Quiz: attempt to fetch a fresh set that differs from lastPlayedQuestions
+    (async () => {
+      const maxAttempts = 3;
+      let attempt = 0;
+      let qs: Q[] = [];
+      try {
+        do {
+          setLoading(true);
+          // eslint-disable-next-line no-await-in-loop
+          let res: any;
+          if (topic) {
+            res = await generateQuizForTopic(
+              topic,
+              12 as any,
+              { force: true } as any
+            );
+          } else {
+            const mod = await import("@/lib/api");
+            res = await mod.generateRandomQuiz(12 as any);
+          }
+          qs = (res || []).map(
+            (q: any) =>
+              ({
+                question: q.question || q.title || "Question",
+                options: q.options || q.choices || (q.answers ? q.answers : []),
+                answer:
+                  q.answer ||
+                  q.correctAnswer ||
+                  q.answerText ||
+                  q.correct_answer ||
+                  "",
+              } as Q)
+          );
+          if (!lastPlayedQuestions) break;
+          if (!areOverlayQuestionSetsEqual(qs, lastPlayedQuestions)) break;
+          attempt++;
+        } while (attempt < maxAttempts);
+
+        setQuestions(qs);
+        setIndex(0);
+        setSelected(null);
+        setScore(0);
+        setFinished(false);
+        setLastPlayedQuestions(qs);
+      } catch (e) {
+        console.error("Failed to fetch new quiz set", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  };
+
+  const replayLastQuiz = () => {
+    if (!lastPlayedQuestions) return;
+    setQuestions(lastPlayedQuestions);
+    setIndex(0);
+    setSelected(null);
+    setScore(0);
+    setFinished(false);
+  };
+
+  const areOverlayQuestionSetsEqual = (
+    a: Q[] | null | undefined,
+    b: Q[] | null | undefined
+  ) => {
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    const normalize = (s: any) =>
+      String(s ?? "")
+        .trim()
+        .toLowerCase();
+    for (let i = 0; i < a.length; i++) {
+      const qa = a[i];
+      const qb = b[i];
+      if (normalize(qa.question) !== normalize(qb.question)) return false;
+      if ((qa.options || []).length !== (qb.options || []).length) return false;
+      if (normalize(qa.answer) !== normalize(qb.answer)) return false;
+    }
+    return true;
   };
 
   return (
@@ -147,7 +243,8 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
                   : "💪 Nice try — practice more to improve."}
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={handlePlayAgain}>Play Again</Button>
+                <Button onClick={replayLastQuiz}>Replay Last Quiz</Button>
+                <Button onClick={handlePlayAgain}>New Quiz</Button>
                 <Button variant="ghost" onClick={() => onOpenChange(false)}>
                   Close
                 </Button>

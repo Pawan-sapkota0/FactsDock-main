@@ -311,18 +311,28 @@ const QuizEdit: React.FC = () => {
         console.debug("validate-quiz call failed or not available:", e);
       }
 
-      const finalStatus = publish ? "published" : "draft";
+      // Determine status and approval metadata.
+      const nowIso = new Date().toISOString();
       const payload: any = {
         fact_type_id: factTypeId,
         country: country || null,
         difficulty,
         questions: payloadQuestions,
         category_id: categoryId || null,
-        status: finalStatus,
         created_by: adminUserId,
       };
 
+      if (publish) {
+        // Publishing directly should mark the quiz as approved immediately.
+        // Do not set `approved_at` here because the column may not exist.
+        payload.status = "approved";
+      } else {
+        // Regular save keeps draft status and clears approval when editing.
+        payload.status = "draft";
+      }
+
       if (editId) {
+        // Editing without publishing will keep status as 'draft', requiring re-approval.
         const res = await supabase
           .from("quizzes")
           .update(payload)
@@ -331,6 +341,7 @@ const QuizEdit: React.FC = () => {
         if (res.error) throw res.error;
         return res;
       }
+
       const insertRes = await supabase
         .from("quizzes")
         .insert([payload])

@@ -231,7 +231,9 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
         category_id: null,
         country: null,
         difficulty: g.difficulty || difficulty,
-        status: publish ? "published" : "draft",
+        // If publishing directly from the generator, mark as approved so it
+        // doesn't require a separate admin approval step.
+        status: publish ? "approved" : "draft",
         created_by: adminUserId,
         is_random: true,
       }));

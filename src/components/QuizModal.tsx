@@ -17,11 +17,9 @@ type Props = {
   questionCount?: number;
 };
 
-type Q = { question: string; options: string[]; answer: string };
+type Q = { question: string; options: any[]; answer: any };
 
-// Simple in-memory cache with optional TTL
-const CACHE = new Map<string, { ts: number; data: Q[] }>();
-const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
+// No client-side caching for quizzes to ensure fresh sets per request
 
 async function fetchAndCache(
   topic: string | undefined,
@@ -29,24 +27,18 @@ async function fetchAndCache(
   sourceType?: string
 ) {
   const key = `${topic || "__global__"}:${count}:${sourceType || ""}`;
-  const now = Date.now();
-  // Skip cache for random quizzes (topic undefined) to always get fresh questions
-  // Skip cache for random quizzes and sourceType-based quizzes (fun-facts, etc.) to always get fresh questions
-  // Only cache topic-specific quizzes without sourceType
-  const useCache = topic && !sourceType;
-  if (useCache) {
-    const cached = CACHE.get(key);
-    if (cached && now - cached.ts < DEFAULT_TTL) return cached.data;
-  }
   // If a sourceType is provided (e.g., 'fun', 'world', 'country'), always fetch
   // using generateQuizForTopic so results are filtered by fact_type. Only fall
   // back to generateRandomQuiz when neither topic nor sourceType is given.
   let res;
   if (sourceType) {
-    res = await generateQuizForTopic(topic, count, { sourceType });
+    // request fresh set
+    res = await generateQuizForTopic(topic, count, { sourceType, force: true });
   } else if (topic) {
-    res = await generateQuizForTopic(topic, count, { sourceType });
+    // topic-specific quiz - request fresh set
+    res = await generateQuizForTopic(topic, count, { force: true });
   } else {
+    // random quiz - always fresh
     res = await generateRandomQuiz(count);
   }
   const qs: Q[] = (res || []).map((q: any) => ({
@@ -55,7 +47,6 @@ async function fetchAndCache(
     answer:
       q.answer || q.correctAnswer || q.answerText || q.correct_answer || "",
   }));
-  CACHE.set(key, { ts: now, data: qs });
   return qs;
 }
 
@@ -69,7 +60,10 @@ const QuizModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<Q[]>([]);
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [lastPlayedQuestions, setLastPlayedQuestions] = useState<Q[] | null>(
+    null
+  );
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -85,10 +79,12 @@ const QuizModal: React.FC<Props> = ({
         if (!mounted) return;
         setQuestions(qs);
         setIndex(0);
-        setSelected(null);
+        setSelectedIndex(null);
         setScore(0);
         setFinished(false);
         setFocusedIndex(null);
+        // store the initially loaded quiz set if not already set
+        setLastPlayedQuestions((prev) => prev ?? qs);
       } catch (e) {
         console.error("Failed to generate quiz", e);
       } finally {
@@ -102,36 +98,144 @@ const QuizModal: React.FC<Props> = ({
   }, [open, topic, questionCount]);
 
   const current = useMemo(() => questions[index], [questions, index]);
+  const isCountryQuiz = sourceType === "country";
 
-  const handleAnswer = (opt: string) => {
-    if (selected) return;
-    setSelected(opt);
-    if (opt === (current?.answer || "")) setScore((s) => s + 1);
+  const normalizeStr = (v: any) =>
+    String(v ?? "")
+      .trim()
+      .toLowerCase();
+
+  const optionId = (o: any) => {
+    if (o == null) return undefined;
+    if (typeof o === "string" || typeof o === "number") return undefined;
+    return o.id ?? o._id ?? o.value ?? o.key ?? undefined;
+  };
+
+  const optionLabel = (o: any) => {
+    if (o == null) return "";
+    if (typeof o === "string" || typeof o === "number") return normalizeStr(o);
+    return normalizeStr(o.label ?? o.text ?? o.name ?? o.value ?? "");
+  };
+
+  const resolveAnswerValue = (q: Q) => {
+    // If the stored answer is an index, resolve to the option value
+    if (typeof q?.answer === "number" && Array.isArray(q.options)) {
+      return q.options[q.answer];
+    }
+    return q?.answer;
+  };
+
+  const answersEqual = (opt: any, ansRaw: any) => {
+    const ans = resolveAnswerValue(current as Q) ?? ansRaw;
+    // If both have id-like properties, compare ids
+    const optId = optionId(opt);
+    const ansId = optionId(ans);
+    if (optId !== undefined && ansId !== undefined)
+      return String(optId) === String(ansId);
+    if (
+      optId !== undefined &&
+      (typeof ans === "string" || typeof ans === "number")
+    )
+      return String(optId) === String(ans);
+    if (
+      ansId !== undefined &&
+      (typeof opt === "string" || typeof opt === "number")
+    )
+      return String(ansId) === String(opt);
+
+    // Fall back to normalized label comparison
+    return optionLabel(opt) === optionLabel(ans);
+  };
+
+  const handleAnswer = (opt: any, idx: number) => {
+    if (selectedIndex !== null) return;
+    setSelectedIndex(idx);
+    // Apply robust comparison for all quiz types (country, fun, world, global)
+    const correct = answersEqual(opt, current?.answer);
+    if (correct) setScore((s) => s + 1);
     setTimeout(() => {
-      if (index + 1 >= questions.length) setFinished(true);
-      else {
+      if (index + 1 >= questions.length) {
+        // mark the just-played set as last played so Replay returns the most recent quiz
+        setLastPlayedQuestions(questions);
+        setFinished(true);
+      } else {
         setIndex((i) => i + 1);
-        setSelected(null);
+        setSelectedIndex(null);
         setFocusedIndex(null);
       }
     }, 600);
   };
 
   const handlePlayAgain = () => {
-    // clear cached entry for this topic so Play Again may regenerate
-    const key = `${topic || "__global__"}:${questionCount}:${sourceType || ""}`;
-    CACHE.delete(key);
-    // reopen will trigger new fetch
-    setLoading(true);
-    fetchAndCache(topic, questionCount, sourceType)
-      .then((qs) => {
+    // Attempt to fetch a fresh distinct quiz set (up to N tries)
+    (async () => {
+      const key = `${topic || "__global__"}:${questionCount}:${
+        sourceType || ""
+      }`;
+      const maxAttempts = 3;
+      let attempt = 0;
+      let qs: Q[] = [];
+      try {
+        do {
+          setLoading(true);
+          // fetch
+          // eslint-disable-next-line no-await-in-loop
+          qs = (await fetchAndCache(topic, questionCount, sourceType)) || [];
+          // if we don't have a lastPlayedQuestions or sets differ, accept
+          if (!lastPlayedQuestions) break;
+          const same = areQuestionSetsEqual(qs, lastPlayedQuestions);
+          if (!same) break;
+          attempt++;
+        } while (attempt < maxAttempts);
+
         setQuestions(qs);
         setIndex(0);
-        setSelected(null);
+        setSelectedIndex(null);
         setScore(0);
         setFinished(false);
-      })
-      .finally(() => setLoading(false));
+        // overwrite lastPlayedQuestions when user requests a new quiz
+        setLastPlayedQuestions(qs);
+      } catch (e) {
+        console.error("Failed to fetch new quiz set", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  };
+
+  // Compare two question sets by normalized question text and option counts
+  const areQuestionSetsEqual = (
+    a: Q[] | null | undefined,
+    b: Q[] | null | undefined
+  ) => {
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    const normalize = (s: any) =>
+      String(s ?? "")
+        .trim()
+        .toLowerCase();
+    for (let i = 0; i < a.length; i++) {
+      const qa = a[i];
+      const qb = b[i];
+      if (normalize(qa.question) !== normalize(qb.question)) return false;
+      if ((qa.options || []).length !== (qb.options || []).length) return false;
+      // compare normalized answers
+      if (
+        normalize(resolveAnswerValue(qa)) !== normalize(resolveAnswerValue(qb))
+      )
+        return false;
+    }
+    return true;
+  };
+
+  const replayLastQuiz = () => {
+    if (!lastPlayedQuestions) return;
+    setQuestions(lastPlayedQuestions);
+    setIndex(0);
+    setSelectedIndex(null);
+    setScore(0);
+    setFinished(false);
+    setFocusedIndex(null);
   };
 
   // keyboard navigation for options: ArrowUp/ArrowDown/Home/End/Enter
@@ -159,7 +263,7 @@ const QuizModal: React.FC<Props> = ({
       } else if (e.key === "Enter" || e.key === " ") {
         if (focusedIndex !== null) {
           e.preventDefault();
-          handleAnswer(opts[focusedIndex]);
+          handleAnswer(opts[focusedIndex], focusedIndex);
         }
       }
     };
@@ -194,21 +298,25 @@ const QuizModal: React.FC<Props> = ({
               </div>
               <div className="grid gap-2">
                 {current.options.map((o, i) => {
-                  const correct = o === current.answer;
-                  const isSelected = selected === o;
-                  const bg = selected
-                    ? isSelected
-                      ? correct
-                        ? "bg-green-100"
-                        : "bg-red-100"
-                      : "bg-transparent"
-                    : "bg-card";
+                  // Track selection by index (not value) to avoid comparison bugs
+                  const isSelected = selectedIndex === i;
+                  const isCorrectAnswer = answersEqual(o, current.answer);
+
+                  let bgColor = "bg-card";
+
+                  if (isSelected) {
+                    bgColor = isCorrectAnswer ? "bg-green-100" : "bg-red-100";
+                  }
+
                   return (
                     <button
                       key={i}
                       ref={(el) => (optionsRef.current[i] = el)}
-                      onClick={() => handleAnswer(o)}
-                      className={`text-left p-3 rounded border ${bg}`}
+                      onClick={() => handleAnswer(o, i)}
+                      disabled={selectedIndex !== null}
+                      className={`text-left p-3 rounded border ${bgColor} ${
+                        selectedIndex === null ? "hover:bg-muted" : ""
+                      }`}
                       tabIndex={0}
                       aria-pressed={isSelected}
                     >
@@ -235,7 +343,8 @@ const QuizModal: React.FC<Props> = ({
                   : "💪 Nice try — practice more to improve."}
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={handlePlayAgain}>Play Again</Button>
+                <Button onClick={replayLastQuiz}>Replay Last Quiz</Button>
+                <Button onClick={handlePlayAgain}>New Quiz</Button>
                 <Button variant="ghost" onClick={() => onOpenChange(false)}>
                   Close
                 </Button>

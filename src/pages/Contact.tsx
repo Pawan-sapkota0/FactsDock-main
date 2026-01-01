@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare, Send } from "lucide-react";
-import emailjs from '@emailjs/browser';
 import { useToast } from "@/hooks/use-toast";
 
 const Contact = () => {
@@ -17,56 +16,59 @@ const Contact = () => {
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setErrorMsg(null);
-  setSuccessMsg(null);
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
 
-  try {
-    const formElement = e.currentTarget; // Save form before async call
+    try {
+      const formElement = e.currentTarget; // Save form before async call
+      const fd = new FormData(formElement);
+      const payload = {
+        name: String(fd.get("user_name") || "").trim(),
+        email: String(fd.get("user_email") || "").trim(),
+        message: String(fd.get("message") || "").trim(),
+      };
 
-    const emailResponse = await emailjs.sendForm(
-      'service_tyqwinp',
-      'template_xinynen',
-      formElement,
-      'aWhW2bMG4NThrK5h5'
-    );
+      const resp = await fetch(
+        import.meta.env.VITE_CONTACT_API_URL || "/api/contact",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-    console.log('📧 EmailJS Response:', emailResponse);
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => "Server error");
+        throw new Error(text || "Failed to send message");
+      }
 
-    if (emailResponse?.status === 200 || emailResponse?.text === 'OK') {
-      console.log("✅ Email confirmed sent!");
       const successText = "Email sent successfully!";
       setSuccessMsg(successText);
       toast({
         title: successText,
         description: "Thank you for contacting us. We'll get back to you soon.",
       });
-      formElement.reset(); // ✅ Reset safely here
-    } else {
-      throw new Error('Unexpected response from email service');
+      formElement.reset(); // Reset form
+    } catch (error) {
+      console.error("🚨 Email sending failed.", error);
+      const err = "Failed to send email, please try again.";
+      setErrorMsg(err);
+      toast({
+        title: "Error",
+        description: err,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error("🚨 Email sending failed.", error);
-    const err = "Failed to send email, please try again.";
-    setErrorMsg(err);
-    toast({
-      title: "Error",
-      description: err,
-      variant: "destructive",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-
-
-
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto space-y-8">
@@ -95,7 +97,13 @@ const Contact = () => {
                     <div className="p-4 rounded-md bg-green-50 border border-green-200 text-green-800">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium">{successMsg}</div>
-                        <button type="button" onClick={() => setSuccessMsg(null)} className="text-green-700 hover:text-green-900">×</button>
+                        <button
+                          type="button"
+                          onClick={() => setSuccessMsg(null)}
+                          className="text-green-700 hover:text-green-900"
+                        >
+                          ×
+                        </button>
                       </div>
                     </div>
                   ) : null}
@@ -104,23 +112,29 @@ const Contact = () => {
                     <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-800">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium">{errorMsg}</div>
-                        <button type="button" onClick={() => setErrorMsg(null)} className="text-red-700 hover:text-red-900">×</button>
+                        <button
+                          type="button"
+                          onClick={() => setErrorMsg(null)}
+                          className="text-red-700 hover:text-red-900"
+                        >
+                          ×
+                        </button>
                       </div>
                     </div>
                   ) : null}
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input 
+                    <Input
                       id="name"
                       name="user_name"
                       placeholder="Your name"
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input 
+                    <Input
                       id="email"
                       name="user_email"
                       type="email"
@@ -128,10 +142,10 @@ const Contact = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
-                    <Textarea 
+                    <Textarea
                       id="message"
                       name="message"
                       placeholder="How can we help you?"
@@ -140,10 +154,10 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    variant="hero" 
-                    size="lg" 
+                  <Button
+                    type="submit"
+                    variant="hero"
+                    size="lg"
                     className="w-full"
                     disabled={isSubmitting}
                   >
@@ -159,9 +173,11 @@ const Contact = () => {
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-semibold text-foreground">Email us directly</p>
-                    <a 
-                      href="mailto:pawansapkota06@gmail.com" 
+                    <p className="font-semibold text-foreground">
+                      Email us directly
+                    </p>
+                    <a
+                      href="mailto:pawansapkota06@gmail.com"
                       className="text-primary hover:text-primary-hover transition-colors"
                     >
                       pawansapkota06@gmail.com

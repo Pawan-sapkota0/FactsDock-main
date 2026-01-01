@@ -1,7 +1,7 @@
-import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import React from "react";
+import { Outlet, Link } from "react-router-dom";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 const AdminLayout: React.FC = () => {
   return (
@@ -12,10 +12,21 @@ const AdminLayout: React.FC = () => {
           <div className="flex gap-6">
             <nav className="w-64">
               <ul className="space-y-2">
-                <li><Link to="/admin">Dashboard</Link></li>
-                <li><Link to="/admin/facts">Facts</Link></li>
-                <li><Link to="/admin/quizzes">Quizzes</Link></li>
-                <li><Link to="/admin/categories">Categories</Link></li>
+                <li>
+                  <Link to="/admin">Dashboard</Link>
+                </li>
+                <li>
+                  <Link to="/admin/facts">Facts</Link>
+                </li>
+                <li>
+                  <Link to="/admin/quizzes">Quizzes</Link>
+                </li>
+                <li>
+                  <Link to="/admin/categories">Categories</Link>
+                </li>
+                <li>
+                  <Link to="/admin/messages">Messages</Link>
+                </li>
               </ul>
             </nav>
             <section className="flex-1">

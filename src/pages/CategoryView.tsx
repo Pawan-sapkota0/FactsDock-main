@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import ResolveDebugPanel from "@/components/dev/ResolveDebugPanel";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -535,14 +534,7 @@ const CategoryView: React.FC = () => {
               </div>
             ))}
 
-            {process.env.NODE_ENV !== "production" && (
-              <div className="mt-4 p-4 bg-muted/5 rounded">
-                <h4 className="font-semibold mb-2">Debug: facts state</h4>
-                <pre className="text-sm max-h-48 overflow-auto">
-                  {JSON.stringify(facts, null, 2)}
-                </pre>
-              </div>
-            )}
+            {/* debug panel removed */}
 
             {isLoading && (
               <div className="flex items-center gap-2">
@@ -573,7 +565,7 @@ const CategoryView: React.FC = () => {
         />
       </React.Suspense>
       {/* dev-only debug panel to show resolved ids */}
-      <ResolveDebugPanel />
+      {/* ResolveDebugPanel removed */}
       <Footer />
     </div>
   );

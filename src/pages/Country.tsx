@@ -546,7 +546,7 @@ const Country = () => {
   const [factsLoading, setFactsLoading] = useState(false);
   const location = useLocation();
 
-  // Debug: log facts list changes so we can verify parent is receiving fetched data
+  // Dev: log facts list changes so we can verify parent is receiving fetched data
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
       try {
@@ -615,6 +615,42 @@ const Country = () => {
     };
   }, [countryData?.capital]);
 
+  // Record a page view once per browser session (uses sessionStorage)
+  useEffect(() => {
+    if (!countryData?.name || !slug) return;
+    try {
+      const key = `wf:viewed:${slug}`;
+      if (
+        typeof sessionStorage !== "undefined" &&
+        sessionStorage.getItem(key)
+      ) {
+        return;
+      }
+
+      const record = async () => {
+        try {
+          const url = `${
+            import.meta.env.VITE_SUPABASE_URL
+          }/functions/v1/record-country-view`;
+          await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: countryData.name }),
+          });
+        } catch (e) {
+          console.debug("[record-country-view] failed", e);
+        }
+      };
+
+      // Fire-and-forget, then mark as recorded for this session
+      record();
+      try {
+        sessionStorage.setItem(key, String(Date.now()));
+      } catch (e) {}
+    } catch (e) {}
+    // only run when the country changes
+  }, [countryData?.name, slug]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -669,14 +705,7 @@ const Country = () => {
               weather={countryData.weather}
             />
 
-            {new URLSearchParams(location.search).get("debug") === "1" ? (
-              <div className="bg-black/5 p-4 rounded border mt-4">
-                <h3 className="font-semibold mb-2">Debug: raw countryData</h3>
-                <pre className="text-sm max-h-64 overflow-auto">
-                  {JSON.stringify(countryData, null, 2)}
-                </pre>
-              </div>
-            ) : null}
+            {/* dev-only raw countryData panel removed */}
 
             {/* previous category button removed; main category cards shown below */}
 

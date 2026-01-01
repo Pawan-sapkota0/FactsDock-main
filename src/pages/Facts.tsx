@@ -79,14 +79,7 @@ const Facts = () => {
               ));
             })()}
           </div>
-          {process.env.NODE_ENV !== "production" && (
-            <div className="mt-4 p-4 bg-muted/5 rounded">
-              <h4 className="font-semibold mb-2">Debug: facts state</h4>
-              <pre className="text-sm max-h-48 overflow-auto">
-                {JSON.stringify(facts, null, 2)}
-              </pre>
-            </div>
-          )}
+          {/* debug panel removed */}
         </div>
       </main>
       <Footer />

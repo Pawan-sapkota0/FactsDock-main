@@ -10,14 +10,20 @@ interface FeatureCardProps {
   iconColor?: string;
 }
 
-const FeatureCard = ({ title, description, icon: Icon, link, iconColor = "text-primary" }: FeatureCardProps) => {
+const FeatureCard = ({
+  title,
+  description,
+  icon: Icon,
+  link,
+  iconColor = "text-primary",
+}: FeatureCardProps) => {
   const navigate = useNavigate();
 
   return (
-    <Card 
+    <Card
       onClick={() => navigate(link)}
-      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary h-full"
-      style={{ boxShadow: 'var(--shadow-card)' }}
+      className="relative cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary h-full"
+      style={{ boxShadow: "var(--shadow-card)" }}
     >
       <CardHeader>
         <div className="flex justify-center mb-4">
@@ -25,10 +31,14 @@ const FeatureCard = ({ title, description, icon: Icon, link, iconColor = "text-p
             <Icon className={`h-10 w-10 ${iconColor}`} />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold text-center text-foreground">{title}</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center text-foreground">
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground text-center leading-relaxed">{description}</p>
+        <p className="text-muted-foreground text-center leading-relaxed">
+          {description}
+        </p>
       </CardContent>
     </Card>
   );

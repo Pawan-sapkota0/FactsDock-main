@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Country from "./pages/Country";
 import FunFacts from "./pages/FunFacts";
+import FunZone from "./pages/FunZone";
 import WorldFacts from "./pages/WorldFacts";
 import CategoryView from "./pages/CategoryView";
 import CountryCategoryPage from "./pages/CountryCategoryPage";
@@ -14,6 +15,8 @@ import Facts from "./pages/Facts";
 import QuizCountry from "./pages/QuizCountry";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -25,6 +28,7 @@ import CategoryEdit from "@/pages/admin/CategoryEdit";
 import QuizEdit from "@/pages/admin/QuizEdit";
 import AdminGuard from "@/pages/admin/AdminGuard";
 import Login from "./pages/admin/Login";
+import ContactMessages from "./pages/admin/ContactMessages";
 
 const queryClient = new QueryClient();
 
@@ -38,18 +42,31 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/country/:slug" element={<Country />} />
           <Route path="/fun-facts" element={<FunFacts />} />
+          <Route path="/fun-zone" element={<FunZone />} />
           <Route path="/fun-facts/:slug" element={<CategoryView />} />
           <Route path="/world-facts" element={<WorldFacts />} />
           <Route path="/world-facts/:slug" element={<CategoryView />} />
-          <Route path="/countries/:country/:category" element={<CountryCategoryPage />} />
+          <Route
+            path="/countries/:country/:category"
+            element={<CountryCategoryPage />}
+          />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/:slug" element={<QuizCountry />} />
           <Route path="/facts/:category" element={<Facts />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
           {/* Admin routes */}
           <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
+          <Route
+            path="/admin"
+            element={
+              <AdminGuard>
+                <AdminLayout />
+              </AdminGuard>
+            }
+          >
             <Route index element={<Dashboard />} />
             <Route path="facts" element={<FactsAdmin />} />
             <Route path="quizzes" element={<QuizzesAdmin />} />
@@ -60,6 +77,7 @@ const App = () => (
             <Route path="quizzes/:id/edit" element={<QuizEdit />} />
             <Route path="facts/new" element={<FactsEdit />} />
             <Route path="facts/:id/edit" element={<FactsEdit />} />
+            <Route path="messages" element={<ContactMessages />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

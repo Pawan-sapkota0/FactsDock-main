@@ -20,6 +20,7 @@ import { clearFactsCacheForKey, clearFactsCacheAll } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { BulkCountryFactsModal } from "@/components/admin/BulkCountryFactsModal";
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +29,9 @@ const FactsAdmin: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [factTypes, setFactTypes] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -35,6 +39,60 @@ const FactsAdmin: React.FC = () => {
   // local map to keep optimistic status updates for facts (id -> status)
   const [statusMap, setStatusMap] = useState<Record<string, string>>({});
   const [lastError, setLastError] = useState<string | null>(null);
+
+  // Load fact types and categories for bulk generator
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // Load all fact types
+        const { data: ftypes } = await supabase.from("fact_types").select("*");
+
+        // Prefer categories of type 'country'. If none found, try a case-insensitive
+        // match, then fall back to all categories (helps environments with different data).
+        let cats: any[] = [];
+        try {
+          const resp1: any = await supabase
+            .from("categories")
+            .select("*")
+            .eq("type", "country");
+          cats = resp1?.data || [];
+
+          // Fallback: case-insensitive match if exact eq returned nothing
+          if (!cats.length) {
+            const resp2: any = await supabase
+              .from("categories")
+              .select("*")
+              .ilike("type", "%country%");
+            cats = resp2?.data || [];
+          }
+
+          // Final fallback: load all categories (keeps UI functioning)
+          if (!cats.length) {
+            const resp3: any = await supabase.from("categories").select("*");
+            cats = resp3?.data || [];
+            console.warn(
+              "[FactsAdmin] No 'country' categories found; falling back to all categories."
+            );
+          }
+        } catch (e) {
+          console.error("[FactsAdmin] Error loading categories:", e);
+        }
+
+        if (mounted) {
+          setFactTypes(ftypes || []);
+          setCategories(cats || []);
+        }
+        console.log("[FactsAdmin] Loaded categories:", cats);
+        console.log("[FactsAdmin] Loaded fact types:", ftypes);
+      } catch (e) {
+        console.error("Failed to load fact types/categories:", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const fetchFacts = async ({ pageParam = page }: { pageParam?: number }) => {
     const from = (pageParam - 1) * PAGE_SIZE;
@@ -277,8 +335,19 @@ const FactsAdmin: React.FC = () => {
             }}
           />
           <Button onClick={startNew}>New Fact</Button>
+          <Button variant="secondary" onClick={() => setBulkModalOpen(true)}>
+            🌍 Bulk Generate Country Facts
+          </Button>
         </div>
       </div>
+
+      {/* Bulk Country Facts Modal */}
+      <BulkCountryFactsModal
+        open={bulkModalOpen}
+        onOpenChange={setBulkModalOpen}
+        factTypes={factTypes}
+        categories={categories}
+      />
 
       {lastError ? (
         <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-800">

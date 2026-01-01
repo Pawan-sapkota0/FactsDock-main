@@ -27,6 +27,8 @@ const QuizzesAdmin: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusMap, setStatusMap] = useState<Record<string, string>>({});
+  const [lastError, setLastError] = useState<string | null>(null);
   const qc = useQueryClient();
   const { toast } = useToast();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -69,6 +71,77 @@ const QuizzesAdmin: React.FC = () => {
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
+
+  const approveMut = useMutation({
+    mutationFn: async (id: string) =>
+      // Set status to 'approved'. Do not touch `approved_at` column (may not exist).
+      supabase.from("quizzes").update({ status: "approved" }).eq("id", id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
+      toast({ title: "Approved", description: "Quiz approved." });
+    },
+    onError: (err: any) => {
+      const message =
+        err?.message || err?.error?.message || "Failed to approve quiz.";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const approve = async (id: string) => {
+    setActionLoading(id);
+    try {
+      // read metadata for targeted cache invalidation (if useful)
+      let meta: any = null;
+      try {
+        const m = await supabase
+          .from("quizzes")
+          .select("fact_type_id,country,category_id,is_random")
+          .eq("id", id)
+          .maybeSingle();
+        meta = m?.data || null;
+      } catch (e) {
+        // ignore
+      }
+
+      // optimistic UI update
+      setStatusMap((s) => ({ ...s, [id]: "approved" }));
+      try {
+        const res: any = await approveMut.mutateAsync(id);
+        if (res && res.error) throw res.error;
+      } catch (mutErr) {
+        // rollback optimistic update
+        setStatusMap((s) => {
+          const copy = { ...s };
+          delete copy[id];
+          return copy;
+        });
+        throw mutErr;
+      }
+
+      // Invalidate queries and clear quiz caches stored in localStorage
+      try {
+        qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
+        qc.invalidateQueries({ queryKey: ["quiz"] });
+        // remove localStorage entries created by api.ts for quiz cache
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i) || "";
+          if (key.startsWith("wf:quiz:") || key.startsWith("wf:randomquiz:")) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to clear quiz caches", e);
+      }
+
+      toast({ title: "Approved", description: "Quiz approved." });
+    } catch (e: any) {
+      const message = e?.message || String(e);
+      setLastError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const remove = async (id: string) => {
     setDeletingId(id);
@@ -124,6 +197,23 @@ const QuizzesAdmin: React.FC = () => {
                     "Edit"
                   )}
                 </Button>
+                {q.status === "approved" ? (
+                  <div className="px-3 py-1 rounded bg-green-100 text-green-800 text-sm flex items-center">
+                    Approved
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => approve(q.id)}
+                    disabled={!!actionLoading}
+                  >
+                    {actionLoading === q.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Approve"
+                    )}
+                  </Button>
+                )}
                 <AlertDialog
                   open={deletingId === q.id}
                   onOpenChange={(open) => {
