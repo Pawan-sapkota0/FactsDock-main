@@ -20,10 +20,44 @@
       content="Discover fascinating facts about countries worldwide, play interactive quizzes, and explore fun facts across multiple categories."
     />
     <meta property="og:type" content="website" />
-    
   </head>
 
   <body>
+    <script>
+      // Theme initialization: apply saved theme (light/dark/system) before React mounts
+      (function () {
+        try {
+          var key = "theme-preference";
+          var pref = null;
+          try {
+            pref = localStorage.getItem(key);
+          } catch (e) {
+            /* ignore */
+          }
+
+          function apply(isDark) {
+            try {
+              if (isDark) document.documentElement.classList.add("dark");
+              else document.documentElement.classList.remove("dark");
+            } catch (e) {}
+          }
+
+          if (pref === "light") {
+            apply(false);
+          } else if (pref === "dark") {
+            apply(true);
+          } else {
+            // system or null
+            var mq =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)");
+            apply(mq ? mq.matches : false);
+          }
+        } catch (e) {
+          // noop
+        }
+      })();
+    </script>
     <div id="root"></div>
     <!-- Runtime error overlay: shows uncaught errors so a blank page can be diagnosed -->
     <div

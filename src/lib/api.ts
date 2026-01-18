@@ -1,6 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, no-empty */
 import { supabase, SUPABASE_AVAILABLE } from '@/integrations/supabase/client';
-import { generateMockFacts, generateMockQuiz } from './mockData';
+
+// Local lightweight mock generators to replace the missing `mockData` module.
+// These provide deterministic data for local development when Supabase isn't available.
+function generateLocalMockFacts(category: string, count = 60) {
+  const n = Math.max(0, Math.min(count || 60, 200));
+  return Array.from({ length: n }).map((_, i) => ({
+    id: `mock-fact-${i}`,
+    title: `${category} Fact ${i + 1}`,
+    fact: `This is a mock fact #${i + 1} about ${category}.`,
+    fact_text: `This is a mock fact #${i + 1} about ${category}.`,
+    metadata: null,
+  }));
+}
+
+function generateLocalMockQuiz(topic: string, count = 10) {
+  const n = Math.max(0, Math.min(count || 10, 50));
+  return Array.from({ length: n }).map((_, i) => ({
+    id: `mock-q-${i}`,
+    question: `Mock question ${i + 1} about ${topic}?`,
+    choices: ['Option A', 'Option B', 'Option C', 'Option D'],
+    answer: 0,
+  }));
+}
 
 // Simple in-memory cache for the current session
 const memoryCache = new Map<string, { ts: number; value: any }>();
@@ -51,17 +73,17 @@ export function getLocalCacheMeta(prefix: string, key: string) {
 }
 
 async function callGenerateContent(body: Record<string, any>) {
-  if (!SUPABASE_AVAILABLE) {
+    if (!SUPABASE_AVAILABLE) {
     // Return deterministic mock data for local development. Use the request body type to decide.
     const t = (body.type || 'fun-facts').toLowerCase();
     if (t === 'quiz') {
       const cnt = body.questionCount || 10;
-      return generateMockQuiz(body.country || body.topic || 'General', cnt as number);
+        return generateLocalMockQuiz(body.country || body.topic || 'General', cnt as number);
     }
     // for 'fun-facts' or 'world-facts'
     const category = body.category || 'General';
     // return a modest number of items so paging works
-    return generateMockFacts(category, 60);
+      return generateLocalMockFacts(category, 60);
   }
 
   try {

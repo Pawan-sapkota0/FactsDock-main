@@ -85,7 +85,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
   // Get country facts type ID
   useEffect(() => {
     const countryFacts = factTypes.find((ft) =>
-      ft.name?.toLowerCase().includes("country")
+      ft.name?.toLowerCase().includes("country"),
     );
     if (countryFacts) {
       setCountryFactType(countryFacts.id);
@@ -181,9 +181,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${
-              (
-                await supabase.auth.getSession()
-              )?.data?.session?.access_token
+              (await supabase.auth.getSession())?.data?.session?.access_token
             }`,
           },
           body: JSON.stringify({
@@ -200,7 +198,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
             factTypeId: countryFactType,
             created_by: adminUserId,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -208,7 +206,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
         console.error(
           "[BulkModal] Response not OK:",
           response.status,
-          errorText
+          errorText,
         );
         throw new Error(errorText || `Server error: ${response.status}`);
       }
@@ -245,7 +243,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
             results.push(countryResult);
             setBulkResults([...results]); // Update UI in real-time
             console.log(
-              `[BulkModal] Added ${countryData.country}: ${countryData.factCount} facts`
+              `[BulkModal] Added ${countryData.country}: ${countryData.factCount} facts`,
             );
             setGenerationProgress({
               current: results.length,
@@ -398,8 +396,8 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
   const toggleCountrySelection = (country: string) => {
     setBulkResults((prev) =>
       prev.map((r) =>
-        r.country === country ? { ...r, selected: !r.selected } : r
-      )
+        r.country === country ? { ...r, selected: !r.selected } : r,
+      ),
     );
   };
 
@@ -466,7 +464,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                         setSelectedSubcategory("");
                       } else {
                         const subcat = subcategories.find(
-                          (s) => String(s.id) === val
+                          (s) => String(s.id) === val,
                         );
                         setSelectedSubcategory(subcat?.name || "");
                       }
@@ -498,7 +496,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                   value={factsPerCountry}
                   onChange={(e) =>
                     setFactsPerCountry(
-                      Math.max(1, Math.min(20, Number(e.target.value) || 1))
+                      Math.max(1, Math.min(20, Number(e.target.value) || 1)),
                     )
                   }
                 />
@@ -715,7 +713,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
               <DialogTitle>Saving Facts...</DialogTitle>
             </DialogHeader>
             <div className="py-8 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">
                 Inserting {selectedFactCount} facts into database...
               </p>

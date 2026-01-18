@@ -3,61 +3,210 @@ import {
   Sparkles,
   Globe2,
   Brain,
-  Plane,
-  MapPin,
-  Cloud,
-  ChevronDown,
-  Compass,
-  Rocket,
   Gamepad2,
-  Search,
-  Sun,
-  Moon,
+  BookOpen,
+  Users,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/common/SearchBar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import Globe3D from "@/components/Globe3D";
-import HeroIllustration from "@/components/illustration/HeroIllustration";
 
-// Local ErrorBoundary to catch runtime errors in hero and show a helpful message
-class ErrorBoundary extends React.Component<
-  { children?: React.ReactNode },
-  { hasError: boolean; error?: any }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
+// HeroSection Component
+const HeroSection = ({
+  onExploreFactsClick,
+  onBrowseCountriesClick,
+}: {
+  onExploreFactsClick: () => void;
+  onBrowseCountriesClick: () => void;
+}) => {
+  return (
+    <section className="relative overflow-hidden py-16 md:py-24 lg:py-32">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0">
+        <img
+          src="/hero-bg.jpg"
+          alt="Books with warm lighting"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+      </div>
 
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, error };
-  }
+      {/* Content */}
+      <div className="relative container mx-auto px-4 md:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
+            <Brain className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
+              Explore the World Through Facts & Quizzes
+            </span>
+          </div>
 
-  componentDidCatch(error: any) {
-    // log to console for now; could be sent to telemetry
-    console.error("Error in HeroIllustration:", error);
-  }
+          <h1
+            className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold leading-tight mb-8 animate-fade-in-up"
+            style={{ animationDelay: "0.1s" }}
+          >
+            Know the World  <span className="text-gradient"> In One Glance </span>
+          </h1>
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-6 bg-red-50 text-red-700 rounded-md">
-          <strong>There was an error loading the hero visual.</strong>
-          <div className="mt-2 text-sm">Open the console for details.</div>
+          <p
+            className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed animate-fade-in-up"
+            style={{ animationDelay: "0.2s" }}
+          >
+            Explore fascinating facts and quizzes from every corner of the globe. Turn curiosity into adventure with world quizzes that make learning fun.
+          </p>
+
+          <div
+            className="flex flex-wrap gap-4 animate-fade-in-up mb-12"
+            style={{ animationDelay: "0.3s" }}
+          >
+            <Button
+              size="lg"
+              className="gap-2 shadow-hover"
+              onClick={onExploreFactsClick}
+            >
+              <BookOpen className="h-5 w-5" />
+              Explore Facts
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onBrowseCountriesClick}
+            >
+              Browse Countries
+            </Button>
+          </div>
+
+          {/* Trust indicators */}
+          <div
+            className="flex items-center gap-6 text-sm text-muted-foreground animate-fade-in"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span>Learn While You Play</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-yellow-400" />
+              <span>Every Country Covered</span>
+            </div>
+          </div>
         </div>
-      );
-    }
-    return this.props.children as React.ReactElement;
-  }
+      </div>
+    </section>
+  );
+};
+
+// StatsSection Component
+interface StatItemProps {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  suffix?: string;
 }
 
-// Illustration-based hero visual (framer-motion animated SVG)
+const StatItem = ({ icon, value, label, suffix = "" }: StatItemProps) => {
+  const [count, setCount] = React.useState(0);
+  const [isVisible, setIsVisible] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 },
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (!isVisible) return;
+
+    const duration = 2000;
+    const steps = 60;
+    const stepValue = value / steps;
+    let currentStep = 0;
+
+    const timer = setInterval(() => {
+      currentStep++;
+      if (currentStep >= steps) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(stepValue * currentStep));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [isVisible, value]);
+
+  return (
+    <div ref={ref} className="text-center group">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+        {icon}
+      </div>
+      <div className="text-3xl md:text-4xl font-bold font-heading mb-2 animate-count">
+        {count.toLocaleString()}
+        {suffix}
+      </div>
+      <div className="text-muted-foreground font-medium">{label}</div>
+    </div>
+  );
+};
+
+const StatsSection = () => {
+  const stats = [
+    {
+      icon: <Sparkles className="h-7 w-7" />,
+      value: 10000,
+      label: "Facts",
+      suffix: "+",
+    },
+    {
+      icon: <Brain className="h-7 w-7" />,
+      value: 500,
+      label: "Quizzes",
+      suffix: "+",
+    },
+    {
+      icon: <Globe2 className="h-7 w-7" />,
+      value: 195,
+      label: "Countries",
+      suffix: "+",
+    },
+    {
+      icon: <Users className="h-7 w-7" />,
+      value: 100000,
+      label: "Active Users",
+      suffix: "+",
+    },
+  ];
+
+  return (
+    <section className="py-16 md:py-24 bg-secondary/30">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
+          {stats.map((stat, index) => (
+            <StatItem key={index} {...stat} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const Index = () => {
   const [trendingCountries, setTrendingCountries] = React.useState<
@@ -68,6 +217,11 @@ const Index = () => {
     { name: "India", slug: "india", flag: "🇮🇳" },
     { name: "China", slug: "china", flag: "🇨🇳" },
   ]);
+
+  const navigate = useNavigate();
+  const searchRef = useRef<HTMLElement | null>(null);
+  const trendingRef = useRef<HTMLElement | null>(null);
+  const factsRef = useRef<HTMLElement | null>(null);
 
   // Load dynamic trending countries
   React.useEffect(() => {
@@ -81,10 +235,9 @@ const Index = () => {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          }
+          },
         );
         if (!res.ok) {
-          // On network/error responses, fall back to the default 4 countries
           setTrendingCountries([
             { name: "United States", slug: "united-states", flag: "🇺🇸" },
             { name: "Nepal", slug: "nepal", flag: "🇳🇵" },
@@ -98,7 +251,6 @@ const Index = () => {
         if (!mounted) return;
         if (!Array.isArray(data) || data.length === 0) return;
 
-        // Map to CountryCard props. We compute slug and attempt to fetch a flag image/emoji
         const items: { name: string; slug: string; flag?: string }[] = [];
         for (const d of data.slice(0, 4)) {
           const name = d.name || d.country || "";
@@ -110,7 +262,6 @@ const Index = () => {
           items.push({ name, slug, flag });
         }
 
-        // Enrich with flag via fetch-country-data function for small list
         for (let i = 0; i < items.length; i++) {
           try {
             const name = items[i].name;
@@ -122,7 +273,7 @@ const Index = () => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ countryName: name }),
-              }
+              },
             );
             if (!resp.ok) continue;
             const p = await resp.json();
@@ -149,18 +300,11 @@ const Index = () => {
     };
   }, []);
 
-  const navigate = useNavigate();
-  // refs to target sections for smooth scrolling
-  const searchRef = useRef<HTMLElement | null>(null);
-  const trendingRef = useRef<HTMLElement | null>(null);
-
   const handleSearch = (value: string) => {
-    // Keep console log for debugging
     console.log("Searching for:", value);
   };
 
   const handleSelect = (country: string) => {
-    // navigate to the country page using slugified name
     const slug = country
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -173,169 +317,24 @@ const Index = () => {
       <Navbar />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20 hero-gradient">
-          <div className="container mx-auto px-4">
-            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-              <div className="relative text-center lg:text-left space-y-6">
-                {/* Floating background icons on the left */}
-                <div className="absolute inset-0 pointer-events-none overflow-visible hidden md:block">
-                  {/* existing decorative floats */}
-                  <Plane
-                    className="absolute h-8 w-8 text-primary/30"
-                    style={{
-                      top: "10%",
-                      left: "5%",
-                      animation: "floatSlow 8s ease-in-out infinite",
-                    }}
-                  />
-                  <Sparkles
-                    className="absolute h-7 w-7 text-secondary/30"
-                    style={{
-                      top: "15%",
-                      right: "10%",
-                      animation: "floatSlow 10s ease-in-out infinite",
-                    }}
-                  />
-                  <Cloud
-                    className="absolute h-9 w-9 text-accent/30"
-                    style={{
-                      bottom: "17%",
-                      left: "25%",
-                      animation: "floatSlow 9s ease-in-out infinite",
-                    }}
-                  />
-                  <MapPin
-                    className="absolute h-6 w-6 text-primary/30"
-                    style={{
-                      bottom: "30%",
-                      right: "15%",
-                      animation: "floatSlow 11s ease-in-out infinite",
-                    }}
-                  />
-                  <Globe2
-                    className="absolute h-10 w-10 text-secondary/30"
-                    style={{
-                      top: "50%",
-                      left: "2%",
-                      animation: "floatSlow 12s ease-in-out infinite",
-                    }}
-                  />
+        {/* New Hero Section Component */}
+        <HeroSection
+          onExploreFactsClick={() =>
+            factsRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+          onBrowseCountriesClick={() =>
+            searchRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+        />
 
-                  {/* corner icons removed from text-area overlay; they will be positioned at the hero section corners instead */}
-                </div>
-
-                <h1 className="relative text-5xl md:text-6xl font-bold leading-tight z-10">
-                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Know the world
-                  </span>
-                  <br />
-                  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    in one glance
-                  </span>
-                </h1>
-                <p className="relative text-xl text-muted-foreground z-10">
-                  Discover the world while playing quizzes
-                </p>
-                <div className="relative flex gap-4 justify-center lg:justify-start z-10">
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    onClick={() =>
-                      searchRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      })
-                    }
-                  >
-                    Get Started
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() =>
-                      trendingRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      })
-                    }
-                  >
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-
-              <div className="h-auto md:h-[420px] w-full relative flex items-start md:items-center justify-center">
-                {/* ErrorBoundary to surface runtime errors from HeroIllustration */}
-                <ErrorBoundary>
-                  <HeroIllustration />
-                </ErrorBoundary>
-              </div>
-            </div>
-
-            {/* Corner icons positioned relative to the hero section (below the navbar) */}
-            <div className="pointer-events-none absolute inset-0">
-              <Plane
-                className="absolute h-8 w-8 text-primary/30"
-                style={{
-                  top: "10px",
-                  left: "12px",
-                  animation: "floatSlow 8s ease-in-out infinite",
-                }}
-              />
-              <Compass
-                className="absolute h-8 w-8 text-secondary/30"
-                style={{
-                  top: "10px",
-                  right: "12px",
-                  animation: "floatSlow 10s ease-in-out infinite",
-                }}
-              />
-              <Gamepad2
-                className="absolute h-8 w-8 text-primary/30"
-                style={{
-                  bottom: "10px",
-                  left: "12px",
-                  animation: "floatSlow 11s ease-in-out infinite",
-                }}
-              />
-              <Rocket
-                className="absolute h-8 w-8 text-accent/30"
-                style={{
-                  bottom: "10px",
-                  right: "12px",
-                  animation: "floatSlow 9s ease-in-out infinite",
-                }}
-              />
-            </div>
-
-            {/* full page-right icon stack removed; icons are anchored around the globe and near the text inside the hero component */}
-
-            {/* Scroll Indicator */}
-            <div className="absolute bottom-2 inset-x-0 flex justify-center items-center flex-col gap-0.5 animate-fade-in">
-              {/* centered horizontally using inset-x-0 + justify-center */}
-              <p
-                className="text-sm text-muted-foreground flex items-center gap-3 mt-1 translate-y-2 animate-bounce"
-                style={{
-                  animationDuration: "1.6s",
-                  animationTimingFunction: "cubic-bezier(.2,.8,.2,1)",
-                  animationDelay: "0s",
-                }}
-              >
-                <span>Scroll to explore</span>
-              </p>
-              {/* arrow keeps the bounce animation but slightly delayed for a gentle follow */}
-              <ChevronDown
-                className="h-6 w-6 text-primary animate-bounce mt-1 translate-y-2"
-                style={{
-                  animationDuration: "1.6s",
-                  animationTimingFunction: "cubic-bezier(.2,.8,.2,1)",
-                  animationDelay: "0.12s",
-                }}
-              />
-            </div>
-          </div>
-        </section>
+        {/* New Stats Section Component */}
+        <StatsSection />
 
         {/* Search Section */}
         <section ref={searchRef} className="py-12 bg-card/30">
@@ -370,7 +369,7 @@ const Index = () => {
         </section>
 
         {/* Feature Cards */}
-        <section className="py-16 bg-muted/30">
+        <section ref={factsRef} className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
               <FeatureCard
@@ -378,7 +377,7 @@ const Index = () => {
                 description="Learn the funniest and mind-blowing facts"
                 icon={Sparkles}
                 link="/fun-facts"
-                iconColor="text-secondary"
+                iconColor="text-primary"
               />
               <FeatureCard
                 title="Fun Zone"
@@ -399,7 +398,7 @@ const Index = () => {
                 description="Country wise quiz or Random quiz"
                 icon={Brain}
                 link="/quiz"
-                iconColor="text-accent"
+                iconColor="text-primary"
               />
             </div>
           </div>

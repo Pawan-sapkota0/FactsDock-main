@@ -40,3 +40,212 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Theme variables and small animations for hero/stats */
+:root {
+  --background: #ffffff;
+  --background-rgb: 255,255,255;
+  --bg-card: #ffffff;
+  --text-foreground: #0f172a;
+  --text-muted-foreground: #64748b;
+  --primary: #6366f1;
+  --accent: #f59e0b;
+  --secondary: #ec4899;
+}
+
+.dark {
+  --background: #071124;
+  --background-rgb: 7,17,36;
+  --bg-card: #0b1220;
+  --text-foreground: #e6eef8;
+  --text-muted-foreground: #9aa6b2;
+  --primary: #8b5cf6;
+  --accent: #fbbf24;
+  --secondary: #f472b6;
+}
+
+* {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, opacity 220ms ease;
+}
+
+@keyframes fadeScale {
+  from { opacity: 0; transform: translateY(8px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fade-scale { animation: fadeScale 520ms cubic-bezier(.2,.9,.2,1) both; }
+
+.bg-card { background-color: var(--bg-card); }
+
+/* Enhanced Hero Section with Background Image */
+.hero-bg {
+  background-image: url('/hero-bg.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 600px !important;
+}
+
+/* Overlay using CSS variables - automatically changes based on theme */
+.hero-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Light theme: Warm cream/beige overlay matching reference image */
+  background: linear-gradient(
+    to right,
+    rgba(255, 240, 220, 0.75) 0%,
+    rgba(255, 230, 200, 0.55) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Dark theme overlay - uses CSS variables for dark colors */
+.dark .hero-bg::before {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.75) 0%,
+    hsl(var(--background) / 0.55) 100%
+  );
+  background-image: none;
+}
+
+/* Smooth fade-in and scale animation for hero content */
+.hero-content {
+  animation: heroFadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes heroFadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Staggered animation for multiple elements */
+.hero-content > * {
+  animation: inherit;
+}
+
+.hero-content > :nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.hero-content > :nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.hero-content > :nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.hero-content > :nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Smooth transition for buttons */
+.hero-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.hero-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.hero-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.dark .hero-btn:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-bg {
+    background-attachment: scroll;
+    min-height: 500px;
+  }
+  
+  .dark .hero-bg {
+    background-attachment: scroll;
+  }
+  
+  .hero-content {
+    animation: heroFadeInScaleMobile 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+}
+
+@keyframes heroFadeInScaleMobile {
+  0% {
+    opacity: 0;
+    transform: scale(0.98) translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Preserve reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg,
+  .dark .hero-bg {
+    animation: none;
+    background-attachment: scroll;
+  }
+  
+  .hero-bg::before {
+    animation: none;
+  }
+  
+  .hero-content {
+    animation: heroFadeInNoMotion 0.3s ease forwards;
+    opacity: 0;
+  }
+  
+  .hero-btn::before {
+    display: none;
+  }
+  
+  .hero-btn:hover {
+    transform: none;
+  }
+}
+
+@keyframes heroFadeInNoMotion {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}

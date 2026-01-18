@@ -19,8 +19,7 @@ import Footer from "@/components/layout/Footer";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { clearFactsCacheAll } from "@/lib/api";
-import { fetchFactsByCategory } from "@/lib/facts";
+import { clearFactsCacheAll, fetchFactsByCategory } from "@/lib/api";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 import {
   Dialog,
@@ -44,7 +43,7 @@ const FunFacts = () => {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [openQuizModal, setOpenQuizModal] = useState(false);
   const [quizModalTopic, setQuizModalTopic] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const factTypeIdRef = React.useRef<string | null>(null);
   // use shared lazy wrapper
@@ -381,7 +380,7 @@ const FunFacts = () => {
 
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
                   Fun Facts
                 </span>
               </h1>

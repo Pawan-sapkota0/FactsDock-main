@@ -146,7 +146,7 @@ const Quiz = () => {
       try {
         localStorage.setItem(
           "lastQuizScore",
-          JSON.stringify({ total: autoQuiz.length, correct })
+          JSON.stringify({ total: autoQuiz.length, correct }),
         );
       } catch (e) {}
     }
@@ -167,7 +167,7 @@ const Quiz = () => {
 
             <div className="text-center">
               <h1 className="text-5xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
                   Quiz Setup
                 </span>
               </h1>
@@ -200,11 +200,11 @@ const Quiz = () => {
                               ? isCorrect
                                 ? "default"
                                 : isSelected
-                                ? "destructive"
-                                : "outline"
+                                  ? "destructive"
+                                  : "outline"
                               : answers[currentIndex] === opt
-                              ? "default"
-                              : "outline";
+                                ? "default"
+                                : "outline";
                             return (
                               <Button
                                 key={i}
@@ -215,7 +215,7 @@ const Quiz = () => {
                                 {opt}
                               </Button>
                             );
-                          }
+                          },
                         )}
                       </div>
                     </CardContent>
@@ -299,8 +299,8 @@ const Quiz = () => {
                 >
                   <CardHeader>
                     <div className="flex justify-center mb-4">
-                      <div className="bg-secondary/10 p-4 rounded-2xl">
-                        <Shuffle className="h-10 w-10 text-secondary" />
+                      <div className="bg-primary/10 p-4 rounded-2xl">
+                        <Shuffle className="h-10 w-10 text-primary" />
                       </div>
                     </div>
                     <CardTitle className="text-center">Random Quiz</CardTitle>

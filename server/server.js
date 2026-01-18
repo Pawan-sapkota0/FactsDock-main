@@ -79,7 +79,7 @@ app.post('/api/contact', async (req, res) => {
 
     try {
       const sendResult = await resend.emails.send({
-        from: "World Facts <onboarding@resend.dev>",
+        from: 'World Facts <no-reply@worldfacts.com>',
         to: process.env.ADMIN_EMAIL,
         subject: `New Contact Message from ${name}`,
         html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p>${String(message).replace(/\n/g,'<br/>')}</p>`,

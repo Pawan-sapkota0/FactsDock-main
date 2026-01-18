@@ -41,7 +41,7 @@ const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             return;
           }
           console.debug(
-            "[AdminGuard] user not found after retries, redirecting to login"
+            "[AdminGuard] user not found after retries, redirecting to login",
           );
           if (location.pathname !== "/admin/login") navigate("/admin/login");
           return;
@@ -91,7 +91,7 @@ const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-2">
           <svg
-            className="animate-spin h-6 w-6 text-blue-600"
+            className="animate-spin h-6 w-6 text-primary"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"

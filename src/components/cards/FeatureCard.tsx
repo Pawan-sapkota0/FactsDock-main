@@ -27,7 +27,7 @@ const FeatureCard = ({
     >
       <CardHeader>
         <div className="flex justify-center mb-4">
-          <div className="bg-muted p-4 rounded-2xl">
+          <div className="bg-primary/10 p-3 rounded-xl">
             <Icon className={`h-10 w-10 ${iconColor}`} />
           </div>
         </div>

@@ -9,16 +9,18 @@ interface CategoryCardProps {
 
 const CategoryCard = ({ title, icon: Icon, onClick }: CategoryCardProps) => {
   return (
-    <Card 
+    <Card
       onClick={onClick}
-      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-secondary"
-      style={{ boxShadow: 'var(--shadow-card)' }}
+      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-primary"
+      style={{ boxShadow: "var(--shadow-card)" }}
     >
       <CardContent className="p-6 flex flex-col items-center justify-center gap-3">
-        <div className="bg-secondary/10 p-3 rounded-xl">
-          <Icon className="h-8 w-8 text-secondary" />
+        <div className="bg-primary/10 p-3 rounded-xl">
+          <Icon className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="font-bold text-lg text-center text-foreground">{title}</h3>
+        <h3 className="font-bold text-lg text-center text-foreground">
+          {title}
+        </h3>
       </CardContent>
     </Card>
   );

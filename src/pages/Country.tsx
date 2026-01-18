@@ -73,7 +73,7 @@ const Country = () => {
           const firstCurrency = currencyValues[0] || {};
           const cacheMeta = getLocalCacheMeta(
             "country",
-            (country?.name?.common || candidate).toLowerCase().trim()
+            (country?.name?.common || candidate).toLowerCase().trim(),
           );
           const capitalVal = Array.isArray(country?.capital)
             ? country.capital[0]
@@ -143,9 +143,9 @@ const Country = () => {
             country.idd.suffixes.length > 0
               ? country.idd.suffixes[0]
               : Array.isArray(meta?.idd?.suffixes) &&
-                meta.idd.suffixes.length > 0
-              ? meta.idd.suffixes[0]
-              : null;
+                  meta.idd.suffixes.length > 0
+                ? meta.idd.suffixes[0]
+                : null;
           const callingCodeRaw =
             callingRoot && callingSuffix
               ? `${callingRoot}${callingSuffix}`
@@ -238,7 +238,7 @@ const Country = () => {
       if (country && looksSuspicious(country)) {
         try {
           const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(
-            candidate
+            candidate,
           )}?fullText=true`;
           const r = await fetch(url);
           if (r.ok) {
@@ -254,7 +254,7 @@ const Country = () => {
                     ts: Date.now(),
                     ttl: 86400 * 1000,
                     value: data,
-                  })
+                  }),
                 );
               } catch (e) {
                 // ignore
@@ -270,7 +270,7 @@ const Country = () => {
         "fetchCountryData results count:",
         Array.isArray(results) ? results.length : 0,
         "country:",
-        country
+        country,
       );
 
       const currencies = country?.currencies || {};
@@ -282,7 +282,7 @@ const Country = () => {
 
       const cacheMeta = getLocalCacheMeta(
         "country",
-        (country?.name?.common || candidate).toLowerCase().trim()
+        (country?.name?.common || candidate).toLowerCase().trim(),
       );
 
       // defensive field mapping to handle different response shapes
@@ -342,8 +342,8 @@ const Country = () => {
         Array.isArray(country?.idd?.suffixes) && country.idd.suffixes.length > 0
           ? country.idd.suffixes[0]
           : Array.isArray(meta?.idd?.suffixes) && meta.idd.suffixes.length > 0
-          ? meta.idd.suffixes[0]
-          : null;
+            ? meta.idd.suffixes[0]
+            : null;
       const callingCodeRaw =
         callingRoot && callingSuffix
           ? `${callingRoot}${callingSuffix}`
@@ -407,7 +407,7 @@ const Country = () => {
       if (country && looksSuspiciousBg(country)) {
         try {
           const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(
-            candidate
+            candidate,
           )}?fullText=true`;
           const r = await fetch(url);
           if (r.ok) {
@@ -421,7 +421,7 @@ const Country = () => {
                     ts: Date.now(),
                     ttl: 86400 * 1000,
                     value: data,
-                  })
+                  }),
                 );
               } catch (e) {}
             }
@@ -432,7 +432,7 @@ const Country = () => {
         "handleRefresh results count:",
         Array.isArray(results) ? results.length : 0,
         "country:",
-        country
+        country,
       );
       const currencies = country?.currencies || {};
       const currencyValues = Object.values(currencies) as Array<{
@@ -442,7 +442,7 @@ const Country = () => {
       const firstCurrency = currencyValues[0] || {};
       const cacheMeta = getLocalCacheMeta(
         "country",
-        (country?.name?.common || candidate).toLowerCase().trim()
+        (country?.name?.common || candidate).toLowerCase().trim(),
       );
 
       const capitalVal = Array.isArray(country?.capital)
@@ -570,14 +570,14 @@ const Country = () => {
         });
         if (!apiKey) {
           console.debug(
-            "[Weather] no API key available, skipping weather fetch"
+            "[Weather] no API key available, skipping weather fetch",
           );
           return;
         }
         const res = await fetch(
           `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(
-            countryData.capital
-          )}`
+            countryData.capital,
+          )}`,
         );
         if (!res.ok) {
           console.debug("[Weather] fetch failed", { status: res.status });
@@ -591,7 +591,7 @@ const Country = () => {
                 temp_c: data.current.temp_c,
                 condition: data.current.condition?.text,
               }
-            : data
+            : data,
         );
         if (cancelled) return;
         setCountryData((prev) => ({
@@ -672,7 +672,7 @@ const Country = () => {
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Country not found</p>
             <Button onClick={() => navigate("/")} className="mt-4">
               Go Home
@@ -720,7 +720,7 @@ const Country = () => {
                     navigate(
                       `/countries/${slug}/${c.title
                         .toLowerCase()
-                        .replace(/\s+/g, "-")}`
+                        .replace(/\s+/g, "-")}`,
                     )
                   }
                 />
