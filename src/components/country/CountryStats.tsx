@@ -1,8 +1,10 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MapPin, Users, DollarSign, Globe, Phone } from "lucide-react";
 import { DateTime } from "luxon";
 import { useState, useEffect } from "react";
+import { scrollToElementObserver } from "@/lib/scroll-utils";
 type Props = {
   flag?: string;
   capital?: string;
@@ -37,18 +39,29 @@ export default function CountryStats({
 }: Props) {
   return (
     <div className="grid md:grid-cols-3 gap-6 items-start mb-8">
-      <div className="col-span-1 flex items-center justify-center">
+      <div className="col-span-1 flex flex-col items-center gap-4">
         {flag ? (
           <img
             src={flag}
             alt="flag"
-            className="w-56 h-36 object-cover rounded-lg shadow"
+            className="w-60 h-46 object-cover rounded-lg shadow"
           />
         ) : (
-          <div className="w-56 h-36 bg-muted rounded-lg flex items-center justify-center">
+          <div className="w-60 h-46 bg-muted rounded-lg flex items-center justify-center">
             No flag
           </div>
         )}
+        <Button
+          onClick={() => {
+            scrollToElementObserver("latest-news", 5000).catch((err) => {
+              console.error("[Latest News Button] Scroll failed:", err);
+            });
+          }}
+          variant="outline"
+          className="px-6 py-2"
+        >
+         View Latest News
+        </Button>
       </div>
 
       <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -120,48 +133,47 @@ export default function CountryStats({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-2 text-foreground">
-  {(() => {
-    const TimeDisplay = () => {
-      const [time, setTime] = React.useState("N/A");
+            {(() => {
+              const TimeDisplay = () => {
+                const [time, setTime] = React.useState("N/A");
 
-      React.useEffect(() => {
-        const updateTime = () => {
-          try {
-            if (capitalTimezone) {
-              setTime(
-                DateTime.now()
-                  .setZone(capitalTimezone)
-                  .toFormat("hh:mm a '(UTC'ZZ')'")
-              );
-            } else if (timezones) {
-              const first = String(timezones).split(",")[0].trim();
-              setTime(
-                first
-                  ? DateTime.now()
-                      .setZone(first)
-                      .toFormat("hh:mm a '(UTC'ZZ')'")
-                  : "N/A"
-              );
-            } else {
-              setTime("N/A");
-            }
-          } catch {
-            setTime("N/A");
-          }
-        };
+                React.useEffect(() => {
+                  const updateTime = () => {
+                    try {
+                      if (capitalTimezone) {
+                        setTime(
+                          DateTime.now()
+                            .setZone(capitalTimezone)
+                            .toFormat("hh:mm a '(UTC'ZZ')'"),
+                        );
+                      } else if (timezones) {
+                        const first = String(timezones).split(",")[0].trim();
+                        setTime(
+                          first
+                            ? DateTime.now()
+                                .setZone(first)
+                                .toFormat("hh:mm a '(UTC'ZZ')'")
+                            : "N/A",
+                        );
+                      } else {
+                        setTime("N/A");
+                      }
+                    } catch {
+                      setTime("N/A");
+                    }
+                  };
 
-        updateTime(); // initial render
-        const interval = setInterval(updateTime, 60000); // update every minute
-        return () => clearInterval(interval);
-      }, [capitalTimezone, timezones]);
+                  updateTime(); // initial render
+                  const interval = setInterval(updateTime, 60000); // update every minute
+                  return () => clearInterval(interval);
+                }, [capitalTimezone, timezones]);
 
-      return <>{time}</>;
-    };
+                return <>{time}</>;
+              };
 
-    return <TimeDisplay />;
-  })()}
-</CardContent>
-
+              return <TimeDisplay />;
+            })()}
+          </CardContent>
         </Card>
 
         <Card className="p-4">

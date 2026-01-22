@@ -1,24 +1,54 @@
 import React, { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
   HelpCircle,
   Layers,
   Mail,
+  Settings,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
+  LogOut,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAdminAuth();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      navigate("/admin/login", { replace: true });
+    } catch (error) {
+      console.error("[AdminLayout] Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred during logout.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +56,7 @@ const AdminLayout: React.FC = () => {
     { path: "/admin/quizzes", label: "Quizzes", icon: HelpCircle },
     { path: "/admin/categories", label: "Categories", icon: Layers },
     { path: "/admin/messages", label: "Messages", icon: Mail },
+    { path: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   return (
@@ -110,9 +141,39 @@ const AdminLayout: React.FC = () => {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-3">
+            {user && (
+              <div className={`text-xs ${sidebarOpen ? "block" : "hidden"}`}>
+                <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-muted/50">
+                  <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {user.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {user.role}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                sidebarOpen
+                  ? "text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                  : "justify-center text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              }`}
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              {sidebarOpen && (isLoggingOut ? "Logging out..." : "Logout")}
+            </button>
+
             <div className={`text-xs ${sidebarOpen ? "block" : "hidden"}`}>
-              <p className="text-muted-foreground mb-2">Admin Panel v1.0</p>
+              <p className="text-muted-foreground">Admin Panel v1.0</p>
               <p className="text-xs text-muted-foreground/60">
                 © 2025 WorldFacts
               </p>
@@ -156,6 +217,31 @@ const AdminLayout: React.FC = () => {
                   </Link>
                 ))}
               </nav>
+
+              {/* Mobile Logout */}
+              <div className="p-3 border-t border-border space-y-2">
+                {user && (
+                  <div className="px-4 py-2 text-xs">
+                    <p className="font-medium text-foreground truncate">
+                      {user.email}
+                    </p>
+                    <p className="text-muted-foreground capitalize">
+                      {user.role}
+                    </p>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  disabled={isLoggingOut}
+                  className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
+                </button>
+              </div>
             </aside>
           </div>
         )}

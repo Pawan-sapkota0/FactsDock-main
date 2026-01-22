@@ -1,14 +1,35 @@
+# World Facts robots.txt
+# Generated for SEO optimization
+
+# Default rules for all crawlers
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /*.json$
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+
+# Specific rules for Google
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 0
 
+# Specific rules for Bing
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
+# Specific rules for other crawlers
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
+
+# Reference to sitemap
+Sitemap: https://worldfacts.example.com/sitemap.xml
+
 
 User-agent: *
 Allow: /

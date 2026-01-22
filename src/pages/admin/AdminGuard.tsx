@@ -1,81 +1,142 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Loader2, AlertCircle } from "lucide-react";
+import {
+  getCurrentAdminUser,
+  AdminUser,
+  AdminPermission,
+} from "@/lib/admin-auth";
 
-const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AdminGuardProps {
+  children: React.ReactNode;
+  requiredPermission?: AdminPermission;
+}
+
+const AdminGuard: React.FC<AdminGuardProps> = ({
+  children,
+  requiredPermission,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
   const [notAdmin, setNotAdmin] = useState(false);
+  const [insufficientPermissions, setInsufficientPermissions] = useState(false);
   const [userInfo, setUserInfo] = useState<{
     id?: string;
     email?: string;
+    role?: string;
   } | null>(null);
-  // debug UI state removed — keeping console.debug logs only
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-    const checkAuth = async (attempt = 1) => {
-      console.debug(`[AdminGuard] auth check attempt ${attempt}`);
-      // Dev bypass: set VITE_ADMIN_BYPASS=true in your local env to skip auth checks
-      if (import.meta.env.DEV && import.meta.env.VITE_ADMIN_BYPASS === "true") {
-        console.debug("[AdminGuard] dev bypass enabled");
-        if (!cancelled) setLoading(false);
-        return;
-      }
-
+    const checkAuth = async () => {
       try {
-        const userResp = await supabase.auth.getUser();
-        console.debug("[AdminGuard] getUser response", userResp);
-        const user = (userResp as any)?.data?.user || null;
-
-        if (!user) {
-          // sometimes the session is established a moment after redirect; retry a few times
-          if (attempt < 4) {
-            console.debug("[AdminGuard] user not found, retrying", attempt);
-            await wait(700);
-            if (!cancelled) await checkAuth(attempt + 1);
-            return;
+        // Dev bypass: set VITE_ADMIN_BYPASS=true in your local env to skip auth checks
+        if (
+          import.meta.env.DEV &&
+          import.meta.env.VITE_ADMIN_BYPASS === "true"
+        ) {
+          console.debug("[AdminGuard] dev bypass enabled");
+          if (!cancelled) {
+            setAuthorized(true);
+            setLoading(false);
           }
-          console.debug(
-            "[AdminGuard] user not found after retries, redirecting to login",
-          );
-          if (location.pathname !== "/admin/login") navigate("/admin/login");
           return;
         }
 
-        // Check admins table for the user id
+        // Check if user is authenticated with Supabase
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          console.debug("[AdminGuard] no session found, redirecting to login");
+          if (!cancelled && location.pathname !== "/admin/login") {
+            navigate("/admin/login", {
+              state: { from: location.pathname },
+              replace: true,
+            });
+          }
+          return;
+        }
+
+        // Get admin user from database
         const { data: admins, error } = await supabase
           .from("admins")
-          .select("id,email")
-          .eq("id", user.id)
+          .select("id, email, role, permissions, created_at, is_active")
+          .eq("id", session.user.id)
           .limit(1);
-        console.debug("[AdminGuard] admins query result", { admins, error });
-        if (error || !admins || (admins as any).length === 0) {
-          // Not an admin — retry a few times to avoid transient race conditions
-          if (attempt < 4) {
-            console.debug("[AdminGuard] admin row missing, retrying", attempt);
-            await wait(700);
-            if (!cancelled) await checkAuth(attempt + 1);
-            return;
-          }
 
-          // Instead of redirecting away immediately, show a clear message to the user
-          // with their id/email and SQL to add them as an admin. This avoids layout
-          // jumps and gives actionable steps.
-          setUserInfo({ id: user.id, email: (user as any).email });
+        if (error || !admins || admins.length === 0) {
+          console.warn("[AdminGuard] user is not an admin");
+          setUserInfo({
+            id: session.user.id,
+            email: session.user.email || "unknown",
+          });
           setNotAdmin(true);
-          setLoading(false);
+          if (!cancelled) setLoading(false);
           return;
         }
 
-        if (!cancelled) setLoading(false);
+        const adminRecord = admins[0] as any;
+
+        // Check if user is active
+        if (!adminRecord.is_active) {
+          console.warn("[AdminGuard] user admin account is inactive");
+          setUserInfo({
+            id: adminRecord.id,
+            email: adminRecord.email,
+            role: adminRecord.role,
+          });
+          setNotAdmin(true);
+          if (!cancelled) setLoading(false);
+          return;
+        }
+
+        // Check if user has required permission
+        if (requiredPermission) {
+          const isSuperadmin = adminRecord.role === "superadmin";
+          const hasPermission =
+            isSuperadmin ||
+            (adminRecord.permissions || []).includes(requiredPermission);
+
+          if (!hasPermission) {
+            console.warn(
+              `[AdminGuard] user lacks permission: ${requiredPermission}`,
+            );
+            setCurrentUser({
+              id: adminRecord.id,
+              email: adminRecord.email,
+              role: adminRecord.role || "editor",
+              permissions: adminRecord.permissions || [],
+              createdAt: adminRecord.created_at,
+              isActive: adminRecord.is_active,
+            });
+            setInsufficientPermissions(true);
+            if (!cancelled) setLoading(false);
+            return;
+          }
+        }
+
+        // Get current admin user from service
+        const adminUser = await getCurrentAdminUser();
+        if (adminUser) {
+          setCurrentUser(adminUser);
+        }
+
+        if (!cancelled) {
+          setAuthorized(true);
+          setLoading(false);
+        }
       } catch (e) {
-        console.error("Admin guard error", e);
-        if (location.pathname !== "/") navigate("/");
+        console.error("[AdminGuard] auth check error:", e);
+        if (!cancelled && location.pathname !== "/") {
+          navigate("/", { replace: true });
+        }
       }
     };
 
@@ -84,86 +145,146 @@ const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, location, requiredPermission]);
 
-  if (loading)
+  // Loading state
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <svg
-            className="animate-spin h-6 w-6 text-primary"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-            ></path>
-          </svg>
-          <span className="text-sm text-muted-foreground">
-            Loading admin...
-          </span>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Verifying admin access...
+          </p>
         </div>
       </div>
     );
+  }
 
-  if (notAdmin && userInfo)
+  // Not an admin
+  if (notAdmin && userInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="max-w-xl p-6 bg-white/90 rounded shadow">
-          <h3 className="text-lg font-semibold">Access required</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You are signed in but your account is not in the <code>admins</code>{" "}
-            table.
-          </p>
-          <div className="mt-4">
-            <p className="text-sm">
-              <strong>Signed in as:</strong>
-            </p>
-            <p className="font-mono text-sm my-1">id: {userInfo.id}</p>
-            {userInfo.email && (
-              <p className="font-mono text-sm">email: {userInfo.email}</p>
-            )}
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-xl w-full space-y-6 p-6 border rounded-lg shadow-sm bg-card">
+          <div className="flex gap-3">
+            <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Admin Access Required
+              </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your account is not configured as an admin.
+              </p>
+            </div>
           </div>
-          <div className="mt-4 text-sm">
+
+          <div className="bg-muted p-4 rounded space-y-2 text-sm">
             <p>
-              To grant admin access run this SQL in Supabase SQL editor (or ask
-              a project admin):
+              <span className="font-semibold">Signed in as:</span>{" "}
+              {userInfo.email}
             </p>
-            <pre className="bg-slate-100 p-2 rounded text-xs mt-2">
+            {userInfo.id && (
+              <p>
+                <span className="font-semibold">User ID:</span> {userInfo.id}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground pt-2">
+              Contact a superadmin to grant you admin access, or run this SQL in
+              Supabase:
+            </p>
+            <pre className="bg-background p-2 rounded text-xs font-mono mt-2 overflow-auto">
               INSERT INTO admins (id, email, created_at) VALUES ('{userInfo.id}
-              ', '{userInfo.email || ""}', now());
+              ', '{userInfo.email}', now());
             </pre>
           </div>
-          <div className="mt-4 flex gap-2">
+
+          <div className="flex gap-3">
             <button
-              className="px-3 py-2 bg-blue-600 text-white rounded"
-              onClick={() => window.location.reload()}
+              onClick={() => navigate("/")}
+              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
             >
-              Retry
+              Go Home
             </button>
             <button
-              className="px-3 py-2 border rounded"
-              onClick={() => (window.location.href = "/")}
+              onClick={() => {
+                supabase.auth.signOut();
+                navigate("/");
+              }}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Insufficient permissions
+  if (insufficientPermissions && currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-xl w-full space-y-6 p-6 border rounded-lg shadow-sm bg-card">
+          <div className="flex gap-3">
+            <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Insufficient Permissions
+              </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                You don't have permission to access this area.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-muted p-4 rounded space-y-2 text-sm">
+            <p>
+              <span className="font-semibold">User:</span> {currentUser.email}
+            </p>
+            <p>
+              <span className="font-semibold">Role:</span> {currentUser.role}
+            </p>
+            {currentUser.permissions.length > 0 && (
+              <p>
+                <span className="font-semibold">Permissions:</span>{" "}
+                {currentUser.permissions.join(", ")}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground pt-2">
+              Contact a superadmin to grant you the required permissions.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/admin")}
+              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
+            >
+              Go to Dashboard
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
             >
               Go Home
             </button>
           </div>
-          {/* debug UI removed */}
         </div>
       </div>
     );
-  return <>{children}</>;
+  }
+
+  // Authorized - render children
+  if (authorized) {
+    return <>{children}</>;
+  }
+
+  // Fallback
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <p className="text-muted-foreground">Checking permissions...</p>
+    </div>
+  );
 };
 
 export default AdminGuard;

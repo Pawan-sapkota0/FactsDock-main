@@ -3,9 +3,17 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Filter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { fetchFactsByCategory } from "@/lib/facts";
+import { usePagination } from "@/hooks/use-pagination";
+import PaginationControls from "@/components/common/PaginationControls";
+import PaginationSkeleton from "@/components/common/PaginationSkeleton";
+import {
+  filterFacts,
+  getEmptyStateMessage,
+  markFactViewed,
+} from "@/lib/fact-filtering";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import { useToast } from "@/hooks/use-toast";
@@ -28,11 +36,18 @@ const CategoryView: React.FC = () => {
   const [openQuiz, setOpenQuiz] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [currentCategoryKey, setCurrentCategoryKey] = useState<string | null>(
-    null
+    null,
   );
+  const [filterType, setFilterType] = useState<string>("all");
   const cacheRef = useRef<Map<string, any[]>>(new Map());
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Initialize pagination at top level
+  const pagination = usePagination({ itemsPerPage: 8 });
+
+  // Update pagination when facts change
+  useEffect(() => {
+    pagination.setTotalItems(facts.length);
+  }, [facts]);
 
   const categoryKey = `${type || "fun-facts"}:${slug}`;
   const factTypeIdRef = useRef<string | null>(null);
@@ -196,7 +211,7 @@ const CategoryView: React.FC = () => {
               const altRes = await fetchFactsByCategory(
                 typeKey,
                 altCategory,
-                opts
+                opts,
               );
               if ((altRes || []).length > 0) {
                 items = altRes || [];
@@ -262,37 +277,6 @@ const CategoryView: React.FC = () => {
     }
   };
 
-  const handleLoadMore = () => {
-    const next = page;
-    loadMore(next);
-  };
-
-  // NOTE: Infinite-scroll via IntersectionObserver was causing repeated triggers and layout jitter
-  // that produced a 'shaking' effect. Re-introducing a guarded observer that will trigger
-  // loadMore() only when not loading and hasMore is true. This uses a tiny debounce via
-  // checking isLoading/hasMore and a short timeout to avoid rapid retriggers.
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    if (observerRef.current) observerRef.current.disconnect();
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && hasMore && !isLoading) {
-            // small safety delay
-            setTimeout(() => {
-              if (!isLoading && hasMore) loadMore(page);
-            }, 150);
-          }
-        });
-      },
-      { root: null, rootMargin: "150px", threshold: 0.1 }
-    );
-    observerRef.current.observe(el);
-    return () => observerRef.current?.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, isLoading, page, currentCategoryKey]);
-
   // Restore a previously-saved snapshot when the user navigates with the
   // browser Back/Forward buttons (popstate). We attach snapshots via
   // `history.replaceState(..., { wf_snapshot })` before entering a
@@ -317,7 +301,7 @@ const CategoryView: React.FC = () => {
         setHasMore(
           typeof snap.hasMore === "boolean"
             ? snap.hasMore
-            : all.length > slice.length
+            : all.length > slice.length,
         );
         // restore scroll position a moment later so layout stabilizes
         setTimeout(() => {
@@ -348,8 +332,8 @@ const CategoryView: React.FC = () => {
           cacheRef.current.get(
             currentCategoryKey ||
               `${type === "world" ? "world-facts" : "fun-facts"}:${slugToTitle(
-                slug
-              )}`
+                slug,
+              )}`,
           ) || facts,
         page,
         hasMore,
@@ -359,7 +343,7 @@ const CategoryView: React.FC = () => {
       try {
         window.history.replaceState(
           { ...(window.history.state || {}), wf_snapshot: snapshot },
-          ""
+          "",
         );
       } catch (e) {
         // ignore replaceState failures in restrictive environments
@@ -393,7 +377,7 @@ const CategoryView: React.FC = () => {
       try {
         window.history.pushState(
           { ...(window.history.state || {}), wf_sub: category },
-          ""
+          "",
         );
       } catch (e) {
         // ignore
@@ -443,18 +427,6 @@ const CategoryView: React.FC = () => {
                   className="px-4 py-2 text-lg"
                 >
                   Facts by Subcategories
-                </Button>
-              </div>
-
-              <div>
-                {/* use native title attribute for tooltip to avoid layout jitter */}
-                <Button
-                  onClick={() => setOpenQuiz(true)}
-                  variant="secondary"
-                  className="px-4 py-2 text-lg transform transition-transform duration-200 ease-out hover:scale-105 hover:shadow-[0_10px_24px_rgba(99,102,241,0.10)]"
-                  title={`Play a quick quiz about ${title}`}
-                >
-                  Play Quiz
                 </Button>
               </div>
             </div>
@@ -508,51 +480,87 @@ const CategoryView: React.FC = () => {
             }
             return (
               title && (
-                <div className="w-full mt-6 mb-2">
+                <div className="w-full mt-6 mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl md:text-2xl font-semibold text-foreground">
                     {subcategoryName
                       ? `Facts about ${subcategoryName} of ${title}`
                       : `Facts about ${title}`}
                   </h2>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <label className="text-sm font-medium text-foreground">
+                      View facts
+                    </label>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
+                    >
+                      <option value="all">All facts</option>
+                      <option value="newtoday">New today</option>
+                      <option value="latest">Latest release</option>
+                      <option value="notseen">Not seen yet</option>
+                    </select>
+                  </div>
                 </div>
               )
             );
           })()}
 
-          <div className="space-y-4">
-            {facts.length === 0 && !isLoading && (
-              <Card className="p-6 text-center">
-                No facts available for this topic yet.
-              </Card>
+          <div className="space-y-4" id="facts-section">
+            {isLoading ? (
+              <PaginationSkeleton count={8} columns={1} height="120px" />
+            ) : (
+              (() => {
+                // Apply filter
+                const filtered = filterFacts(facts, filterType);
+
+                if (filtered.length === 0) {
+                  return (
+                    <Card className="p-6 text-center">
+                      <p className="text-muted-foreground">
+                        {getEmptyStateMessage(filterType)}
+                      </p>
+                    </Card>
+                  );
+                }
+
+                const paginatedFacts = pagination.paginate(filtered);
+
+                return (
+                  <>
+                    <div className="space-y-4">
+                      {paginatedFacts.map((f, i) => (
+                        <div
+                          key={f?.id || i}
+                          className="p-0"
+                          onMouseEnter={() =>
+                            markFactViewed(f?.id || f?.fact_id)
+                          }
+                        >
+                          <LazyFactCard
+                            fact={f?.fact_text || f?.fact || f?.title || ""}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <PaginationControls
+                      currentPage={pagination.currentPage}
+                      totalPages={pagination.totalPages}
+                      onPageChange={(page) => {
+                        pagination.setPage(page);
+                        document
+                          .getElementById("facts-section")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      canGoPrevious={pagination.canGoPrevious}
+                      canGoNext={pagination.canGoNext}
+                      className="mt-8"
+                    />
+                  </>
+                );
+              })()
             )}
-
-            {facts.map((f, i) => (
-              <div key={f?.id || i} className="p-0">
-                <LazyFactCard
-                  fact={f?.fact_text || f?.fact || f?.title || ""}
-                />
-              </div>
-            ))}
-
-            {/* debug panel removed */}
-
-            {isLoading && (
-              <div className="flex items-center gap-2">
-                <Loader2 className="animate-spin" /> Loading...
-              </div>
-            )}
-
-            {/* debug panel removed - rendering fixed */}
-
-            {!isLoading && hasMore && (
-              <div className="pt-4">
-                <Button onClick={handleLoadMore} className="w-full">
-                  Load more
-                </Button>
-              </div>
-            )}
-            {/* sentinel for guarded infinite scroll (observed by IntersectionObserver) */}
-            <div ref={sentinelRef as any} style={{ height: 1 }} />
           </div>
         </div>
       </main>

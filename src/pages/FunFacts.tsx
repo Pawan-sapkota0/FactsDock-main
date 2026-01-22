@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePagination } from "@/hooks/use-pagination";
+import PaginationControls from "@/components/common/PaginationControls";
+import PaginationSkeleton from "@/components/common/PaginationSkeleton";
 import {
   Dog,
   FlaskConical,
@@ -13,6 +16,7 @@ import {
   X,
   MapPin,
   Lightbulb,
+  Filter,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -29,6 +33,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  filterFacts,
+  getEmptyStateMessage,
+  markFactViewed,
+} from "@/lib/fact-filtering";
 // import { generateQuiz } from '@/lib/quiz';
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 import { Button } from "@/components/ui/button";
@@ -46,6 +55,9 @@ const FunFacts = () => {
     undefined,
   );
   const factTypeIdRef = React.useRef<string | null>(null);
+
+  // Initialize pagination at top level
+  const pagination = usePagination({ itemsPerPage: 8 });
   // use shared lazy wrapper
 
   // Main categories and their subcategories
@@ -162,6 +174,7 @@ const FunFacts = () => {
 
   const [openMain, setOpenMain] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>("all");
   // Component-level cache to avoid duplicate generation calls for the same subcategory
   const subCacheRef = new Map<string, any[]>();
   // Track in-flight promises to dedupe concurrent requests
@@ -207,6 +220,17 @@ const FunFacts = () => {
     // to deps to avoid re-registering on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, selectedSub]);
+
+  // Update pagination when facts or selected subcategory changes
+  useEffect(() => {
+    const displayed = (facts || []).filter((f) => {
+      if (selectedSub) {
+        return !!(f && (f as any).subcategory_id);
+      }
+      return !(f && (f as any).subcategory_id);
+    });
+    pagination.setTotalItems(displayed.length);
+  }, [facts, selectedSub]);
 
   const handleMainClick = (title: string) => {
     // navigate to category page
@@ -448,10 +472,26 @@ const FunFacts = () => {
             {/* Inline Facts (show when a subcategory is selected) */}
             {selectedSub && (
               <div className="mt-6">
-                <div className="mb-2">
+                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl md:text-2xl font-semibold text-foreground">
                     Facts about {selectedSub}
                   </h2>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <label className="text-sm font-medium text-foreground">
+                      View facts
+                    </label>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
+                    >
+                      <option value="all">All facts</option>
+                      <option value="newtoday">New today</option>
+                      <option value="latest">Latest release</option>
+                      <option value="notseen">Not seen yet</option>
+                    </select>
+                  </div>
                 </div>
 
                 {isLoading ? (
@@ -470,14 +510,31 @@ const FunFacts = () => {
                       // main category: show only facts not assigned to a subcategory
                       return !(f && (f as any).subcategory_id);
                     });
+
+                    // Apply filter
+                    const filtered = filterFacts(displayed, filterType);
+
+                    if (filtered.length === 0) {
+                      return (
+                        <Card className="p-6 text-center">
+                          <p className="text-muted-foreground">
+                            {getEmptyStateMessage(filterType)}
+                          </p>
+                        </Card>
+                      );
+                    }
+
                     return (
                       <div className="grid md:grid-cols-2 gap-4">
                         <React.Suspense fallback={<div />}>
-                          {displayed.map((fact, idx) => (
+                          {filtered.map((fact, idx) => (
                             <div
                               key={idx}
                               className="transform transition-all duration-400 opacity-0 animate-fade-in"
                               style={{ animationDelay: `${idx * 60}ms` }}
+                              onMouseEnter={() =>
+                                markFactViewed(fact?.id || fact?.fact_id)
+                              }
                             >
                               <LazyFactCard
                                 fact={

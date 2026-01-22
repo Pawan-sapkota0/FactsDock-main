@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_AVAILABLE } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -9,9 +9,13 @@ import {
   Plus,
   ArrowRight,
   TrendingUp,
+  Newspaper,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { triggerNewsFetch } from "@/lib/api";
 
 const fetchAdminStats = async () => {
   if (!SUPABASE_AVAILABLE)
@@ -130,6 +134,36 @@ const Dashboard: React.FC = () => {
     queryKey: ["admin", "stats"],
     queryFn: fetchAdminStats,
   });
+  const { toast } = useToast();
+  const [isRefreshingNews, setIsRefreshingNews] = useState(false);
+
+  const handleRefreshNews = async () => {
+    setIsRefreshingNews(true);
+    try {
+      const result = await triggerNewsFetch();
+      if (result.success) {
+        toast({
+          title: "News Updated",
+          description: `Successfully updated news for multiple countries`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to refresh news",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to trigger news refresh",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingNews(false);
+    }
+  };
 
   const stats = data || {
     total_approved_facts: 0,
@@ -176,7 +210,7 @@ const Dashboard: React.FC = () => {
         <h2 className="text-xl font-semibold text-foreground mb-4">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Link to="/admin/facts">
             <Button
               variant="outline"
@@ -204,6 +238,19 @@ const Dashboard: React.FC = () => {
               <span>Review Pending</span>
             </Button>
           </Link>
+          <Button
+            onClick={handleRefreshNews}
+            disabled={isRefreshingNews}
+            variant="outline"
+            className="w-full justify-start gap-2 h-auto py-3 px-4"
+          >
+            {isRefreshingNews ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Newspaper className="h-4 w-4" />
+            )}
+            <span>{isRefreshingNews ? "Updating..." : "Refresh News"}</span>
+          </Button>
         </div>
       </div>
 

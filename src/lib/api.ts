@@ -922,3 +922,156 @@ export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: numb
 
   return normalized;
 }
+
+// ============================================================
+// NEWS API FUNCTIONS
+// ============================================================
+
+/**
+ * Fetch latest news for a country from the database
+ * News is cached locally for 1 hour
+ */
+export async function fetchCountryNews(country: string, options: any = {}) {
+  if (!country) return [];
+
+  const cacheKey = `news:${country.toLowerCase()}`;
+  const cached = getLocalCache('news', country.toLowerCase());
+  if (cached && !options.force) {
+    return cached;
+  }
+
+  if (!SUPABASE_AVAILABLE) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('country_news')
+      .select('id, title, source, url, image_url, published_at, created_at')
+      .eq('country', country)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('[fetchCountryNews] Error fetching news:', error);
+      return [];
+    }
+
+    // Cache for 6 hours
+    setLocalCache('news', country.toLowerCase(), data || [], 21600);
+    return data || [];
+  } catch (err) {
+    console.error('[fetchCountryNews] Exception:', err);
+    return [];
+  }
+}
+
+/**
+ * Insert or update news articles (called by Edge Function)
+ * Only service_role should call this
+ */
+export async function saveCountryNews(articles: any[]) {
+  if (!SUPABASE_AVAILABLE || !Array.isArray(articles)) return false;
+
+  try {
+    const { error } = await supabase.from('country_news').upsert(
+      articles.map((a) => ({
+        country: a.country,
+        title: a.title,
+        source: a.source,
+        url: a.url,
+        image_url: a.image_url,
+        published_at: a.published_at,
+      })),
+      { onConflict: 'url,country' }
+    );
+
+    if (error) {
+      console.error('[saveCountryNews] Error saving news:', error);
+      return false;
+    }
+
+    // Clear cache for this country
+    localStorage.removeItem(cacheKey('news', articles[0]?.country?.toLowerCase()));
+    return true;
+  } catch (err) {
+    console.error('[saveCountryNews] Exception:', err);
+    return false;
+  }
+}
+
+/**
+ * Cleanup old news (keep only last 7 days or top 10 per country)
+ * Called by scheduled Edge Function
+ */
+export async function cleanupOldNews(country?: string) {
+  if (!SUPABASE_AVAILABLE) return false;
+
+  try {
+    const query = supabase
+      .from('country_news')
+      .delete()
+      .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (country) {
+      query.eq('country', country);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+      console.error('[cleanupOldNews] Error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[cleanupOldNews] Exception:', err);
+    return false;
+  }
+}
+
+/**
+ * Trigger news fetching from Edge Function (manual or from admin dashboard)
+ */
+export async function triggerNewsFetch() {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      console.error('[triggerNewsFetch] SUPABASE_URL not configured');
+      return { success: false, error: 'Configuration error' };
+    }
+
+    const invokeUrl = `${supabaseUrl}/functions/v1/fetch-news`;
+    
+    const response = await fetch(invokeUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[triggerNewsFetch] Error:', error);
+      return { success: false, error };
+    }
+
+    const data = await response.json();
+    console.log('[triggerNewsFetch] Success:', data);
+    
+    // Clear all cached news from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('wf:news:')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Dispatch event to refresh news in UI
+    window.dispatchEvent(new Event('wf:facts-updated'));
+    
+    return { success: true, data };
+  } catch (err) {
+    console.error('[triggerNewsFetch] Exception:', err);
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

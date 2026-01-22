@@ -11,7 +11,7 @@ const CategoryCard = ({ title, icon: Icon, onClick }: CategoryCardProps) => {
   return (
     <Card
       onClick={onClick}
-      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-primary"
+      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary"
       style={{ boxShadow: "var(--shadow-card)" }}
     >
       <CardContent className="p-6 flex flex-col items-center justify-center gap-3">

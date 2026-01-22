@@ -15,6 +15,12 @@ import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { SEOMeta } from "@/components/common/SEOMeta";
+import {
+  generateOrganizationSchema,
+  generateWebsiteSchema,
+  PAGE_TEMPLATES,
+} from "@/lib/seo-utils";
 
 // HeroSection Component
 const HeroSection = ({
@@ -51,14 +57,17 @@ const HeroSection = ({
             className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold leading-tight mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
-            Know the World  <span className="text-gradient"> In One Glance </span>
+            Know the World{" "}
+            <span className="text-gradient"> In One Glance </span>
           </h1>
 
           <p
             className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Explore fascinating facts and quizzes from every corner of the globe. Turn curiosity into adventure with world quizzes that make learning fun.
+            Explore fascinating facts and quizzes from every corner of the
+            globe. Turn curiosity into adventure with world quizzes that make
+            learning fun.
           </p>
 
           <div
@@ -314,6 +323,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={PAGE_TEMPLATES.home.title}
+        description={PAGE_TEMPLATES.home.description}
+        keywords={PAGE_TEMPLATES.home.keywords}
+        ogImage={`${window.location.origin}/og-image.jpg`}
+        structuredData={generateWebsiteSchema()}
+      />
       <Navbar />
 
       <main className="flex-1">

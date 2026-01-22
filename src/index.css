@@ -116,9 +116,19 @@ All colors MUST be HSL.
   }
 }
 
-/* Smooth scroll fallback for browsers that support CSS smooth scrolling */
+/* 
+  Smooth scroll only for explicit anchor navigation (user clicks links with #hash)
+  Route changes will be handled by ScrollToTop component for instant scrolling
+*/
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+}
+
+/* Enable smooth scrolling only for hash-based anchor navigation */
+@supports (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: auto; /* Keep auto by default, let ScrollToTop handle route changes */
+  }
 }
 
 /* Animated pastel gradient for hero */

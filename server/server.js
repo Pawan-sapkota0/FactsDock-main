@@ -101,6 +101,32 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+// GET /api/auth/callback/google
+// OAuth callback handler for Google authentication
+// Note: Supabase handles the OAuth code exchange internally.
+// This endpoint is just a redirect target for Supabase to handle.
+app.get('/api/auth/callback/google', async (req, res) => {
+  try {
+    const { error, error_description } = req.query;
+
+    // Handle OAuth errors from Supabase
+    if (error) {
+      const errorMsg = error_description || error;
+      console.error('OAuth error from Supabase:', errorMsg);
+      return res.redirect(`http://localhost:8080/admin/login?error=${encodeURIComponent(errorMsg)}`);
+    }
+
+    // Supabase has already handled the code exchange and set the session.
+    // The JWT token is automatically stored by the Supabase client in localStorage.
+    // Simply redirect back to admin login where the component will detect the session.
+    console.log('OAuth callback processed, redirecting to admin login');
+    res.redirect('http://localhost:8080/admin/login');
+  } catch (err) {
+    console.error('OAuth callback error:', err);
+    res.redirect(`http://localhost:8080/admin/login?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
 app.get('/api/health', (req, res) => {
   const health = {
     status: 'ok',

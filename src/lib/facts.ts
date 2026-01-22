@@ -410,3 +410,89 @@ if (typeof window !== 'undefined') {
   // @ts-ignore
   (window as any).fetchFactsByCategory = fetchFactsByCategory;
 }
+
+/**
+ * Fetch facts by category with pagination support
+ * Loads a specific batch of facts (initial load or load more)
+ * 
+ * @param factType - Type of facts (e.g., 'fun-facts', 'world-facts')
+ * @param category - Category name
+ * @param page - Page number (0-indexed), default 0
+ * @param pageSize - Number of facts per page, default 8
+ * @param subcategory - Optional subcategory
+ * @returns Array of facts for the requested page
+ */
+export async function fetchFactsByPage(
+  factType: string,
+  category: string,
+  page: number = 0,
+  pageSize: number = 8,
+  subcategoryOrOpts?: string | { ttl?: number; force?: boolean; fact_type_id?: string }
+) {
+  let subcategory: string | undefined;
+  let opts: { ttl?: number; force?: boolean; fact_type_id?: string } | undefined;
+  if (typeof subcategoryOrOpts === 'string') subcategory = subcategoryOrOpts;
+  else opts = subcategoryOrOpts;
+
+  try {
+    // Resolve category and fact type IDs (reuse existing logic by fetching all first)
+    // For pagination, we need to fetch all facts and then slice
+    const allFacts = await fetchFactsByCategory(factType, category, subcategory, opts);
+    
+    const start = page * pageSize;
+    const end = start + pageSize;
+    
+    return {
+      facts: allFacts.slice(start, end),
+      total: allFacts.length,
+      page,
+      pageSize,
+      hasMore: end < allFacts.length,
+    };
+  } catch (e) {
+    console.error('[fetchFactsByPage] error', e);
+    return {
+      facts: [],
+      total: 0,
+      page,
+      pageSize,
+      hasMore: false,
+    };
+  }
+}
+
+/**
+ * Fetch initial batch of facts (typically for page load)
+ * 
+ * @param factType - Type of facts
+ * @param category - Category name
+ * @param initialCount - Number of initial facts to load (default 8)
+ * @returns Object with facts array and hasMore flag
+ */
+export async function fetchFactsInitialBatch(
+  factType: string,
+  category: string,
+  initialCount: number = 8,
+  subcategoryOrOpts?: string | { ttl?: number; force?: boolean; fact_type_id?: string }
+) {
+  return fetchFactsByPage(factType, category, 0, initialCount, subcategoryOrOpts);
+}
+
+/**
+ * Fetch next batch of facts (for "Load More" functionality)
+ * 
+ * @param factType - Type of facts
+ * @param category - Category name
+ * @param currentPage - Current page number (0-indexed)
+ * @param pageSize - Facts per page
+ * @returns Object with next batch of facts and hasMore flag
+ */
+export async function fetchFactsNextBatch(
+  factType: string,
+  category: string,
+  currentPage: number,
+  pageSize: number = 8,
+  subcategoryOrOpts?: string | { ttl?: number; force?: boolean; fact_type_id?: string }
+) {
+  return fetchFactsByPage(factType, category, currentPage + 1, pageSize, subcategoryOrOpts);
+}

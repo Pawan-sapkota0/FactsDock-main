@@ -14,6 +14,8 @@ import {
 import SearchBar from "@/components/common/SearchBar";
 import { useToast } from "@/hooks/use-toast";
 import { generateQuizForTopic } from "@/lib/api";
+import { SEOMeta } from "@/components/common/SEOMeta";
+import { PAGE_TEMPLATES, generateArticleSchema } from "@/lib/seo-utils";
 
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
@@ -97,18 +99,46 @@ const Quiz = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [window.location.search]);
 
-  // Smooth scroll to appropriate section when quiz type is selected
+  // Scroll to appropriate section when quiz type is selected - instant, no animation
   useEffect(() => {
-    try {
-      if (quizType === "country" && countryRef.current) {
-        countryRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      } else if (quizType === "random" && countRef.current) {
-        countRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!quizType) return;
+
+    // Use a longer timeout to ensure DOM has fully updated and rendered
+    const scrollTimer = setTimeout(() => {
+      try {
+        let targetRef: HTMLDivElement | null = null;
+
+        if (quizType === "country") {
+          targetRef = countryRef.current;
+        } else if (quizType === "random") {
+          targetRef = countRef.current;
+        }
+
+        if (targetRef) {
+          // Disable smooth scrolling
+          const html = document.documentElement;
+          const originalScrollBehavior = html.style.scrollBehavior;
+          html.style.scrollBehavior = "auto";
+
+          // Get element position and scroll to it
+          const elementTop =
+            targetRef.getBoundingClientRect().top + window.scrollY - 100; // Add navbar offset
+          window.scrollTo({
+            top: elementTop,
+            behavior: "auto",
+          });
+
+          // Restore scroll behavior
+          requestAnimationFrame(() => {
+            html.style.scrollBehavior = originalScrollBehavior;
+          });
+        }
+      } catch (e) {
+        console.error("Scroll error:", e);
       }
-    } catch (e) {}
+    }, 100); // Increased delay for better DOM rendering
+
+    return () => clearTimeout(scrollTimer);
   }, [quizType]);
 
   useEffect(() => {
@@ -158,6 +188,18 @@ const Quiz = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={PAGE_TEMPLATES.quizzes.title}
+        description={PAGE_TEMPLATES.quizzes.description}
+        keywords={PAGE_TEMPLATES.quizzes.keywords}
+        ogImage={`${window.location.origin}/og-image.jpg`}
+        structuredData={generateArticleSchema({
+          headline: "Geography Quizzes",
+          description:
+            "Challenge yourself with fun, educational geography quizzes. Test your knowledge about countries, capitals, and global facts.",
+          datePublished: new Date().toISOString(),
+        })}
+      />
       <Navbar />
 
       <main className="flex-1 py-12">

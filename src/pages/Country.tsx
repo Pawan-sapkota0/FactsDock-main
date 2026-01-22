@@ -31,6 +31,8 @@ import CountryStats from "@/components/country/CountryStats";
 import NewsSection from "@/components/country/NewsSection";
 import QuizButton from "@/components/country/QuizButton";
 import LazyFactCard from "@/components/cards/LazyFactCard";
+import { SEOMeta } from "@/components/common/SEOMeta";
+import { generatePlaceSchema, generateArticleSchema } from "@/lib/seo-utils";
 
 const Country = () => {
   const { slug } = useParams();
@@ -686,6 +688,20 @@ const Country = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={`${countryData.name} Facts & Information | World Facts`}
+        description={`Explore fascinating facts about ${countryData.name}. Learn about culture, geography, history, economy, and interesting trivia.`}
+        keywords={`${countryData.name} facts, facts about ${countryData.name}, ${countryData.name} information, ${countryData.name} quiz`}
+        ogImage={
+          countryData.flagImage || `${window.location.origin}/og-image.jpg`
+        }
+        structuredData={generatePlaceSchema({
+          name: countryData.name,
+          description: `Comprehensive facts and information about ${countryData.name}. Capital: ${countryData.capital}, Population: ${countryData.population}`,
+          image: countryData.flagImage,
+          url: window.location.href,
+        })}
+      />
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">

@@ -40,3 +40,16 @@ if (SUPABASE_AVAILABLE) {
 }
 
 export const supabase = supabaseClient;
+
+// Expose a tiny debug shim in development so the app can quickly detect
+// whether the Supabase client was configured at runtime. This helps when
+// pages render skeletons due to missing/invalid envs or network auth issues.
+// if (typeof window !== 'undefined') {
+//   try {
+//     (window as any).__wf_supabase_available = SUPABASE_AVAILABLE;
+//     // Expose only the URL (non-secret) so developers can confirm endpoint is set.
+//     (window as any).__wf_supabase_url = supabaseUrl || null;
+//   } catch (e) {
+//     // ignore
+//   }
+// }

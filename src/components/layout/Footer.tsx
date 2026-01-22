@@ -10,7 +10,7 @@ const Footer = () => {
       links: [
         { label: "Facts", href: "/world-facts" },
         { label: "Quizzes", href: "/quiz" },
-        { label: "Categories", href: "/categories" },
+        { label: "Game Zone", href: "/fun-zone" },
         { label: "Countries", href: "/" },
       ],
     },

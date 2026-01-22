@@ -3,11 +3,19 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Filter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { fetchFactsForCountry, fetchCountryFacts } from "@/lib/api";
 import { fetchFactsByCategory } from "@/lib/facts";
 import { useToast } from "@/hooks/use-toast";
+import { usePagination } from "@/hooks/use-pagination";
+import PaginationControls from "@/components/common/PaginationControls";
+import PaginationSkeleton from "@/components/common/PaginationSkeleton";
+import {
+  filterFacts,
+  getEmptyStateMessage,
+  markFactViewed,
+} from "@/lib/fact-filtering";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import LazyFactCard from "@/components/cards/LazyFactCard";
 
@@ -33,12 +41,11 @@ const CountryCategoryPage: React.FC = () => {
   const [openQuiz, setOpenQuiz] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [currentCategoryKey, setCurrentCategoryKey] = useState<string | null>(
-    null
+    null,
   );
+  const [filterType, setFilterType] = useState<string>("all");
 
   const cacheRef = useRef<Map<string, any[]>>(new Map());
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const factTypeIdRef = useRef<string | null>(null);
 
   // Listen for admin cache invalidation events and reload facts for this country/category
@@ -73,6 +80,14 @@ const CountryCategoryPage: React.FC = () => {
       window.removeEventListener("wf:facts-updated", handler as EventListener);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country, category]);
+
+  // Initialize pagination at top level
+  const pagination = usePagination({ itemsPerPage: 8 });
+
+  // Update pagination when facts change
+  useEffect(() => {
+    pagination.setTotalItems(facts.length);
+  }, [facts]);
 
   const title = category ? slugToTitle(category) : "Category";
   const countryName = country ? slugToTitle(country) : "Country";
@@ -202,7 +217,7 @@ const CountryCategoryPage: React.FC = () => {
           console.debug(
             "[CountryCategoryPage] loadMore fetched items count",
             items.length,
-            { countryName, title, cacheKey, sample: items[0] }
+            { countryName, title, cacheKey, sample: items[0] },
           );
         } catch (e) {}
       }
@@ -244,7 +259,7 @@ const CountryCategoryPage: React.FC = () => {
       try {
         window.history.replaceState(
           { ...(window.history.state || {}), wf_snapshot: snapshot },
-          ""
+          "",
         );
       } catch (e) {
         // ignore
@@ -280,7 +295,7 @@ const CountryCategoryPage: React.FC = () => {
           console.debug(
             "[CountryCategoryPage] handleSubSelect fetched items count",
             items.length,
-            { countryName, title, sub, cacheKey }
+            { countryName, title, sub, cacheKey },
           );
         } catch (e) {}
       }
@@ -293,7 +308,7 @@ const CountryCategoryPage: React.FC = () => {
             ...(window.history.state || {}),
             wf_sub: `${countryName}:${title}:${sub}`,
           },
-          ""
+          "",
         );
       } catch (e) {
         // ignore
@@ -332,27 +347,6 @@ const CountryCategoryPage: React.FC = () => {
     })();
   }, []);
 
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    if (observerRef.current) observerRef.current.disconnect();
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && hasMore && !isLoading) {
-            setTimeout(() => {
-              if (!isLoading && hasMore) loadMore(page);
-            }, 150);
-          }
-        });
-      },
-      { root: null, rootMargin: "150px", threshold: 0.1 }
-    );
-    observerRef.current.observe(el);
-    return () => observerRef.current?.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, isLoading, page]);
-
   // Restore a previously-saved snapshot when the user navigates with Back/Forward.
   // We attach snapshots via `history.replaceState(..., { wf_snapshot })` before
   // entering a subcategory and `pushState` after, so Back will provide the snapshot.
@@ -377,7 +371,7 @@ const CountryCategoryPage: React.FC = () => {
         setHasMore(
           typeof snap.hasMore === "boolean"
             ? snap.hasMore
-            : all.length > slice.length
+            : all.length > slice.length,
         );
         setTimeout(() => {
           if (typeof window !== "undefined" && snap.scrollY)
@@ -416,7 +410,7 @@ const CountryCategoryPage: React.FC = () => {
                   Facts by Subcategories
                 </Button>
               </div>
-
+              {/* 
               <div>
                 <Button
                   onClick={() => setOpenQuiz(true)}
@@ -426,7 +420,7 @@ const CountryCategoryPage: React.FC = () => {
                 >
                   Play Quiz
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -471,12 +465,28 @@ const CountryCategoryPage: React.FC = () => {
               subName = parts.slice(1).join(":");
             }
             return (
-              <div className="w-full mt-6 mb-2">
+              <div className="w-full mt-6 mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-xl md:text-2xl font-semibold text-foreground">
                   {subName
                     ? `Facts about ${subName} of ${title} in ${countryName}`
                     : `Facts about ${title} of ${countryName}`}
                 </h2>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <label className="text-sm font-medium text-foreground">
+                    View facts
+                  </label>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
+                  >
+                    <option value="all">All facts</option>
+                    <option value="newtoday">New today</option>
+                    <option value="latest">Latest release</option>
+                    <option value="notseen">Not seen yet</option>
+                  </select>
+                </div>
               </div>
             );
           })()}
@@ -498,9 +508,13 @@ const CountryCategoryPage: React.FC = () => {
               // (currentCategoryKey includes a sub token), show only subcategory facts.
               const displayed = showingSub
                 ? (facts || []).filter(
-                    (f) => !!(f && (f as any).subcategory_id)
+                    (f) => !!(f && (f as any).subcategory_id),
                   )
                 : facts || [];
+
+              // Apply selected filter
+              const filtered = filterFacts(displayed, filterType);
+
               if (process.env.NODE_ENV !== "production") {
                 try {
                   console.debug(
@@ -508,18 +522,53 @@ const CountryCategoryPage: React.FC = () => {
                     facts,
                     "displayed",
                     displayed,
-                    "currentCategoryKey",
-                    currentCategoryKey
+                    "filtered",
+                    filtered,
+                    "filterType",
+                    filterType,
                   );
                 } catch (e) {}
               }
-              return displayed.map((f, i) => (
-                <div key={f?.id || i}>
-                  <LazyFactCard
-                    fact={f?.fact_text || f?.fact || f?.title || ""}
-                  />
-                </div>
-              ));
+
+              const paginatedFacts = pagination.paginate(filtered);
+
+              return (
+                <>
+                  {filtered.length === 0 && !isLoading && (
+                    <Card className="p-6 text-center">
+                      <p className="text-muted-foreground">
+                        {getEmptyStateMessage(filterType)}
+                      </p>
+                    </Card>
+                  )}
+                  {paginatedFacts.map((f, i) => (
+                    <div
+                      key={f?.id || i}
+                      onMouseEnter={() => markFactViewed(f?.id || f?.fact_id)}
+                    >
+                      <LazyFactCard
+                        fact={f?.fact_text || f?.fact || f?.title || ""}
+                      />
+                    </div>
+                  ))}
+
+                  {pagination.totalPages > 1 && (
+                    <PaginationControls
+                      currentPage={pagination.currentPage}
+                      totalPages={pagination.totalPages}
+                      onPageChange={(page) => {
+                        pagination.setPage(page);
+                        document
+                          .getElementById("facts-section")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      canGoPrevious={pagination.canGoPrevious}
+                      canGoNext={pagination.canGoNext}
+                      className="mt-4"
+                    />
+                  )}
+                </>
+              );
             })()}
 
             {/* debug panel removed */}
@@ -531,16 +580,6 @@ const CountryCategoryPage: React.FC = () => {
             )}
 
             {/* debug panel removed - rendering fixed */}
-
-            {!isLoading && hasMore && (
-              <div className="pt-4">
-                <Button onClick={() => loadMore(page)} className="w-full">
-                  Load more
-                </Button>
-              </div>
-            )}
-
-            <div ref={sentinelRef as any} style={{ height: 1 }} />
           </div>
         </div>
       </main>
