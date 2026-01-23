@@ -148,6 +148,6 @@ export function getEmptyStateMessage(filterType: string): string {
       return "You've seen all available facts in this category during this session!";
     case "all":
     default:
-      return "No facts available for this category yet.";
+        return "No facts available for this topic yet.";
   }
 }
