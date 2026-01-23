@@ -1,5 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
+import logger from "@/lib/logger";
 
 type FactLike =
   | string
@@ -9,7 +10,8 @@ type FactLike =
       fact?: string | null;
       fact_text?: string | null;
       description?: string | null;
-      [k: string]: any;
+      text?: string | null;
+      [k: string]: unknown;
     };
 
 type Props = {
@@ -17,30 +19,42 @@ type Props = {
   className?: string;
 };
 
-function normalizeText(v: any) {
+function normalizeText(v: unknown): string {
   if (v === null || v === undefined) return "";
   return String(v).replace(/\s+/g, " ").trim();
 }
 
-export default function FactCard({ fact, className = "" }: Props) {
-  const isString = typeof fact === "string";
-  const title = isString ? null : normalizeText((fact as any).title || "");
-  const content = normalizeText(
-    isString
-      ? fact
-      : (fact as any).fact_text ||
-          (fact as any).fact ||
-          (fact as any).description ||
-          (fact as any).title ||
-          (fact as any).text ||
-          ""
-  );
+function getFactTitle(f: FactLike): string | null {
+  if (typeof f === "string") return null;
+  const val = (f.title ??
+    f.fact_text ??
+    f.fact ??
+    f.description ??
+    f.text) as unknown;
+  const t = normalizeText(val);
+  return t.length > 0 ? t : null;
+}
 
-  // Dev-time: log incoming prop shape so we can verify mappings
-  if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+function getFactContent(f: FactLike): string {
+  if (typeof f === "string") return normalizeText(f);
+  const val = (f.fact_text ??
+    f.fact ??
+    f.description ??
+    f.title ??
+    f.text) as unknown;
+  return normalizeText(val);
+}
+
+export default function FactCard({ fact, className = "" }: Props) {
+  const title = getFactTitle(fact);
+  const content = getFactContent(fact);
+
+  if (typeof window !== "undefined" && import.meta.env.DEV) {
     try {
-      console.debug("[FactCard] received fact prop", { fact, content });
-    } catch (e) {}
+      logger.debug("[FactCard] received fact prop", { fact, content });
+    } catch (e) {
+      /* ignored - dev logging */
+    }
   }
 
   // Avoid duplicate rendering when title and content are identical or one contains the other

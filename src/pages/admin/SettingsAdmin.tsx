@@ -61,16 +61,20 @@ const SettingsAdmin: React.FC = () => {
       // Dispatch event for frontend to reload settings
       window.dispatchEvent(new Event("wf:settings-updated"));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const e = error as Record<string, unknown> | undefined;
+      const message =
+        (e && (e.message as string)) ||
+        String(error || "Failed to save settings");
       toast({
         title: "Error",
-        description: error?.message || "Failed to save settings",
+        description: message,
         variant: "destructive",
       });
     },
   });
 
-  const handleInputChange = (field: keyof Settings, value: any) => {
+  const handleInputChange = (field: keyof Settings, value: unknown) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value,
@@ -106,7 +110,9 @@ const SettingsAdmin: React.FC = () => {
           key !== "hasChanges" &&
           formState[key] !== settings[key as keyof Settings]
         ) {
-          (updates as any)[key] = formState[key];
+          (updates as Record<string, unknown>)[String(key)] = formState[
+            key
+          ] as unknown;
         }
       });
     }

@@ -2,6 +2,8 @@
  * Safely scroll to an element by ID, with retry mechanism for async rendering
  * Handles cases where element might not be in DOM yet
  */
+import { debug, error, warn } from "@/lib/logger";
+ 
 export function scrollToElement(elementId: string, maxRetries = 20): Promise<boolean> {
   return new Promise((resolve) => {
     let retries = 0;
@@ -19,8 +21,8 @@ export function scrollToElement(elementId: string, maxRetries = 20): Promise<boo
           // Give a small delay to ensure scroll has started
           setTimeout(() => resolve(true), 100);
           return;
-        } catch (err) {
-          console.error(`[scrollToElement] Error scrolling to ${elementId}:`, err);
+          } catch (err) {
+          error(`[scrollToElement] Error scrolling to ${elementId}:`, err);
           resolve(false);
           return;
         }
@@ -33,7 +35,7 @@ export function scrollToElement(elementId: string, maxRetries = 20): Promise<boo
         setTimeout(attemptScroll, 100);
       } else {
         // Max retries exceeded, element doesn't exist
-        console.warn(`[scrollToElement] Element #${elementId} not found after ${maxRetries} retries`);
+        warn(`[scrollToElement] Element #${elementId} not found after ${maxRetries} retries`);
         resolve(false);
       }
     };
@@ -57,7 +59,7 @@ export function scrollToElementObserver(elementId: string, timeout = 5000): Prom
         setTimeout(() => resolve(true), 100);
         return;
       } catch (err) {
-        console.error(`[scrollToElementObserver] Error scrolling:`, err);
+        error(`[scrollToElementObserver] Error scrolling:`, err);
         resolve(false);
         return;
       }
@@ -72,7 +74,7 @@ export function scrollToElementObserver(elementId: string, timeout = 5000): Prom
           element.scrollIntoView({ behavior: "smooth", block: "start" });
           setTimeout(() => resolve(true), 100);
         } catch (err) {
-          console.error(`[scrollToElementObserver] Error scrolling:`, err);
+          error(`[scrollToElementObserver] Error scrolling:`, err);
           resolve(false);
         }
       }
@@ -88,7 +90,7 @@ export function scrollToElementObserver(elementId: string, timeout = 5000): Prom
     // Timeout after 5 seconds to prevent infinite observation
     setTimeout(() => {
       observer.disconnect();
-      console.warn(`[scrollToElementObserver] Timeout waiting for #${elementId}`);
+      warn(`[scrollToElementObserver] Timeout waiting for #${elementId}`);
       resolve(false);
     }, timeout);
   });

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logger from "@/lib/logger";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import {
@@ -40,7 +41,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           import.meta.env.DEV &&
           import.meta.env.VITE_ADMIN_BYPASS === "true"
         ) {
-          console.debug("[AdminGuard] dev bypass enabled");
+          logger.debug("[AdminGuard] dev bypass enabled");
           if (!cancelled) {
             setAuthorized(true);
             setLoading(false);
@@ -54,7 +55,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
         } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          console.debug("[AdminGuard] no session found, redirecting to login");
+          logger.debug("[AdminGuard] no session found, redirecting to login");
           if (!cancelled && location.pathname !== "/admin/login") {
             navigate("/admin/login", {
               state: { from: location.pathname },
@@ -72,7 +73,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           .limit(1);
 
         if (error || !admins || admins.length === 0) {
-          console.warn("[AdminGuard] user is not an admin");
+          logger.warn("[AdminGuard] user is not an admin");
           setUserInfo({
             id: session.user.id,
             email: session.user.email || "unknown",
@@ -82,15 +83,15 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           return;
         }
 
-        const adminRecord = admins[0] as any;
+        const adminRecord = admins[0] as Record<string, unknown>;
 
         // Check if user is active
-        if (!adminRecord.is_active) {
-          console.warn("[AdminGuard] user admin account is inactive");
+        if (!(adminRecord.is_active as boolean)) {
+          logger.warn("[AdminGuard] user admin account is inactive");
           setUserInfo({
-            id: adminRecord.id,
-            email: adminRecord.email,
-            role: adminRecord.role,
+            id: String(adminRecord.id),
+            email: String(adminRecord.email || ""),
+            role: String(adminRecord.role || ""),
           });
           setNotAdmin(true);
           if (!cancelled) setLoading(false);
@@ -99,22 +100,22 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
 
         // Check if user has required permission
         if (requiredPermission) {
-          const isSuperadmin = adminRecord.role === "superadmin";
+          const isSuperadmin = String(adminRecord.role) === "superadmin";
+          const perms = (adminRecord.permissions as string[] | undefined) || [];
           const hasPermission =
-            isSuperadmin ||
-            (adminRecord.permissions || []).includes(requiredPermission);
+            isSuperadmin || perms.includes(requiredPermission);
 
           if (!hasPermission) {
-            console.warn(
+            logger.warn(
               `[AdminGuard] user lacks permission: ${requiredPermission}`,
             );
             setCurrentUser({
-              id: adminRecord.id,
-              email: adminRecord.email,
-              role: adminRecord.role || "editor",
-              permissions: adminRecord.permissions || [],
-              createdAt: adminRecord.created_at,
-              isActive: adminRecord.is_active,
+              id: String(adminRecord.id),
+              email: String(adminRecord.email || ""),
+              role: String(adminRecord.role || "editor"),
+              permissions: perms,
+              createdAt: String(adminRecord.created_at),
+              isActive: Boolean(adminRecord.is_active),
             });
             setInsufficientPermissions(true);
             if (!cancelled) setLoading(false);
@@ -133,7 +134,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           setLoading(false);
         }
       } catch (e) {
-        console.error("[AdminGuard] auth check error:", e);
+        logger.error("[AdminGuard] auth check error:", e);
         if (!cancelled && location.pathname !== "/") {
           navigate("/", { replace: true });
         }

@@ -23,12 +23,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import logger from "@/lib/logger";
 
 interface BulkCountryFactsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  factTypes: any[];
-  categories: any[];
+  factTypes: FactType[];
+  categories: Category[];
 }
 
 type ModalStep = "config" | "preview" | "saving";
@@ -36,7 +37,7 @@ type ModalStep = "config" | "preview" | "saving";
 interface BulkGeneratedFact {
   text: string;
   source: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface CountryFactsResult {
@@ -45,6 +46,21 @@ interface CountryFactsResult {
   factCount: number;
   error?: string;
   selected?: boolean;
+}
+
+interface FactType {
+  id: string;
+  name: string;
+}
+
+interface Category {
+  id: string | number;
+  name: string;
+}
+
+interface Subcategory {
+  id: string | number;
+  name: string;
 }
 
 /**
@@ -71,7 +87,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
   // Preview state
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [bulkResults, setBulkResults] = useState<CountryFactsResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState({
@@ -110,8 +126,8 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
           .eq("category_id", selectedCategoryId)
           .order("name");
         setSubcategories(data || []);
-      } catch (error) {
-        console.error("Failed to load subcategories:", error);
+      } catch (error: unknown) {
+        logger.error("Failed to load subcategories:", error);
         setSubcategories([]);
       }
     };
@@ -122,11 +138,12 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
     let mounted = true;
     (async () => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK auth response
         const resp: any = await supabase.auth.getUser();
         const user = resp?.data?.user || null;
         if (mounted && user) setAdminUserId(user.id);
-      } catch (e) {
-        console.error("Failed to get admin user:", e);
+      } catch (_e: unknown) {
+        logger.error("Failed to get admin user:", _e);
       }
     })();
     return () => {
@@ -203,7 +220,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
+        logger.error(
           "[BulkModal] Response not OK:",
           response.status,
           errorText,
@@ -211,7 +228,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
         throw new Error(errorText || `Server error: ${response.status}`);
       }
 
-      console.log("[BulkModal] Starting to stream results...");
+      logger.debug("[BulkModal] Starting to stream results...");
 
       // Stream newline-delimited JSON results
       const reader = response.body?.getReader();
@@ -224,7 +241,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log("[BulkModal] Stream ended");
+          logger.debug("[BulkModal] Stream ended");
           break;
         }
 
@@ -242,7 +259,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
             };
             results.push(countryResult);
             setBulkResults([...results]); // Update UI in real-time
-            console.log(
+            logger.debug(
               `[BulkModal] Added ${countryData.country}: ${countryData.factCount} facts`,
             );
             setGenerationProgress({
@@ -250,8 +267,8 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
               total: 195,
               currentCountry: countryData.country,
             });
-          } catch (e) {
-            console.error("Failed to parse result line:", line, e);
+          } catch (e: unknown) {
+            logger.error("Failed to parse result line:", line, e);
           }
         }
       }
@@ -266,8 +283,8 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
           };
           results.push(countryResult);
           setBulkResults([...results]);
-        } catch (e) {
-          console.error("Failed to parse final buffer:", buffer, e);
+        } catch (e: unknown) {
+          logger.error("Failed to parse final buffer:", buffer, e);
         }
       }
 
@@ -278,22 +295,31 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
         title: "Generated",
         description: `${totalFacts} facts generated across ${processedCountries} countries. Review before saving.`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Don't show error toast if user cancelled
-      if (error?.name === "AbortError") {
-        console.log("Generation cancelled by user");
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        String((error as { name?: unknown }).name) === "AbortError"
+      ) {
+        logger.info("Generation cancelled by user");
         toast({
           title: "Cancelled",
           description:
             "Generation was cancelled. Results so far are still available.",
         });
       } else {
+        const message =
+          error && typeof error === "object" && "message" in error
+            ? String((error as { message?: unknown }).message ?? "")
+            : "Failed to generate facts";
         toast({
           title: "Generation Failed",
-          description: error?.message || "Failed to generate facts",
+          description: message,
           variant: "destructive",
         });
-        console.error("Bulk generation error:", error);
+        logger.error("Bulk generation error:", error);
       }
     } finally {
       setIsGenerating(false);
@@ -380,13 +406,17 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
       });
 
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message ?? "")
+          : "Failed to save facts";
       toast({
         title: "Save Failed",
-        description: error?.message || "Failed to save facts",
+        description: message,
         variant: "destructive",
       });
-      console.error("Bulk save error:", error);
+      logger.error("Bulk save error:", error);
       setStep("preview");
     } finally {
       setIsSaving(false);

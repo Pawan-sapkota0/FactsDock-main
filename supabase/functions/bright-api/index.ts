@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Deno / Supabase function template. Type checking is disabled here because the editor
 // may not resolve Deno std imports and runtime types. Deploy this file to Supabase functions.
 

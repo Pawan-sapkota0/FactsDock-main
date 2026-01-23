@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
+import logger from "@/lib/logger";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -193,9 +194,9 @@ export default function QuizBuilderDnd({
         setDndReady(true);
       } catch (e) {
         // If import fails, we silently fall back to static UI.
-        console.warn(
+        logger.warn(
           "dnd-kit dynamic import failed, falling back to static builder",
-          e
+          e,
         );
       }
     })();
@@ -212,8 +213,7 @@ export default function QuizBuilderDnd({
     // Run the enable on the next animation frame to avoid rendering inside
     // the same cycle that mounted the page.
     if (!allowDnd) return;
-    let frameId: number;
-    frameId = requestAnimationFrame(() => {
+    const frameId = requestAnimationFrame(() => {
       setCanRenderDnd(true);
     });
     return () => cancelAnimationFrame(frameId);
@@ -244,7 +244,7 @@ export default function QuizBuilderDnd({
       return { hasError: true };
     }
     componentDidCatch(err: any) {
-      console.error("QuizBuilderDnd caught error", err);
+      logger.error("QuizBuilderDnd caught error", err);
     }
     render() {
       return this.state.hasError
@@ -401,13 +401,13 @@ export default function QuizBuilderDnd({
             (q: any) =>
               q.id === active.id ||
               q._localId === active.id ||
-              String(questions.indexOf(q)) === String(active.id)
+              String(questions.indexOf(q)) === String(active.id),
           );
           const newIndex = questions.findIndex(
             (q: any) =>
               q.id === over.id ||
               q._localId === over.id ||
-              String(questions.indexOf(q)) === String(over.id)
+              String(questions.indexOf(q)) === String(over.id),
           );
           if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
             const copy = arrayMove(questions, oldIndex, newIndex);
@@ -460,7 +460,7 @@ export default function QuizBuilderDnd({
           // Render SortableContext only when safe and modules are ready
           <SortableContext
             items={questions.map(
-              (q: any, i: number) => q.id || q._localId || String(i)
+              (q: any, i: number) => q.id || q._localId || String(i),
             )}
             strategy={verticalListSortingStrategy}
           >

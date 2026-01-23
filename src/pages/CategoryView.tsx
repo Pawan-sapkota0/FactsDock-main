@@ -17,6 +17,7 @@ import {
 import LazyFactCard from "@/components/cards/LazyFactCard";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import { useToast } from "@/hooks/use-toast";
+import logger from "@/lib/logger";
 
 function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -29,7 +30,7 @@ const CategoryView: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -39,7 +40,7 @@ const CategoryView: React.FC = () => {
     null,
   );
   const [filterType, setFilterType] = useState<string>("all");
-  const cacheRef = useRef<Map<string, any[]>>(new Map());
+  const cacheRef = useRef<Map<string, unknown[]>>(new Map());
 
   // Initialize pagination at top level
   const pagination = usePagination({ itemsPerPage: 8 });
@@ -132,7 +133,7 @@ const CategoryView: React.FC = () => {
               // ignore – will call without explicit id if resolution fails
             }
           }
-          const opts: any = { fact_type_id: factTypeIdRef.current };
+          const opts = { fact_type_id: factTypeIdRef.current };
         }
       })();
     };
@@ -190,7 +191,7 @@ const CategoryView: React.FC = () => {
       // reconstruction when the initial fetch returns no items (avoids
       // misclassifying single hyphenated main-category slugs).
       let fetchCategory = cacheKey.split(":").slice(1).join(":");
-      const opts: any = { fact_type_id: factTypeIdRef.current };
+      const opts = { fact_type_id: factTypeIdRef.current };
       let res = await fetchFactsByCategory(typeKey, fetchCategory, opts);
       let items = res || [];
       if ((items || []).length === 0 && slug && slug.includes("-")) {
@@ -245,19 +246,23 @@ const CategoryView: React.FC = () => {
             try {
               res = await fetchFactsByCategory(typeKey, alt2, opts);
               items = res || [];
-            } catch (e) {}
+            } catch (e) {
+              /* ignored - fallback */
+            }
           }
         }
       }
       if (process.env.NODE_ENV !== "production") {
         try {
-          console.debug("[CategoryView] loadMore fetched", {
+          logger.debug("[CategoryView] loadMore fetched", {
             cacheKey,
             fetchCategory,
             count: items.length,
             sample: items[0],
           });
-        } catch (e) {}
+        } catch (e) {
+          /* ignored - debug only */
+        }
       }
       cacheRef.current.set(cacheKey, items);
       setCurrentCategoryKey(cacheKey);
@@ -266,7 +271,7 @@ const CategoryView: React.FC = () => {
       setHasMore(items.length > slice.length);
       setPage(nextPage === 0 ? 1 : nextPage + 1);
     } catch (e) {
-      console.error("Failed to load category facts", e);
+      logger.error("Failed to load category facts", e);
       toast({
         title: "Error",
         description: "Failed to load facts for this category",
@@ -283,9 +288,12 @@ const CategoryView: React.FC = () => {
   // subcategory and `pushState` after, so Back will provide the snapshot.
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
-      const state =
-        (e.state as any) || (window.history && (window.history.state as any));
-      const snap = state && state.wf_snapshot ? state.wf_snapshot : null;
+      const stateObj = (e.state ??
+        (window.history && window.history.state)) as Record<
+        string,
+        unknown
+      > | null;
+      const snap = stateObj?.wf_snapshot ?? null;
       if (!snap) return;
       try {
         // restore cached list if present
@@ -368,7 +376,7 @@ const CategoryView: React.FC = () => {
         return;
       }
 
-      const opts: any = { fact_type_id: factTypeIdRef.current };
+      const opts = { fact_type_id: factTypeIdRef.current };
       const res = await fetchFactsByCategory(typeKey, category, opts);
       const items = res || [];
       // After loading the subcategory facts, push a new history entry so that
@@ -388,7 +396,7 @@ const CategoryView: React.FC = () => {
       setHasMore(items.length > BATCH_SIZE);
       setPage(1);
     } catch (e) {
-      console.error("Failed to load subcategory facts", e);
+      logger.error("Failed to load subcategory facts", e);
       toast({
         title: "Error",
         description: "Failed to load subcategory facts",
@@ -400,6 +408,8 @@ const CategoryView: React.FC = () => {
   };
 
   // Prefer the title passed via navigation state so it matches the main category exact label
+  // Navigation state may contain arbitrary data from routing; allow `any` only here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const navState: any = (location && (location.state as any)) || {};
   const mainTitle = navState.title || (slug ? slugToTitle(slug) : "Category");
   const availableSubs: string[] = navState.subs || [];
@@ -530,19 +540,30 @@ const CategoryView: React.FC = () => {
                 return (
                   <>
                     <div className="space-y-4">
-                      {paginatedFacts.map((f, i) => (
-                        <div
-                          key={f?.id || i}
-                          className="p-0"
-                          onMouseEnter={() =>
-                            markFactViewed(f?.id || f?.fact_id)
-                          }
-                        >
-                          <LazyFactCard
-                            fact={f?.fact_text || f?.fact || f?.title || ""}
-                          />
-                        </div>
-                      ))}
+                      {paginatedFacts.map((f: unknown, i: number) => {
+                        const row = f as {
+                          id?: string | number;
+                          fact_id?: string | number;
+                          fact_text?: unknown;
+                          fact?: unknown;
+                          title?: unknown;
+                        };
+                        const key = row?.id ?? `fact-${i}`;
+                        const displayText = String(
+                          row?.fact_text ?? row?.fact ?? row?.title ?? "",
+                        );
+                        return (
+                          <div
+                            key={key}
+                            className="p-0"
+                            onMouseEnter={() =>
+                              markFactViewed(row?.id ?? row?.fact_id)
+                            }
+                          >
+                            <LazyFactCard fact={displayText} />
+                          </div>
+                        );
+                      })}
                     </div>
                     <PaginationControls
                       currentPage={pagination.currentPage}

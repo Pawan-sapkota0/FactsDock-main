@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { triggerNewsFetch } from "@/lib/api";
+import logger from "@/lib/logger";
 
 const fetchAdminStats = async () => {
   if (!SUPABASE_AVAILABLE)
@@ -62,7 +63,7 @@ const fetchAdminStats = async () => {
       recent_quizzes: recentQuizzesRes.data || [],
     };
   } catch (e) {
-    console.error("Failed to fetch admin stats", e);
+    logger.error("Failed to fetch admin stats", e);
     return {
       total_approved_facts: 0,
       total_quizzes: 0,
@@ -275,24 +276,26 @@ const Dashboard: React.FC = () => {
                   No facts yet
                 </div>
               ) : (
-                stats.recent_facts.map((fact: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <p className="text-sm font-medium text-foreground line-clamp-2">
-                      {fact.fact_text}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {fact.country}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(fact.created_at).toLocaleDateString()}
-                      </span>
+                stats.recent_facts.map(
+                  (fact: Record<string, unknown>, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <p className="text-sm font-medium text-foreground line-clamp-2">
+                        {fact.fact_text}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          {fact.country}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(fact.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ),
+                )
               )}
             </div>
             <Link to="/admin/facts">
@@ -323,24 +326,26 @@ const Dashboard: React.FC = () => {
                   No quizzes yet
                 </div>
               ) : (
-                stats.recent_quizzes.map((quiz: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <p className="text-sm font-medium text-foreground line-clamp-2">
-                      {quiz.title}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        Quiz ID: {quiz.id.substring(0, 8)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(quiz.created_at).toLocaleDateString()}
-                      </span>
+                stats.recent_quizzes.map(
+                  (quiz: Record<string, unknown>, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <p className="text-sm font-medium text-foreground line-clamp-2">
+                        {quiz.title}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Quiz ID: {quiz.id.substring(0, 8)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(quiz.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ),
+                )
               )}
             </div>
             <Link to="/admin/quizzes">

@@ -15,6 +15,7 @@ type Props = {
   topic?: string;
   type?: "fun" | "world";
 };
+import { log, debug, warn, error } from "@/lib/logger";
 
 type Q = {
   question: string;
@@ -30,47 +31,44 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [lastPlayedQuestions, setLastPlayedQuestions] = useState<Q[] | null>(
-    null
+    null,
   );
 
   const fetchQuestions = async (count = 10) => {
     setLoading(true);
     try {
-      let res: any;
+      let res: unknown;
       if (topic) {
-        res = await generateQuizForTopic(
-          topic,
-          count as any,
-          { force: true } as any
-        );
+        res = await generateQuizForTopic(topic, count, { force: true });
       } else {
         // random quizzes should be freshly generated
         // import generateRandomQuiz dynamically to avoid cycle
-        const mod = await import("@/lib/api");
-        res = await mod.generateRandomQuiz(count as any);
+        const mod = (await import("@/lib/api")) as {
+          generateRandomQuiz: (n: number) => Promise<unknown>;
+        };
+        res = await mod.generateRandomQuiz(count);
       }
       // normalize
-      const qs = (res || []).map(
-        (q: any) =>
-          ({
-            question: q.question || q.title || "Question",
-            options: q.options || q.choices || (q.answers ? q.answers : []),
-            answer:
-              q.answer ||
-              q.correctAnswer ||
-              q.answerText ||
-              q.correct_answer ||
-              "",
-          } as Q)
-      );
+      const raw = Array.isArray(res) ? (res as unknown[]) : res ? [res] : [];
+      const qs = raw.map((q: unknown) => {
+        const o = (q || {}) as Record<string, unknown>;
+        const question = String(o.question ?? o.title ?? "Question");
+        const optsRaw = o.options ?? o.choices ?? o.answers ?? [];
+        const options = Array.isArray(optsRaw)
+          ? optsRaw.map((x) => String(x))
+          : [];
+        const answer = String(
+          o.answer ?? o.correctAnswer ?? o.answerText ?? o.correct_answer ?? "",
+        );
+        return { question, options, answer } as Q;
+      });
       setQuestions(qs);
-      setIndex(0);
       setSelected(null);
       setScore(0);
       setFinished(false);
       setLastPlayedQuestions((prev) => prev ?? qs);
     } catch (e) {
-      console.error("Quiz fetch failed", e);
+      error("Quiz fetch failed", e);
     } finally {
       setLoading(false);
     }
@@ -112,30 +110,36 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
         do {
           setLoading(true);
           // eslint-disable-next-line no-await-in-loop
-          let res: any;
+          let res: unknown;
           if (topic) {
-            res = await generateQuizForTopic(
-              topic,
-              12 as any,
-              { force: true } as any
-            );
+            res = await generateQuizForTopic(topic, 12, { force: true });
           } else {
-            const mod = await import("@/lib/api");
-            res = await mod.generateRandomQuiz(12 as any);
+            const mod = (await import("@/lib/api")) as {
+              generateRandomQuiz: (n: number) => Promise<unknown>;
+            };
+            res = await mod.generateRandomQuiz(12);
           }
-          qs = (res || []).map(
-            (q: any) =>
-              ({
-                question: q.question || q.title || "Question",
-                options: q.options || q.choices || (q.answers ? q.answers : []),
-                answer:
-                  q.answer ||
-                  q.correctAnswer ||
-                  q.answerText ||
-                  q.correct_answer ||
-                  "",
-              } as Q)
-          );
+          const raw2 = Array.isArray(res)
+            ? (res as unknown[])
+            : res
+              ? [res]
+              : [];
+          qs = raw2.map((q: unknown) => {
+            const o = (q || {}) as Record<string, unknown>;
+            const question = String(o.question ?? o.title ?? "Question");
+            const optsRaw = o.options ?? o.choices ?? o.answers ?? [];
+            const options = Array.isArray(optsRaw)
+              ? optsRaw.map((x) => String(x))
+              : [];
+            const answer = String(
+              o.answer ??
+                o.correctAnswer ??
+                o.answerText ??
+                o.correct_answer ??
+                "",
+            );
+            return { question, options, answer } as Q;
+          });
           if (!lastPlayedQuestions) break;
           if (!areOverlayQuestionSetsEqual(qs, lastPlayedQuestions)) break;
           attempt++;
@@ -143,12 +147,11 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
 
         setQuestions(qs);
         setIndex(0);
-        setSelected(null);
         setScore(0);
         setFinished(false);
         setLastPlayedQuestions(qs);
       } catch (e) {
-        console.error("Failed to fetch new quiz set", e);
+        error("Failed to fetch new quiz set", e);
       } finally {
         setLoading(false);
       }
@@ -166,11 +169,11 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
 
   const areOverlayQuestionSetsEqual = (
     a: Q[] | null | undefined,
-    b: Q[] | null | undefined
+    b: Q[] | null | undefined,
   ) => {
     if (!a || !b) return false;
     if (a.length !== b.length) return false;
-    const normalize = (s: any) =>
+    const normalize = (s: unknown) =>
       String(s ?? "")
         .trim()
         .toLowerCase();
@@ -237,10 +240,10 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
                 {score === questions.length
                   ? "🎉 Excellent! Perfect Score! 🎉"
                   : score >= Math.ceil(questions.length * 0.8)
-                  ? "👏 Great job! Keep it up!"
-                  : score >= Math.ceil(questions.length * 0.6)
-                  ? "👍 Good effort! Practice more to improve."
-                  : "💪 Nice try — practice more to improve."}
+                    ? "👏 Great job! Keep it up!"
+                    : score >= Math.ceil(questions.length * 0.6)
+                      ? "👍 Good effort! Practice more to improve."
+                      : "💪 Nice try — practice more to improve."}
               </div>
               <div className="flex gap-2 justify-center">
                 <Button onClick={replayLastQuiz}>Replay Last Quiz</Button>

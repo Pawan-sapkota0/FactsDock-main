@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { log, debug, warn, error } from "@/lib/logger";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +37,7 @@ const Contact = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!resp.ok) {
@@ -52,7 +53,7 @@ const Contact = () => {
       });
       formElement.reset(); // Reset form
     } catch (error) {
-      console.error("🚨 Email sending failed.", error);
+      error("🚨 Email sending failed.", error);
       const err = "Failed to send email, please try again.";
       setErrorMsg(err);
       toast({

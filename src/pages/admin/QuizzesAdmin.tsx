@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import logger from "@/lib/logger";
 
 const PAGE_SIZE = 10;
 
@@ -55,7 +55,8 @@ const QuizzesAdmin: React.FC = () => {
     queryKey: ["admin", "quizzes", { page, query }],
     queryFn: () => fetchQuizzes({ pageParam: page }),
   });
-  const quizzes = (quizzesQ?.data as any) || [];
+  const quizzes =
+    (quizzesQ?.data as unknown as Record<string, unknown>[]) || [];
   const isLoading = !!quizzesQ?.isLoading;
 
   const deleteMut = useMutation({
@@ -65,9 +66,16 @@ const QuizzesAdmin: React.FC = () => {
       qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
       toast({ title: "Deleted", description: "Quiz deleted." });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const e = err as Record<string, unknown> | undefined;
+      const nestedErr = (e && (e.error as unknown)) as
+        | Record<string, unknown>
+        | undefined;
       const message =
-        err?.message || err?.error?.message || "Failed to delete quiz.";
+        (e &&
+          ((e.message as string) ||
+            (nestedErr && (nestedErr.message as string)))) ||
+        String(err || "Failed to delete quiz.");
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
@@ -80,9 +88,16 @@ const QuizzesAdmin: React.FC = () => {
       qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
       toast({ title: "Approved", description: "Quiz approved." });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const e = err as Record<string, unknown> | undefined;
+      const nestedErr2 = (e && (e.error as unknown)) as
+        | Record<string, unknown>
+        | undefined;
       const message =
-        err?.message || err?.error?.message || "Failed to approve quiz.";
+        (e &&
+          ((e.message as string) ||
+            (nestedErr2 && (nestedErr2.message as string)))) ||
+        String(err || "Failed to approve quiz.");
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
@@ -91,14 +106,15 @@ const QuizzesAdmin: React.FC = () => {
     setActionLoading(id);
     try {
       // read metadata for targeted cache invalidation (if useful)
-      let meta: any = null;
+      let meta: Record<string, unknown> | null = null;
       try {
         const m = await supabase
           .from("quizzes")
           .select("fact_type_id,country,category_id,is_random")
           .eq("id", id)
           .maybeSingle();
-        meta = m?.data || null;
+        // SDK boundary: m.data comes from Supabase; treat as unknown then narrow
+        meta = (m?.data as unknown as Record<string, unknown>) || null;
       } catch (e) {
         // ignore
       }
@@ -106,8 +122,9 @@ const QuizzesAdmin: React.FC = () => {
       // optimistic UI update
       setStatusMap((s) => ({ ...s, [id]: "approved" }));
       try {
-        const res: any = await approveMut.mutateAsync(id);
-        if (res && res.error) throw res.error;
+        const res = (await approveMut.mutateAsync(id)) as unknown;
+        const resRec = res as Record<string, unknown> | undefined;
+        if (resRec && (resRec.error as unknown)) throw resRec.error;
       } catch (mutErr) {
         // rollback optimistic update
         setStatusMap((s) => {
@@ -130,12 +147,13 @@ const QuizzesAdmin: React.FC = () => {
           }
         }
       } catch (e) {
-        console.warn("Failed to clear quiz caches", e);
+        logger.warn("Failed to clear quiz caches", e);
       }
 
       toast({ title: "Approved", description: "Quiz approved." });
-    } catch (e: any) {
-      const message = e?.message || String(e);
+    } catch (e: unknown) {
+      const errRec = e as Record<string, unknown> | undefined;
+      const message = (errRec && (errRec.message as string)) || String(e);
       setLastError(message);
       toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
@@ -162,8 +180,9 @@ const QuizzesAdmin: React.FC = () => {
           <Input
             placeholder="Search by country or id..."
             value={query}
-            onChange={(e: any) => {
-              setQuery(e.target.value);
+            onChange={(e) => {
+              const ev = e as React.ChangeEvent<HTMLInputElement>;
+              setQuery(ev.target.value);
               setPage(1);
             }}
           />
@@ -177,80 +196,87 @@ const QuizzesAdmin: React.FC = () => {
         <div>Loading...</div>
       ) : (
         <div className="grid gap-4">
-          {quizzes.map((q: any) => (
-            <Card key={q.id} className="p-4 flex justify-between items-center">
-              <div>
-                <div className="font-semibold">{q.id}</div>
-                <div className="text-sm text-muted-foreground">
-                  {q.country || "—"} • {q.difficulty || "—"}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/admin/quizzes/${q.id}/edit`)}
-                  disabled={!!actionLoading}
-                >
-                  {actionLoading === q.id ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Edit"
-                  )}
-                </Button>
-                {q.status === "approved" ? (
-                  <div className="px-3 py-1 rounded bg-green-100 text-green-800 text-sm flex items-center">
-                    Approved
+          {quizzes.map((q) => {
+            const row = q as Record<string, unknown>;
+            const id = String(row.id);
+            const country = String(row.country || "");
+            const difficulty = String(row.difficulty || "");
+            const status = String(row.status || "");
+            return (
+              <Card key={id} className="p-4 flex justify-between items-center">
+                <div>
+                  <div className="font-semibold">{id}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {country || "—"} • {difficulty || "—"}
                   </div>
-                ) : (
+                </div>
+                <div className="flex gap-2">
                   <Button
-                    variant="secondary"
-                    onClick={() => approve(q.id)}
+                    variant="outline"
+                    onClick={() => navigate(`/admin/quizzes/${q.id}/edit`)}
                     disabled={!!actionLoading}
                   >
                     {actionLoading === q.id ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      "Approve"
+                      "Edit"
                     )}
                   </Button>
-                )}
-                <AlertDialog
-                  open={deletingId === q.id}
-                  onOpenChange={(open) => {
-                    if (!open) setDeletingId(null);
-                  }}
-                >
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDeletingId(q.id)}
-                    disabled={!!actionLoading}
+                  {status === "approved" ? (
+                    <div className="px-3 py-1 rounded bg-green-100 text-green-800 text-sm flex items-center">
+                      Approved
+                    </div>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => approve(id)}
+                      disabled={!!actionLoading}
+                    >
+                      {actionLoading === q.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        "Approve"
+                      )}
+                    </Button>
+                  )}
+                  <AlertDialog
+                    open={deletingId === q.id}
+                    onOpenChange={(open) => {
+                      if (!open) setDeletingId(null);
+                    }}
                   >
-                    {actionLoading === q.id ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      "Delete"
-                    )}
-                  </Button>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete quiz?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this quiz?
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setDeletingId(null)}>
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction onClick={() => remove(q.id)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </Card>
-          ))}
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeletingId(String(q.id))}
+                      disabled={!!actionLoading}
+                    >
+                      {actionLoading === q.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        "Delete"
+                      )}
+                    </Button>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete quiz?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this quiz?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDeletingId(null)}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => remove(String(q.id))}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </Card>
+            );
+          })}
 
           <div className="flex items-center justify-between">
             <div>

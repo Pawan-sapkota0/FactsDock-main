@@ -16,6 +16,7 @@ import {
   getEmptyStateMessage,
   markFactViewed,
 } from "@/lib/fact-filtering";
+import { log, debug, warn, error } from "@/lib/logger";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import LazyFactCard from "@/components/cards/LazyFactCard";
 
@@ -34,7 +35,7 @@ const CountryCategoryPage: React.FC = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -45,7 +46,7 @@ const CountryCategoryPage: React.FC = () => {
   );
   const [filterType, setFilterType] = useState<string>("all");
 
-  const cacheRef = useRef<Map<string, any[]>>(new Map());
+  const cacheRef = useRef<Map<string, unknown[]>>(new Map());
   const factTypeIdRef = useRef<string | null>(null);
 
   // Listen for admin cache invalidation events and reload facts for this country/category
@@ -72,7 +73,9 @@ const CountryCategoryPage: React.FC = () => {
           setFacts([]);
           setPage(0);
           setHasMore(true);
-        } catch (e) {}
+        } catch (e) {
+          /* ignored - event handler */
+        }
       })();
     };
     window.addEventListener("wf:facts-updated", handler as EventListener);
@@ -178,7 +181,7 @@ const CountryCategoryPage: React.FC = () => {
       }
 
       // Use the country-specific helper so we request world-facts for this country+category
-      const opts: any = { force: true };
+      const opts = { force: true };
       if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
       // First try with the plain title (slug->title). If that returns no items
       // and the category slug contains a dash, attempt a "Main — Sub" reconstruction
@@ -212,14 +215,14 @@ const CountryCategoryPage: React.FC = () => {
         }
       }
 
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          console.debug(
-            "[CountryCategoryPage] loadMore fetched items count",
-            items.length,
-            { countryName, title, cacheKey, sample: items[0] },
-          );
-        } catch (e) {}
+      try {
+        debug(
+          "[CountryCategoryPage] loadMore fetched items count",
+          items.length,
+          { countryName, title, cacheKey, sample: items[0] },
+        );
+      } catch (e) {
+        /* ignored - debug only */
       }
       cacheRef.current.set(cacheKey, items);
       setCurrentCategoryKey(cacheKey);
@@ -228,7 +231,7 @@ const CountryCategoryPage: React.FC = () => {
       setHasMore(items.length > slice.length);
       setPage(nextPage === 0 ? 1 : nextPage + 1);
     } catch (e) {
-      console.error("Failed to load category facts for country", e);
+      error("Failed to load category facts for country", e);
       toast({
         title: "Error",
         description: "Failed to load facts for this category",
@@ -283,21 +286,21 @@ const CountryCategoryPage: React.FC = () => {
       }
 
       // Fetch subcategory facts for this country
-      const opts: any = { force: true };
+      const opts = { force: true };
       if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
       const res = await fetchCountryFacts(countryName, {
         ...opts,
         category: `${title} — ${sub}`,
       });
       const items = res || [];
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          console.debug(
-            "[CountryCategoryPage] handleSubSelect fetched items count",
-            items.length,
-            { countryName, title, sub, cacheKey },
-          );
-        } catch (e) {}
+      try {
+        debug(
+          "[CountryCategoryPage] handleSubSelect fetched items count",
+          items.length,
+          { countryName, title, sub, cacheKey },
+        );
+      } catch (e) {
+        /* ignored - debug only */
       }
       // After loading the subcategory facts, push a new history entry so that
       // pressing Back will trigger a popstate with the snapshot we attached
@@ -319,7 +322,7 @@ const CountryCategoryPage: React.FC = () => {
       setHasMore(items.length > BATCH_SIZE);
       setPage(1);
     } catch (e) {
-      console.error("Failed to load subcategory facts", e);
+      error("Failed to load subcategory facts", e);
       toast({
         title: "Error",
         description: "Failed to load subcategory facts",
@@ -335,6 +338,8 @@ const CountryCategoryPage: React.FC = () => {
     void (async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
+        // Supabase response: allow `any` at SDK boundary
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r: any = await supabase
           .from("fact_types")
           .select("id")
@@ -352,9 +357,12 @@ const CountryCategoryPage: React.FC = () => {
   // entering a subcategory and `pushState` after, so Back will provide the snapshot.
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
-      const state =
-        (e.state as any) || (window.history && (window.history.state as any));
-      const snap = state && state.wf_snapshot ? state.wf_snapshot : null;
+      const stateObj = (e.state ??
+        (window.history && window.history.state)) as Record<
+        string,
+        unknown
+      > | null;
+      const snap = stateObj?.wf_snapshot ?? null;
       if (!snap) return;
       // Ensure the snapshot belongs to this page (country+category)
       if (snap.pageKey !== pageKey) return;
@@ -508,26 +516,27 @@ const CountryCategoryPage: React.FC = () => {
               // (currentCategoryKey includes a sub token), show only subcategory facts.
               const displayed = showingSub
                 ? (facts || []).filter(
-                    (f) => !!(f && (f as any).subcategory_id),
+                    (f) =>
+                      !!(f && (f as Record<string, unknown>)?.subcategory_id),
                   )
                 : facts || [];
 
               // Apply selected filter
               const filtered = filterFacts(displayed, filterType);
 
-              if (process.env.NODE_ENV !== "production") {
-                try {
-                  console.debug(
-                    "[CountryCategoryPage] facts array",
-                    facts,
-                    "displayed",
-                    displayed,
-                    "filtered",
-                    filtered,
-                    "filterType",
-                    filterType,
-                  );
-                } catch (e) {}
+              try {
+                debug(
+                  "[CountryCategoryPage] facts array",
+                  facts,
+                  "displayed",
+                  displayed,
+                  "filtered",
+                  filtered,
+                  "filterType",
+                  filterType,
+                );
+              } catch (e) {
+                /* ignored - history push best-effort */
               }
 
               const paginatedFacts = pagination.paginate(filtered);

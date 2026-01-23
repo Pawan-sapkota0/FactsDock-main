@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import logger from "@/lib/logger";
 import {
   Dialog,
   DialogContent,
@@ -86,7 +88,7 @@ const FactsEdit: React.FC = () => {
   });
   const categories = useMemo(
     () => (catsQ?.data as Option[]) || [],
-    [catsQ?.data]
+    [catsQ?.data],
   );
 
   const _factQ = useQuery({
@@ -257,17 +259,17 @@ const FactsEdit: React.FC = () => {
       // try exact, case-insensitive, then slug match
       let found = categories.find(
         (c: Option) =>
-          c.id != null && String(c.id) === String(factData.category_id)
+          c.id != null && String(c.id) === String(factData.category_id),
       );
       if (!found) found = categories.find((c: Option) => c.name === name);
       if (!found)
         found = categories.find(
-          (c: Option) => (c.name || "").toLowerCase() === name.toLowerCase()
+          (c: Option) => (c.name || "").toLowerCase() === name.toLowerCase(),
         );
       if (!found) {
         const target = slugify(name);
         found = categories.find(
-          (c: Option) => slugify(c.name || "") === target
+          (c: Option) => slugify(c.name || "") === target,
         );
       }
       if (found) setCategory(String(found.id));
@@ -292,17 +294,17 @@ const FactsEdit: React.FC = () => {
       // try exact, case-insensitive, slug
       let found = subcategories.find(
         (s: Option) =>
-          s.id != null && String(s.id) === String(factData.subcategory_id)
+          s.id != null && String(s.id) === String(factData.subcategory_id),
       );
       if (!found) found = subcategories.find((s: Option) => s.name === name);
       if (!found)
         found = subcategories.find(
-          (s: Option) => (s.name || "").toLowerCase() === name.toLowerCase()
+          (s: Option) => (s.name || "").toLowerCase() === name.toLowerCase(),
         );
       if (!found) {
         const target = slugify(name);
         found = subcategories.find(
-          (s: Option) => slugify(s.name || "") === target
+          (s: Option) => slugify(s.name || "") === target,
         );
       }
       if (found) setSubcategory(String(found.id));
@@ -352,7 +354,7 @@ const FactsEdit: React.FC = () => {
         count,
       };
 
-      console.log("generatePreview -> POST", url, body);
+      logger.debug("generatePreview -> POST", url, body);
       try {
         const res = await fetch(url, {
           method: "POST",
@@ -366,7 +368,7 @@ const FactsEdit: React.FC = () => {
         }
 
         const json = await res.json().catch(() => null);
-        console.log("generatePreview response", json);
+        logger.debug("generatePreview response", json);
         const items = (json && (json.data || json.items || json)) || [];
         const arr = Array.isArray(items) ? items : [items];
         setPreview(arr);
@@ -385,9 +387,9 @@ const FactsEdit: React.FC = () => {
         }
       } catch (outerErr) {
         // network/CORS failure or other issue calling the external endpoint. Try supabase.functions.invoke
-        console.warn(
+        logger.warn(
           "Primary fetch failed, attempting supabase.functions.invoke fallback",
-          outerErr
+          outerErr,
         );
         try {
           const inv = await supabase.functions.invoke("generate-facts", {
@@ -419,12 +421,12 @@ const FactsEdit: React.FC = () => {
           }
           return;
         } catch (invErr) {
-          console.error("Fallback invoke failed", invErr);
+          logger.error("Fallback invoke failed", invErr);
           throw outerErr;
         }
       }
     } catch (e: unknown) {
-      console.error("generatePreview error", e);
+      logger.error("generatePreview error", e);
       const message =
         e instanceof Error
           ? e.message
@@ -471,21 +473,21 @@ const FactsEdit: React.FC = () => {
         persist: true,
         created_by: adminUserId || null,
       };
-      console.log("generateAndPersist -> POST", url, body);
+      logger.debug("generateAndPersist -> POST", url, body);
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const json = await res.json();
-      console.log("generateAndPersist response", json);
+      logger.debug("generateAndPersist response", json);
       if (json.error) {
         toast({
           title: "Error",
           description: json.error,
           variant: "destructive",
         });
-        console.error("generateAndPersist error", json);
+        logger.error("generateAndPersist error", json);
       } else {
         const items = json.data || [];
         setPreview(items);
@@ -499,7 +501,7 @@ const FactsEdit: React.FC = () => {
         qc.invalidateQueries({ queryKey: ["admin", "facts"] });
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       toast({
         title: "Error",
         description: "Failed to generate and persist facts.",
@@ -652,8 +654,8 @@ const FactsEdit: React.FC = () => {
                 line: s.line,
                 index: s.index,
                 error: s.error,
-              })
-            )
+              }),
+            ),
           );
           toast({
             title: "Partial success",
@@ -688,7 +690,7 @@ const FactsEdit: React.FC = () => {
       });
       navigate("/admin/facts");
     } catch (e: unknown) {
-      console.error(e);
+      logger.error(e);
       let message = "Failed to save fact.";
       if (e instanceof Error) message = e.message;
       else if (typeof e === "object" && e !== null) {
@@ -815,8 +817,7 @@ const FactsEdit: React.FC = () => {
             setCountry(e.target.value)
           }
         />
-        <textarea
-          className="p-2 border rounded"
+        <Textarea
           placeholder="Fact text"
           value={text}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -892,13 +893,13 @@ const FactsEdit: React.FC = () => {
                         p.title ||
                         p.description ||
                         p.text ||
-                        JSON.stringify(p)
+                        JSON.stringify(p),
                     );
                     setText(
                       lines
                         .map((l: unknown) => String(l).trim())
                         .filter(Boolean)
-                        .join("\n")
+                        .join("\n"),
                     );
                     setOpenCountDialog(false);
                     toast({

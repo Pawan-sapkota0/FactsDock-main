@@ -42,9 +42,7 @@ export async function generateQuizWithGemini(
   }
 
   // Build the prompt based on selected fields
-  let contextParts = [
-    `Fact Type: ${config.factTypeName}`,
-  ];
+  const contextParts: string[] = [`Fact Type: ${config.factTypeName}`];
 
   if (config.categoryName) {
     contextParts.push(`Category: ${config.categoryName}`);
@@ -135,20 +133,23 @@ Generate the quiz now:`;
     }
 
     // Validate and transform questions
-    const validQuestions: GeneratedQuiz[] = questions
-      .filter((q: any) => {
+    const validQuestions: GeneratedQuiz[] = (questions as unknown[])
+      .filter((q): q is Record<string, unknown> => {
+        if (!q || typeof q !== 'object') return false;
+        const qObj = q as Record<string, unknown>;
+        const opts = qObj.options;
         return (
-          q.question &&
-          Array.isArray(q.options) &&
-          q.options.length === 4 &&
-          q.correct_answer &&
-          q.options.includes(q.correct_answer)
+          typeof qObj.question === 'string' &&
+          Array.isArray(opts) &&
+          opts.length === 4 &&
+          typeof qObj.correct_answer === 'string' &&
+          opts.includes(qObj.correct_answer)
         );
       })
-      .map((q: any) => ({
-        question: q.question,
-        options: q.options,
-        correct_answer: q.correct_answer,
+      .map((q) => ({
+        question: String(q.question),
+        options: (q.options as unknown[]).map((o) => String(o)),
+        correct_answer: String(q.correct_answer),
         fact_type_id: config.factTypeId,
         category_id: config.categoryId,
         country: config.country,
@@ -160,8 +161,8 @@ Generate the quiz now:`;
     }
 
     return validQuestions;
-  } catch (error: any) {
-    console.error('Gemini quiz generation error:', error);
+  } catch (error: unknown) {
+    try { const { default: log } = await import('@/lib/logger'); log.error('Gemini quiz generation error:', error); } catch (_e) { /* ignored - logging best-effort */ }
     throw error;
   }
 }

@@ -1,4 +1,4 @@
-/// <reference path="../deno.d.ts" />
+import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -49,10 +49,12 @@ serve(async (req) => {
 
     const rows = await res.json();
     // rows look like [{ country: 'Name', view_count: '5' }, ...]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB/HTTP response row shape
     const parsed = (rows || []).map((r: any) => ({ name: r.country, view_count: Number(r.view_count) || 0 }));
 
     // If no rows or fewer than 4 or all zeros -> fallback
     const total = parsed.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed array element shape
     const allZero = parsed.every((p: any) => p.view_count === 0);
     if (total < 4 || parsed.length === 0 || allZero) {
       return new Response(JSON.stringify({ data: FALLBACK }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

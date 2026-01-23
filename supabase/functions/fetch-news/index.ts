@@ -1,7 +1,7 @@
-/// <reference path="../deno.d.ts" />
+import "../deno.d.ts";
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-ignore - Supabase module types
+// @ts-expect-error - Supabase module types not available in Deno
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
@@ -52,6 +52,7 @@ async function fetchAndStoreNews(country: string): Promise<boolean> {
     }
 
     // Transform gnews.io articles for database storage
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
     const newsRecords: NewsArticle[] = articles.map((article: any) => ({
       country,
       title: article.title || "Untitled",
@@ -173,6 +174,7 @@ async function getTopCountries(): Promise<string[]> {
       return fallbackCountries;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB row shape returned by Supabase
     const result = (data || []).map((c: any) => c.name).filter(Boolean);
     console.log(`Fetched ${result.length} countries from database`);
     return result.length > 0 ? result : fallbackCountries;

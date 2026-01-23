@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { fetchCountryByName, getLocalCacheMeta } from "@/lib/api";
+import logger from "@/lib/logger";
 import { fetchFactsByCategory } from "@/lib/facts";
 import {
   Dialog,
@@ -38,7 +39,10 @@ const Country = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [countryData, setCountryData] = useState<any>(null);
+  const [countryData, setCountryData] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // removed isCached flag — header no longer shows cached badge
 
@@ -110,7 +114,7 @@ const Country = () => {
             : country?.lang || country?.language || null;
 
           // helper to display a safe value or 'N/A'
-          const safeValue = (v: any) =>
+          const safeValue = (v: unknown) =>
             v === null ||
             v === undefined ||
             (typeof v === "string" && v.trim() === "")
@@ -184,7 +188,7 @@ const Country = () => {
         }
       } catch (e) {
         // background refresh failures are silent
-        // console.debug('background refresh failed', e);
+        // logger.debug('background refresh failed', e);
       }
     })();
 
@@ -221,20 +225,24 @@ const Country = () => {
       try {
         results = await fetchCountryByName(candidate, { force: true });
       } catch (e) {
-        console.warn("Forced fetch failed, trying cached fetch", e);
+        logger.warn("Forced fetch failed, trying cached fetch", e);
         results = await fetchCountryByName(candidate);
       }
       let country =
         Array.isArray(results) && results.length > 0 ? results[0] : null;
 
       // heuristic: if population is unrealistically small or area/region missing, fallback to direct RestCountries
-      const looksSuspicious = (c: any) => {
-        const pop = c?.population || c?.populationTotal || c?.pop_est || 0;
-        const area = c?.area || c?.area_km2 || c?.areaInSqKm || null;
-        const region = c?.region || c?.continent || c?.subregion || null;
-        return (
-          (typeof pop === "number" && pop > 0 && pop < 1000) || !area || !region
+      const looksSuspicious = (
+        c: Record<string, unknown> | null | undefined,
+      ) => {
+        const obj = c ?? null;
+        const pop = Number(
+          (obj && (obj.population ?? obj.populationTotal ?? obj.pop_est)) ?? 0,
         );
+        const areaVal = obj && (obj.area ?? obj.area_km2 ?? obj.areaInSqKm);
+        const area = areaVal != null ? Number(areaVal) : null;
+        const region = obj && (obj.region ?? obj.continent ?? obj.subregion);
+        return (pop > 0 && pop < 1000) || !area || !region;
       };
 
       if (country && looksSuspicious(country)) {
@@ -259,16 +267,16 @@ const Country = () => {
                   }),
                 );
               } catch (e) {
-                // ignore
+                /* ignored - storage best-effort */
               }
             }
           }
         } catch (e) {
-          // ignore fallback failures
+          /* ignored - fallback failures */
         }
       }
       // debug log the raw country object so we can inspect fields in the console
-      console.debug(
+      logger.debug(
         "fetchCountryData results count:",
         Array.isArray(results) ? results.length : 0,
         "country:",
@@ -318,12 +326,12 @@ const Country = () => {
         ? Object.values(country.languages).join(", ")
         : country?.lang || country?.language || null;
 
-      const safeValue = (v: any) =>
+      const safeValue = (v: unknown) =>
         v === null ||
         v === undefined ||
         (typeof v === "string" && v.trim() === "")
           ? "N/A"
-          : v;
+          : String(v);
       const continentValRaw =
         meta?.continent ||
         country?.continent ||
@@ -375,7 +383,7 @@ const Country = () => {
         capitalTimezone: null,
       });
     } catch (error) {
-      console.error("Error fetching country:", error);
+      logger.error("Error fetching country:", error);
       toast({
         title: "Error",
         description: "Failed to load country data.",
@@ -398,13 +406,17 @@ const Country = () => {
       let country =
         Array.isArray(results) && results.length > 0 ? results[0] : null;
       // background fallback same heuristic
-      const looksSuspiciousBg = (c: any) => {
-        const pop = c?.population || c?.populationTotal || c?.pop_est || 0;
-        const area = c?.area || c?.area_km2 || c?.areaInSqKm || null;
-        const region = c?.region || c?.continent || c?.subregion || null;
-        return (
-          (typeof pop === "number" && pop > 0 && pop < 1000) || !area || !region
+      const looksSuspiciousBg = (
+        c: Record<string, unknown> | null | undefined,
+      ) => {
+        const obj = c ?? null;
+        const pop = Number(
+          (obj && (obj.population ?? obj.populationTotal ?? obj.pop_est)) ?? 0,
         );
+        const areaVal = obj && (obj.area ?? obj.area_km2 ?? obj.areaInSqKm);
+        const area = areaVal != null ? Number(areaVal) : null;
+        const region = obj && (obj.region ?? obj.continent ?? obj.subregion);
+        return (pop > 0 && pop < 1000) || !area || !region;
       };
       if (country && looksSuspiciousBg(country)) {
         try {
@@ -425,12 +437,16 @@ const Country = () => {
                     value: data,
                   }),
                 );
-              } catch (e) {}
+              } catch (e) {
+                /* ignored - storage best-effort */
+              }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          /* ignored - fallback */
+        }
       }
-      console.debug(
+      logger.debug(
         "handleRefresh results count:",
         Array.isArray(results) ? results.length : 0,
         "country:",
@@ -476,12 +492,12 @@ const Country = () => {
       const languagesVal = country?.languages
         ? Object.values(country.languages).join(", ")
         : country?.lang || country?.language || null;
-      const safeValue = (v: any) =>
+      const safeValue = (v: unknown) =>
         v === null ||
         v === undefined ||
         (typeof v === "string" && v.trim() === "")
           ? "N/A"
-          : v;
+          : String(v);
       const continentValRaw =
         meta?.continent ||
         country?.continent ||
@@ -520,7 +536,7 @@ const Country = () => {
         capitalTimezone: null,
       });
     } catch (error) {
-      console.error("Error refreshing country data:", error);
+      logger.error("Error refreshing country data:", error);
       toast({
         title: "Error",
         description: "Failed to refresh country data",
@@ -544,7 +560,7 @@ const Country = () => {
   ];
 
   const [factsOpen, setFactsOpen] = useState(false);
-  const [factsList, setFactsList] = useState<any[]>([]);
+  const [factsList, setFactsList] = useState<unknown[]>([]);
   const [factsLoading, setFactsLoading] = useState(false);
   const location = useLocation();
 
@@ -552,8 +568,10 @@ const Country = () => {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
       try {
-        console.debug("[Country] factsList changed", factsList);
-      } catch (e) {}
+        logger.debug("[Country] factsList changed", factsList);
+      } catch (e) {
+        /* ignored - debug only */
+      }
     }
   }, [factsList]);
 
@@ -566,12 +584,12 @@ const Country = () => {
       try {
         const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
         // Log presence (do not print the key itself)
-        console.debug("[Weather] fetch start", {
+        logger.debug("[Weather] fetch start", {
           capital: countryData.capital,
           hasApiKey: !!apiKey,
         });
         if (!apiKey) {
-          console.debug(
+          logger.debug(
             "[Weather] no API key available, skipping weather fetch",
           );
           return;
@@ -582,11 +600,11 @@ const Country = () => {
           )}`,
         );
         if (!res.ok) {
-          console.debug("[Weather] fetch failed", { status: res.status });
+          logger.debug("[Weather] fetch failed", { status: res.status });
           return;
         }
         const data = await res.json();
-        console.debug(
+        logger.debug(
           "[Weather] fetch response",
           data?.current
             ? {
@@ -608,7 +626,7 @@ const Country = () => {
             data?.location?.tz_id || prev?.capitalTimezone || null,
         }));
       } catch (e) {
-        console.debug("[Weather] fetch error", e);
+        logger.debug("[Weather] fetch error", e);
       }
     };
     fetchWeather();
@@ -640,7 +658,7 @@ const Country = () => {
             body: JSON.stringify({ country: countryData.name }),
           });
         } catch (e) {
-          console.debug("[record-country-view] failed", e);
+          logger.debug("[record-country-view] failed", e);
         }
       };
 
@@ -648,8 +666,12 @@ const Country = () => {
       record();
       try {
         sessionStorage.setItem(key, String(Date.now()));
-      } catch (e) {}
-    } catch (e) {}
+      } catch (e) {
+        /* ignored - session storage best-effort */
+      }
+    } catch (e) {
+      /* ignored - record-country-view failed */
+    }
     // only run when the country changes
   }, [countryData?.name, slug]);
 

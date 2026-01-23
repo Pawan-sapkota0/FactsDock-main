@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import logger from "@/lib/logger";
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
@@ -39,7 +40,7 @@ const AdminLayout: React.FC = () => {
       });
       navigate("/admin/login", { replace: true });
     } catch (error) {
-      console.error("[AdminLayout] Logout error:", error);
+      logger.error("[AdminLayout] Logout error:", error);
       toast({
         title: "Logout failed",
         description: "An error occurred during logout.",

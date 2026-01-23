@@ -126,7 +126,7 @@ export function generatePaginationStructuredData(meta: PaginationMeta): string {
   };
 
   if (meta.nextPageUrl) {
-    (structuredData as any).relatedLink = meta.nextPageUrl;
+    (structuredData as Record<string, unknown>)['relatedLink'] = meta.nextPageUrl;
   }
 
   return JSON.stringify(structuredData);

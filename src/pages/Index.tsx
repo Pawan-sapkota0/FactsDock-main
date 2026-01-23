@@ -21,6 +21,7 @@ import {
   generateWebsiteSchema,
   PAGE_TEMPLATES,
 } from "@/lib/seo-utils";
+import { log, debug, warn, error } from "@/lib/logger";
 
 // HeroSection Component
 const HeroSection = ({
@@ -301,7 +302,7 @@ const Index = () => {
 
         if (items.length === 4) setTrendingCountries(items);
       } catch (e) {
-        console.warn("Failed to load trending countries", e);
+        warn("Failed to load trending countries", e);
       }
     })();
     return () => {
@@ -310,7 +311,7 @@ const Index = () => {
   }, []);
 
   const handleSearch = (value: string) => {
-    console.log("Searching for:", value);
+    log("Searching for:", value);
   };
 
   const handleSelect = (country: string) => {

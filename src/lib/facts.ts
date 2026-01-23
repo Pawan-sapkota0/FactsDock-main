@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import logger from '@/lib/logger';
 
 // ✅ Fetch facts by type, category, and optional subcategory
 export async function fetchFactsByCategory(
@@ -24,7 +25,7 @@ export async function fetchFactsByCategory(
     }
   try {
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try { console.debug('[fetchFactsByCategory] called', { factType, category, subcategory, opts }); } catch (e) {}
+      try { logger.debug('[fetchFactsByCategory] called', { factType, category, subcategory, opts }); } catch (e) { /* ignored - debug only */ }
     }
     // Step 1: resolve IDs
     let factTypeId: string | null = null;
@@ -33,8 +34,12 @@ export async function fetchFactsByCategory(
       factTypeId = opts.fact_type_id;
     } else {
       // try direct slug match first
+      // Allow `any` here — this is a Supabase row shape boundary.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let typeRow: any = null;
       try {
+        // Supabase response, allow `any` at this SDK boundary.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const res: any = await supabase
           .from('fact_types')
           .select('id,slug,name')
@@ -53,6 +58,8 @@ export async function fetchFactsByCategory(
           const raw = String(factType || '');
           const stripped = raw.replace(/[-_]?facts$/i, '');
           if (stripped && stripped !== raw) {
+            // Supabase response, allow `any` at this SDK boundary.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const res2: any = await supabase
               .from('fact_types')
               .select('id,slug,name')
@@ -68,6 +75,8 @@ export async function fetchFactsByCategory(
       // 2) try to match on the name column (e.g. 'World Facts')
       if (!typeRow) {
         try {
+          // Supabase response, allow `any` at this SDK boundary.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const res3: any = await supabase
             .from('fact_types')
             .select('id,slug,name')
@@ -88,10 +97,10 @@ export async function fetchFactsByCategory(
       if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
         try {
           const { data: all } = await supabase.from('fact_types').select('id,slug,name');
-          console.debug('[fetchFactsByCategory] available fact_types', all || []);
-        } catch (e) {}
+          logger.debug('[fetchFactsByCategory] available fact_types', all || []);
+        } catch (e) { /* ignored - debug only */ }
       }
-      console.warn('[fetchFactsByCategory] No fact type found for:', factType);
+      logger.warn('[fetchFactsByCategory] No fact type found for:', factType);
       return [];
     }
 
@@ -122,14 +131,14 @@ export async function fetchFactsByCategory(
     // de-duplicate
     const nameCandidates = Array.from(new Set(tryNames.map((s) => (s || '').trim()).filter(Boolean)));
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try { console.debug('[fetchFactsByCategory] category name candidates', nameCandidates); } catch (e) {}
+      try { logger.debug('[fetchFactsByCategory] category name candidates', nameCandidates); } catch (e) { /* ignored - debug only */ }
     }
 
     for (const nameTry of nameCandidates) {
       try {
         // try exact ilike first
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] trying category exact ilike', nameTry); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] trying category exact ilike', nameTry); } catch (e) { /* ignored - debug only */ }
         }
         const { data: categoryRow, error: catErr } = await supabase
           .from('categories')
@@ -141,14 +150,14 @@ export async function fetchFactsByCategory(
         if (categoryRow?.id) {
           categoryId = categoryRow.id;
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] matched category exact', { nameTry, categoryRow }); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] matched category exact', { nameTry, categoryRow }); } catch (e) { /* ignored - debug only */ }
           }
           break;
         }
 
         // then try wildcard ilike to match partials
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] trying category wildcard ilike', `%${nameTry}%`); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] trying category wildcard ilike', `%${nameTry}%`); } catch (e) { /* ignored - debug only */ }
         }
         const { data: categoryRow2, error: catErr2 } = await supabase
           .from('categories')
@@ -160,13 +169,13 @@ export async function fetchFactsByCategory(
         if (categoryRow2?.id) {
           categoryId = categoryRow2.id;
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] matched category wildcard', { nameTry, categoryRow2 }); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] matched category wildcard', { nameTry, categoryRow2 }); } catch (e) { /* ignored - debug only */ }
           }
           break;
         }
       } catch (e) {
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] category try failed', { nameTry, error: e }); } catch (err) {}
+          try { logger.debug('[fetchFactsByCategory] category try failed', { nameTry, error: e }); } catch (err) { /* ignored - debug only */ }
         }
         // continue
       }
@@ -182,15 +191,15 @@ export async function fetchFactsByCategory(
       // results when the category cannot be found under that type.
       if (opts?.fact_type_id) {
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] category not found under explicit fact_type_id, skipping cross-type fallback', { category, factTypeId, opts }); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] category not found under explicit fact_type_id, skipping cross-type fallback', { category, factTypeId, opts }); } catch (e) { /* ignored - debug only */ }
         }
-        console.warn('[fetchFactsByCategory] category not found for explicit fact_type_id', { category, factTypeId });
+        logger.warn('[fetchFactsByCategory] category not found for explicit fact_type_id', { category, factTypeId });
         return [];
       }
-      try {
-        const { data: list } = await supabase.from('categories').select('id,name').eq('fact_type_id', factTypeId);
+        try {
+          const { data: list } = await supabase.from('categories').select('id,name').eq('fact_type_id', factTypeId);
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] fetched categories list for fallback', { count: (list || []).length }); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] fetched categories list for fallback', { count: (list || []).length }); } catch (e) { /* ignored - debug only */ }
         }
         const normalize = (s = '') =>
           String(s)
@@ -200,16 +209,18 @@ export async function fetchFactsByCategory(
             .replace(/\s+/g, ' ')
             .trim();
         const target = normalize(category || '');
+        // The list items come from the DB; allow `any` at this boundary.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const found = (list || []).find((c: any) => normalize(c.name) === target || normalize(c.name).includes(target) || target.includes(normalize(c.name)));
         if (found) {
           categoryId = found.id;
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] fallback normalized match', { target, found }); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] fallback normalized match', { target, found }); } catch (e) { /* ignored - debug only */ }
           }
         }
       } catch (e) {
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] fallback category list fetch failed', e); } catch (err) {}
+          try { logger.debug('[fetchFactsByCategory] fallback category list fetch failed', e); } catch (err) { /* ignored - debug only */ }
         }
         // ignore
       }
@@ -226,6 +237,8 @@ export async function fetchFactsByCategory(
         const normalize = (s = '') =>
           String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
         const target = normalize(category || '');
+        // The list items come from the DB; allow `any` at this boundary.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const foundAny = (listAll || []).find((c: any) => normalize(c.name) === target || normalize(c.name).includes(target) || target.includes(normalize(c.name)));
         if (foundAny) {
           categoryId = foundAny.id;
@@ -236,7 +249,7 @@ export async function fetchFactsByCategory(
             factTypeId = foundAny.fact_type_id;
           }
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] permissive cross-type match for category', { category, foundAny }); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] permissive cross-type match for category', { category, foundAny }); } catch (e) { /* ignored - debug only */ }
           }
         }
       } catch (e) {
@@ -248,12 +261,12 @@ export async function fetchFactsByCategory(
         try {
           const { data: list } = await supabase.from('categories').select('id,name').eq('fact_type_id', factTypeId);
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] category not found, available categories for factTypeId', factTypeId, list || []); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] category not found, available categories for factTypeId', factTypeId, list || []); } catch (e) { /* ignored - debug only */ }
           }
         } catch (e) {
           // ignore
         }
-        console.warn('[fetchFactsByCategory] No category found for:', category);
+        logger.warn('[fetchFactsByCategory] No category found for:', category);
         return [];
       }
     }
@@ -262,11 +275,11 @@ export async function fetchFactsByCategory(
     let requireSubcategoryOnly = false;
     if (subcategory) {
       if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        try { console.debug('[fetchFactsByCategory] resolving subcategory', { subcategory }); } catch (e) {}
+        try { logger.debug('[fetchFactsByCategory] resolving subcategory', { subcategory }); } catch (e) { /* ignored - debug only */ }
       }
       try {
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] trying subcategory exact ilike', String(subcategory).trim()); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] trying subcategory exact ilike', String(subcategory).trim()); } catch (e) { /* ignored - debug only */ }
         }
         const { data: subRow, error: subErr } = await supabase
           .from('subcategories')
@@ -277,14 +290,14 @@ export async function fetchFactsByCategory(
         if (subErr) throw subErr;
         subcategoryId = subRow?.id ?? null;
         if (subcategoryId && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] matched subcategory exact', { subRow }); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] matched subcategory exact', { subRow }); } catch (e) { /* ignored - debug only */ }
         }
       } catch (e) {
         // fallback: fetch list and normalize
         try {
           const { data: subs } = await supabase.from('subcategories').select('id,name').eq('category_id', categoryId);
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] fetched subcategories for fallback', { count: (subs || []).length }); } catch (err) {}
+            try { logger.debug('[fetchFactsByCategory] fetched subcategories for fallback', { count: (subs || []).length }); } catch (err) { /* ignored - debug only */ }
           }
           // More robust normalization for subcategory matching: handle
           // ampersand/and, multiple dash types, curly quotes, and stray
@@ -301,35 +314,37 @@ export async function fetchFactsByCategory(
           const slugify = (s = '') => normalize(s).replace(/\s+/g, '-');
           const target = normalize(String(subcategory));
           const targetSlug = slugify(String(subcategory));
-          const found = (subs || []).find((s: any) => {
-            const n = normalize(s.name || '');
+          // subcategory rows from DB — normalize using unknown and runtime narrowers
+          const found = ((subs || []) as unknown[]).find((s) => {
+            const name = (s as Record<string, unknown>).name as string | undefined;
+            const n = normalize(name || '');
             if (n === target) return true;
             if (n.includes(target) || target.includes(n)) return true;
-            const sl = slugify(s.name || '');
+            const sl = slugify(name || '');
             if (sl === targetSlug) return true;
             if (sl.includes(targetSlug) || targetSlug.includes(sl)) return true;
             // try loose wildcard-ish match
             if (n.includes(target.split(' ').slice(0, 2).join(' '))) return true;
             return false;
           });
-          if (found) {
-            subcategoryId = found.id;
+            if (found) {
+            subcategoryId = (found as Record<string, unknown>).id as string;
             if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-              try { console.debug('[fetchFactsByCategory] fallback subcategory normalized match', { target, found }); } catch (err) {}
+              try { logger.debug('[fetchFactsByCategory] fallback subcategory normalized match', { target, found }); } catch (err) { /* ignored - debug only */ }
             }
           }
         } catch (e2) {
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] fallback subcategory fetch failed', e2); } catch (err) {}
+            try { logger.debug('[fetchFactsByCategory] fallback subcategory fetch failed', e2); } catch (err) { /* ignored - debug only */ }
           }
         }
       }
       // If caller asked for a subcategory but we failed to resolve an id, require
       // that results be tied to some subcategory (don't return category-level facts).
-      if (subcategory && !subcategoryId) {
+        if (subcategory && !subcategoryId) {
         requireSubcategoryOnly = true;
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] requested subcategory not resolved, will require subcategory_id NOT NULL', { subcategory }); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] requested subcategory not resolved, will require subcategory_id NOT NULL', { subcategory }); } catch (e) { /* ignored - debug only */ }
         }
       }
     }
@@ -345,7 +360,10 @@ export async function fetchFactsByCategory(
       // Caller asked for a subcategory but we couldn't resolve it: require any subcategory (NOT NULL)
       try {
         // prefer .neq which is broadly supported by PostgREST/Supabase
-        query = (query as any).neq('subcategory_id', null);
+        type QueryLike = { neq?: (col: string, val: unknown) => unknown };
+        const qLike = query as unknown as QueryLike;
+        const maybe = qLike.neq?.('subcategory_id', null);
+        if (maybe) query = maybe as unknown as typeof query;
       } catch (e) {
         // leave query as-is if .neq unsupported
       }
@@ -354,14 +372,19 @@ export async function fetchFactsByCategory(
       // (subcategory_id IS NULL) AND all facts that belong to any subcategory
       // of this category. This mirrors the behavior in the other API path.
       try {
-        const subListResp: any = await supabase.from('subcategories').select('id').eq('category_id', categoryId);
-        const subs = (subListResp?.data || []).map((s: any) => s.id).filter(Boolean);
+        const subListResp = await supabase.from('subcategories').select('id').eq('category_id', categoryId);
+        const subs = ((subListResp?.data || []) as unknown[]).map((s) => (s as Record<string, unknown>).id).filter(Boolean);
         if (subs.length > 0) {
           const ids = subs.join(',');
           query = query.or(`subcategory_id.is.null,subcategory_id.in.(${ids})`);
         } else {
           // no subcategories: only category-level facts
-          try { query = (query as any).is('subcategory_id', null); } catch (e) {}
+          try {
+            type QueryLike2 = { is?: (col: string, val: unknown) => unknown };
+            const q2 = query as unknown as QueryLike2;
+            const maybeIs = q2.is?.('subcategory_id', null);
+            if (maybeIs) query = maybeIs as unknown as typeof query;
+          } catch (e) { /* ignored - SDK quirk */ }
         }
       } catch (e) {
         // fallback: leave the base query as-is (will return category-level rows)
@@ -371,44 +394,48 @@ export async function fetchFactsByCategory(
     const { data: facts, error } = await query;
 
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try { console.log('Fetched facts:', facts); } catch (e) {}
+      try { logger.debug('Fetched facts:', facts); } catch (e) { /* ignored - debug only */ }
     }
 
     if (error) throw error;
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try { console.debug('[fetchFactsByCategory] raw facts rows', { count: (facts || []).length, sample: (facts || [])[0] }); } catch (e) {}
+      try { logger.debug('[fetchFactsByCategory] raw facts rows', { count: (facts || []).length, sample: (facts || [])[0] }); } catch (e) { /* ignored - debug only */ }
     }
-    const normalized = (facts || []).map((r: any) => ({
-      id: r.id,
-      title: r.title || null,
-      fact: r.fact_text || r.fact || r.description || r.title || null,
-      fact_text: r.fact_text || null,
-      metadata: r.metadata || null,
-      category_id: r.category_id || null,
-      subcategory_id: r.subcategory_id || null,
-      fact_type_id: r.fact_type_id || null,
-    }));
+    // Facts are DB rows; normalize rows safely using `unknown` and runtime narrowers.
+    const normalized = (facts || []).map((r: unknown) => {
+      const row = r as Record<string, unknown>;
+      return {
+        id: (row.id as string) || undefined,
+        title: (row.title as string) ?? null,
+        fact: (row.fact_text as string) ?? (row.fact as string) ?? (row.description as string) ?? (row.title as string) ?? null,
+        fact_text: (row.fact_text as string) ?? null,
+        metadata: row.metadata ?? null,
+        category_id: (row.category_id as string) ?? null,
+        subcategory_id: (row.subcategory_id as string) ?? null,
+        fact_type_id: (row.fact_type_id as string) ?? null,
+      };
+    });
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
       try {
-        console.debug('[fetchFactsByCategory] returning', normalized.length, 'facts', { factType, category, subcategory, factTypeId, categoryId, subcategoryId });
-      } catch (e) {}
+        logger.debug('[fetchFactsByCategory] returning', normalized.length, 'facts', { factType, category, subcategory, factTypeId, categoryId, subcategoryId });
+      } catch (e) { /* ignored - fallback */ }
       try {
         const payload = { source: 'fetchFactsByCategory', factType, category, subcategory, factTypeId, categoryId, subcategoryId, ts: Date.now() };
-        (window as any).__wf_last_resolve = payload;
+        (window as unknown as Record<string, unknown>).__wf_last_resolve = payload;
         window.dispatchEvent(new CustomEvent('wf:resolve', { detail: payload }));
-      } catch (e) {}
+      } catch (e) { /* ignored - fallback */ }
     }
     return normalized;
   } catch (e) {
-    console.error('[fetchFactsByCategory] error', e);
+    logger.error('[fetchFactsByCategory] error', e);
     return [];
   }
 }
 
-// 🧪 expose for debugging in console
-if (typeof window !== 'undefined') {
-  // @ts-ignore
-  (window as any).fetchFactsByCategory = fetchFactsByCategory;
+// 🧪 expose for debugging in console (dev only)
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  // expose dev helper in a typed way to avoid ts-ignore
+  (window as unknown as Record<string, unknown>).fetchFactsByCategory = fetchFactsByCategory;
 }
 
 /**
@@ -437,7 +464,7 @@ export async function fetchFactsByPage(
   try {
     // Resolve category and fact type IDs (reuse existing logic by fetching all first)
     // For pagination, we need to fetch all facts and then slice
-    const allFacts = await fetchFactsByCategory(factType, category, subcategory, opts);
+    const allFacts = await fetchFactsByCategory(factType, category, subcategory || opts);
     
     const start = page * pageSize;
     const end = start + pageSize;
@@ -450,7 +477,7 @@ export async function fetchFactsByPage(
       hasMore: end < allFacts.length,
     };
   } catch (e) {
-    console.error('[fetchFactsByPage] error', e);
+    logger.error('[fetchFactsByPage] error', e);
     return {
       facts: [],
       total: 0,

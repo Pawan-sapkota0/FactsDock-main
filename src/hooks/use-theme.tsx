@@ -34,7 +34,9 @@ export function useTheme() {
         if (getSystemPrefersDark()) root.classList.add("dark");
         else root.classList.remove("dark");
       }
-    } catch (e) {}
+    } catch (e) {
+      /* ignored - DOM access best-effort */
+    }
   }, []);
 
   // react to changes
@@ -54,7 +56,9 @@ export function useTheme() {
       } catch (e) {
         try {
           mq.addListener(onChange);
-        } catch (e) {}
+        } catch (e) {
+          /* ignored - legacy browsers */
+        }
       }
     }
 
@@ -65,7 +69,9 @@ export function useTheme() {
         } catch (e) {
           try {
             mq.removeListener(onChange);
-          } catch (e) {}
+          } catch (e) {
+            /* ignored - legacy browsers */
+          }
         }
       }
     };
@@ -74,7 +80,9 @@ export function useTheme() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, preference);
-    } catch (e) {}
+    } catch (e) {
+      /* ignored - storage not writable */
+    }
   }, [preference]);
 
   const setTheme = useCallback((pref: ThemePreference) => {

@@ -12,6 +12,7 @@ export default async (req: Request) => {
     } else if (q.length === 0) {
       errors.push('at least one question is required');
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- incoming payload item shape
       q.forEach((item: any, idx: number) => {
         if (typeof item.q !== 'string' || item.q.trim().length === 0) errors.push(`question[${idx}].q must be a non-empty string`);
         if (!Array.isArray(item.options) || item.options.length < 2) errors.push(`question[${idx}].options must be an array with at least 2 items`);

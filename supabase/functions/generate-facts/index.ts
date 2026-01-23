@@ -1,4 +1,4 @@
-/// <reference path="../deno.d.ts" />
+import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Use the official Google Generative AI SDK for Deno (npm compatibility)
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -62,13 +62,15 @@ serve(async (req) => {
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY as string);
       const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       // Use the same prompt text; SDK returns an object with response text.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK response object from Google Generative AI
       const gres: any = await model.generateContent(prompt);
       // SDK compatibility: try to extract a textual response.
       if (gres?.response && typeof gres.response.text === 'function') {
         generated = await gres.response.text();
       } else if (gres?.output && Array.isArray(gres.output) && gres.output[0]?.content) {
         // Fallback extraction pattern
-        generated = gres.output.map((o:any)=> (o.content || []).map((c:any)=> c.text || '').join('')).join('\n');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK output array items
+        generated = gres.output.map((o: any) => (o.content || []).map((c: any) => c.text || '').join('')).join('\n');
       } else if (typeof gres === 'string') {
         generated = gres;
       }
@@ -96,6 +98,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'AI returned no content' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI JSON payload
     let parsed: any = null;
     const candidate = extractJsonLike(stripCodeFences(String(generated)));
     try {
@@ -122,6 +125,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${svcKey}`,
             'Content-Type': 'application/json',
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI-generated item shape
           body: JSON.stringify((Array.isArray(parsed) ? parsed : [parsed]).map((p: any) => ({
             fact_type_id: fact_type_id || null,
             category_id: category_id || null,

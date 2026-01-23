@@ -17,7 +17,7 @@ export interface MetaTags {
 export interface StructuredData {
   "@context": string;
   "@type": string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -202,7 +202,7 @@ export const generatePlaceSchema = (data: {
   url?: string;
   geo?: { latitude: number; longitude: number };
 }): StructuredData => {
-  const schema: any = {
+  const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Place",
     name: data.name,

@@ -20,6 +20,8 @@ declare module "https://deno.land/std/*" {
 
 // Supabase client module - handle both direct URL and aliased import
 declare module "https://esm.sh/@supabase/supabase-js@2" {
+  // SDK boundary: allow flexible options and return type for the external client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK runtime library type
   export function createClient(url: string, key: string, options?: any): any;
   export * from "https://esm.sh/@supabase/supabase-js@2";
 }

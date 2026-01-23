@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logger from "@/lib/logger";
 import {
   AdminUser,
   getCurrentAdminUser,
@@ -80,7 +81,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
           setError(null);
         }
       } catch (err) {
-        console.error("[AdminAuthContext] Init error:", err);
+        logger.error("[AdminAuthContext] Init error:", err);
         if (isMounted) {
           setError(
             err instanceof Error ? err.message : "Auth initialization failed",
@@ -108,7 +109,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.debug("[AdminAuthContext] Auth state changed:", event);
+      logger.debug("[AdminAuthContext] Auth state changed:", event);
 
       if (!session?.user) {
         setUser(null);
@@ -122,7 +123,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
           setUser(adminUser);
           setError(null);
         } catch (err) {
-          console.error("[AdminAuthContext] Error fetching admin user:", err);
+          logger.error("[AdminAuthContext] Error fetching admin user:", err);
           setError("Failed to load admin details");
         }
       }
@@ -143,7 +144,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
       setUser(null);
       setError(null);
     } catch (err) {
-      console.error("[AdminAuthContext] Logout error:", err);
+      logger.error("[AdminAuthContext] Logout error:", err);
       setError(err instanceof Error ? err.message : "Logout failed");
     } finally {
       setLoading(false);
@@ -177,7 +178,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
         setUser(null);
       }
     } catch (err) {
-      console.error("[AdminAuthContext] Session refresh error:", err);
+      logger.error("[AdminAuthContext] Session refresh error:", err);
       setError("Session refresh failed");
     }
   }, []);
@@ -209,7 +210,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
         // Check user's permissions
         return user.permissions.includes(permission);
       } catch (err) {
-        console.error("[AdminAuthContext] Access check error:", err);
+        logger.error("[AdminAuthContext] Access check error:", err);
         return false;
       }
     },

@@ -73,8 +73,12 @@ export default function Login() {
             setError("Access Denied: You do not have admin permissions");
             setStep("error");
           }
-        } catch (err: any) {
-          setError(err.message || "Failed to verify login");
+        } catch (err: unknown) {
+          const e = err as Record<string, unknown> | undefined;
+          const msg =
+            (e && (e.message as string)) ||
+            String(err || "Failed to verify login");
+          setError(msg);
           setStep("error");
         }
       } else if (hash.includes("error")) {

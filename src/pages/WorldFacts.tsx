@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { clearFactsCacheAll } from "@/lib/api";
+import logger from "@/lib/logger";
 import { fetchFactsByCategory } from "@/lib/facts";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 import {
@@ -41,11 +42,11 @@ const WorldFacts = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [openQuizModal, setOpenQuizModal] = useState(false);
   const [quizModalTopic, setQuizModalTopic] = useState<string | undefined>(
-    undefined
+    undefined,
   );
 
   // New main categories + subcategories (9 primary groups)
@@ -168,8 +169,8 @@ const WorldFacts = () => {
   // use shared lazy wrapper
 
   // Component-level cache and pending map for subcategory results
-  const subCacheRef = new Map<string, any[]>();
-  const pendingRef = new Map<string, Promise<any[]>>();
+  const subCacheRef = new Map<string, unknown[]>();
+  const pendingRef = new Map<string, Promise<unknown[]>>();
 
   // Listen for global cache-clear events (admin approvals/deletes)
   useEffect(() => {
@@ -252,6 +253,8 @@ const WorldFacts = () => {
       // when the UI intends to only show 'world-facts' rows.
       if (!factTypeIdRef.current) {
         try {
+          // Supabase response: allow `any` at SDK boundary
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const r: any = await supabase
             .from("fact_types")
             .select("id")
@@ -264,7 +267,7 @@ const WorldFacts = () => {
       }
 
       const promise = (async () => {
-        const opts: any = { force: true, fact_type_id: factTypeIdRef.current };
+        const opts = { force: true, fact_type_id: factTypeIdRef.current };
         const res = await fetchFactsByCategory("world-facts", key, opts);
         subCacheRef.set(key, res || []);
         pendingRef.delete(key);
@@ -279,7 +282,7 @@ const WorldFacts = () => {
         description: `Loaded ${result?.length || 0} facts for ${sub}.`,
       });
     } catch (error) {
-      console.error("Error generating facts:", error);
+      logger.error("Error generating facts:", error);
       toast({
         title: "Error",
         description: "Failed to load facts. Please try again.",
@@ -322,6 +325,8 @@ const WorldFacts = () => {
       // when the UI intends to only show 'world-facts' rows.
       if (!factTypeIdRef.current) {
         try {
+          // Supabase response: allow `any` at SDK boundary
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const r: any = await supabase
             .from("fact_types")
             .select("id")
@@ -334,7 +339,7 @@ const WorldFacts = () => {
       }
 
       const promise = (async () => {
-        const opts: any = { force: true, fact_type_id: factTypeIdRef.current };
+        const opts = { force: true, fact_type_id: factTypeIdRef.current };
         const res = await fetchFactsByCategory("world-facts", key, opts);
         subCacheRef.set(key, res || []);
         pendingRef.delete(key);
@@ -348,7 +353,7 @@ const WorldFacts = () => {
         description: `Loaded ${result?.length || 0} facts for ${main}.`,
       });
     } catch (error) {
-      console.error("Error generating facts:", error);
+      logger.error("Error generating facts:", error);
       toast({
         title: "Error",
         description: "Failed to reload facts. Please try again.",
@@ -363,6 +368,8 @@ const WorldFacts = () => {
     // resolve fact_type id for 'world-facts'
     void (async () => {
       try {
+        // Supabase response: allow `any` at SDK boundary
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r: any = await supabase
           .from("fact_types")
           .select("id")
@@ -469,29 +476,41 @@ const WorldFacts = () => {
                   (() => {
                     const displayed = (facts || []).filter((f) => {
                       if (selectedSub) {
-                        return !!(f && (f as any).subcategory_id);
+                        return !!(
+                          f &&
+                          (f as { subcategory_id?: unknown })?.subcategory_id
+                        );
                       }
-                      return !(f && (f as any).subcategory_id);
+                      return !(
+                        f && (f as { subcategory_id?: unknown })?.subcategory_id
+                      );
                     });
                     return (
                       <div className="grid md:grid-cols-2 gap-4">
                         <React.Suspense fallback={<div />}>
-                          {displayed.map((fact, idx) => (
-                            <div
-                              key={idx}
-                              className="transform transition-all duration-400 opacity-0 animate-fade-in"
-                              style={{ animationDelay: `${idx * 60}ms` }}
-                            >
-                              <LazyFactCard
-                                fact={
-                                  fact?.fact_text ||
-                                  fact?.fact ||
-                                  fact?.title ||
-                                  ""
-                                }
-                              />
-                            </div>
-                          ))}
+                          {displayed.map((fact: unknown, idx: number) => {
+                            const row = fact as {
+                              fact_text?: unknown;
+                              fact?: unknown;
+                              title?: unknown;
+                            };
+                            return (
+                              <div
+                                key={idx}
+                                className="transform transition-all duration-400 opacity-0 animate-fade-in"
+                                style={{ animationDelay: `${idx * 60}ms` }}
+                              >
+                                <LazyFactCard
+                                  fact={String(
+                                    row?.fact_text ??
+                                      row?.fact ??
+                                      row?.title ??
+                                      "",
+                                  )}
+                                />
+                              </div>
+                            );
+                          })}
                         </React.Suspense>
                       </div>
                     );
@@ -550,8 +569,11 @@ const WorldFacts = () => {
               {(() => {
                 const showingSub = !!selectedSub;
                 const displayed = (facts || []).filter((f) => {
-                  if (showingSub) return !!(f && (f as any).subcategory_id);
-                  return !(f && (f as any).subcategory_id);
+                  if (showingSub)
+                    return !!(
+                      f && (f as Record<string, unknown>)?.subcategory_id
+                    );
+                  return !(f && (f as Record<string, unknown>)?.subcategory_id);
                 });
                 return (
                   <React.Suspense fallback={<div />}>

@@ -38,6 +38,7 @@ import {
   getEmptyStateMessage,
   markFactViewed,
 } from "@/lib/fact-filtering";
+import { log, debug, warn, error } from "@/lib/logger";
 // import { generateQuiz } from '@/lib/quiz';
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ const FunFacts = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [openQuizModal, setOpenQuizModal] = useState(false);
   const [quizModalTopic, setQuizModalTopic] = useState<string | undefined>(
@@ -176,9 +177,9 @@ const FunFacts = () => {
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
   // Component-level cache to avoid duplicate generation calls for the same subcategory
-  const subCacheRef = new Map<string, any[]>();
+  const subCacheRef = new Map<string, unknown[]>();
   // Track in-flight promises to dedupe concurrent requests
-  const pendingRef = new Map<string, Promise<any[]>>();
+  const pendingRef = new Map<string, Promise<unknown[]>>();
 
   // Listen for global cache-clear events from admin actions so this view can reload
   // If a category/subcategory is currently selected, re-fetch that data automatically.
@@ -225,9 +226,9 @@ const FunFacts = () => {
   useEffect(() => {
     const displayed = (facts || []).filter((f) => {
       if (selectedSub) {
-        return !!(f && (f as any).subcategory_id);
+        return !!(f && (f as { subcategory_id?: unknown })?.subcategory_id);
       }
-      return !(f && (f as any).subcategory_id);
+      return !(f && (f as { subcategory_id?: unknown })?.subcategory_id);
     });
     pagination.setTotalItems(displayed.length);
   }, [facts, selectedSub]);
@@ -271,7 +272,7 @@ const FunFacts = () => {
       }
       const promise = (async () => {
         // prefer ID-based lookup when available
-        const opts: any = { force: true };
+        const opts = { force: true };
         if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
         const res = await fetchFactsByCategory("fun-facts", key, opts);
         subCacheRef.set(key, res || []);
@@ -281,21 +282,21 @@ const FunFacts = () => {
       pendingRef.set(key, promise);
       const result = await promise;
       setFacts(result || []);
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          console.debug("[FunFacts] handleMainFetch setFacts", {
-            key,
-            count: (result || []).length,
-            sample: (result || [])[0],
-          });
-        } catch (e) {}
+      try {
+        debug("[FunFacts] handleMainFetch setFacts", {
+          key,
+          count: (result || []).length,
+          sample: (result || [])[0],
+        });
+      } catch (e) {
+        /* ignored - debug only */
       }
       toast({
         title: "Facts Loaded",
         description: `Loaded ${result?.length || 0} facts for ${main}.`,
       });
     } catch (e) {
-      console.error(e);
+      error(e);
       toast({
         title: "Error",
         description: "Failed to reload facts.",
@@ -340,7 +341,7 @@ const FunFacts = () => {
       }
 
       const promise = (async () => {
-        const opts: any = { force: true };
+        const opts = { force: true };
         if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
         const res = await fetchFactsByCategory("fun-facts", key, opts);
         subCacheRef.set(key, res || []);
@@ -351,22 +352,22 @@ const FunFacts = () => {
       pendingRef.set(key, promise);
       const result = await promise;
       setFacts(result || []);
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          console.debug("[FunFacts] handleSubClick setFacts", {
-            main,
-            sub,
-            count: (result || []).length,
-            sample: (result || [])[0],
-          });
-        } catch (e) {}
+      try {
+        debug("[FunFacts] handleSubClick setFacts", {
+          main,
+          sub,
+          count: (result || []).length,
+          sample: (result || [])[0],
+        });
+      } catch (e) {
+        /* ignored - debug only */
       }
       toast({
         title: "Facts Loaded",
         description: `Loaded ${result?.length || 0} facts for ${sub}.`,
       });
     } catch (e) {
-      console.error(e);
+      error(e);
       toast({
         title: "Error",
         description: "Failed to load facts for this subcategory.",
@@ -381,6 +382,8 @@ const FunFacts = () => {
     // resolve fact_type id for 'fun-facts' once
     void (async () => {
       try {
+        // Supabase response: allow `any` at SDK boundary
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r: any = await supabase
           .from("fact_types")
           .select("id")
@@ -505,10 +508,15 @@ const FunFacts = () => {
                     const displayed = (facts || []).filter((f) => {
                       if (selectedSub) {
                         // sub views should show only items tied to a subcategory
-                        return !!(f && (f as any).subcategory_id);
+                        return !!(
+                          f &&
+                          (f as { subcategory_id?: unknown })?.subcategory_id
+                        );
                       }
                       // main category: show only facts not assigned to a subcategory
-                      return !(f && (f as any).subcategory_id);
+                      return !(
+                        f && (f as Record<string, unknown>)?.subcategory_id
+                      );
                     });
 
                     // Apply filter

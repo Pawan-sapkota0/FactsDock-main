@@ -18,11 +18,12 @@ import {
   getEmptyStateMessage,
   markFactViewed,
 } from "@/lib/fact-filtering";
+import { log, debug, warn, error } from "@/lib/logger";
 
 const Facts = () => {
   const { category } = useParams();
   const navigate = useNavigate();
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
 
@@ -32,7 +33,7 @@ const Facts = () => {
   // Update pagination when facts change
   useEffect(() => {
     const displayed = (facts || []).filter(
-      (f) => !(f && (f as any).subcategory_id),
+      (f) => !(f && (f as { subcategory_id?: unknown })?.subcategory_id),
     );
     pagination.setTotalItems(displayed.length);
   }, [facts]);
@@ -40,23 +41,27 @@ const Facts = () => {
   useEffect(() => {
     if (!category) return;
     setLoading(true);
-    console.log("[Facts] Fetching facts for category:", category);
+    log("[Facts] Fetching facts for category:", category);
     fetchFacts("fun-facts", category)
       .then((res) => {
-        console.log("[Facts] Fetch success, got", res?.length || 0, "facts");
-        setFacts(res);
+        log(
+          "[Facts] Fetch success, got",
+          (res as unknown[])?.length || 0,
+          "facts",
+        );
+        setFacts(res as unknown[]);
       })
-      .catch(console.error)
+      .catch((e) => error(e))
       .finally(() => {
         setLoading(false);
       });
   }, [category]);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      try {
-        console.debug("[Facts page] facts changed", { category, facts });
-      } catch (e) {}
+    try {
+      debug("[Facts page] facts changed", { category, facts });
+    } catch (e) {
+      /* ignored - debug only */
     }
   }, [facts, category]);
 
@@ -106,7 +111,8 @@ const Facts = () => {
           >
             {(() => {
               const displayed = (facts || []).filter(
-                (f) => !(f && (f as any).subcategory_id),
+                (f) =>
+                  !(f && (f as { subcategory_id?: unknown })?.subcategory_id),
               );
               // Apply filter
               const filtered = filterFacts(displayed, filterType);
@@ -124,28 +130,39 @@ const Facts = () => {
               }
 
               const paginatedFacts = pagination.paginate(filtered);
-              if (process.env.NODE_ENV !== "production") {
-                try {
-                  console.debug(
-                    "[Facts page] displayed",
-                    displayed,
-                    "filtered",
-                    filtered,
-                  );
-                } catch (e) {}
+              try {
+                debug(
+                  "[Facts page] displayed",
+                  displayed,
+                  "filtered",
+                  filtered,
+                );
+              } catch (e) {
+                /* ignored - debug only */
               }
-              return paginatedFacts.map((fact: any, i: number) => (
-                <div
-                  key={fact?.id || i}
-                  onMouseEnter={() => markFactViewed(fact?.id || fact?.fact_id)}
-                >
-                  <React.Suspense fallback={<div />}>
-                    <LazyFactCard
-                      fact={fact?.fact_text || fact?.fact || fact?.title || ""}
-                    />
-                  </React.Suspense>
-                </div>
-              ));
+              return paginatedFacts.map((fact: unknown, i: number) => {
+                const row = fact as {
+                  id?: string | number;
+                  fact_id?: string | number;
+                  fact_text?: unknown;
+                  fact?: unknown;
+                  title?: unknown;
+                };
+                const key = row?.id ?? `fact-${i}`;
+                const displayText = String(
+                  row?.fact_text ?? row?.fact ?? row?.title ?? "",
+                );
+                return (
+                  <div
+                    key={key}
+                    onMouseEnter={() => markFactViewed(row?.id ?? row?.fact_id)}
+                  >
+                    <React.Suspense fallback={<div />}>
+                      <LazyFactCard fact={displayText} />
+                    </React.Suspense>
+                  </div>
+                );
+              });
             })()}
           </div>
           <PaginationControls

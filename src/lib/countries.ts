@@ -235,17 +235,17 @@ export const areDuplicateFacts = (fact1: string, fact2: string): boolean => {
  * @returns Array of facts with duplicates removed
  */
 export const removeDuplicateFacts = (
-  facts: any[],
+  facts: unknown[],
   contentField: string = "text"
-): any[] => {
+): unknown[] => {
   const seen: Set<string> = new Set();
-  const result: any[] = [];
+  const result: unknown[] = [];
 
-  for (const fact of facts) {
-    const content = fact[contentField]?.toString() || "";
-    const isDuplicate = Array.from(seen).some((s) =>
-      areDuplicateFacts(s, content)
-    );
+  for (const fact of facts || []) {
+    const obj = (fact as Record<string, unknown> | null) || {};
+    const raw = obj[contentField];
+    const content = raw != null ? String(raw) : "";
+    const isDuplicate = Array.from(seen).some((s) => areDuplicateFacts(s, content));
 
     if (!isDuplicate && content) {
       seen.add(content);

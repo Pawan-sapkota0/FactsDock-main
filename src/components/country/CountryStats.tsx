@@ -5,6 +5,7 @@ import { MapPin, Users, DollarSign, Globe, Phone } from "lucide-react";
 import { DateTime } from "luxon";
 import { useState, useEffect } from "react";
 import { scrollToElementObserver } from "@/lib/scroll-utils";
+import { log, debug, warn, error } from "@/lib/logger";
 type Props = {
   flag?: string;
   capital?: string;
@@ -54,13 +55,13 @@ export default function CountryStats({
         <Button
           onClick={() => {
             scrollToElementObserver("latest-news", 5000).catch((err) => {
-              console.error("[Latest News Button] Scroll failed:", err);
+              error("[Latest News Button] Scroll failed:", err);
             });
           }}
           variant="outline"
           className="px-6 py-2"
         >
-         View Latest News
+          View Latest News
         </Button>
       </div>
 

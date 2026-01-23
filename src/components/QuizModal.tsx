@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { generateQuizForTopic, generateRandomQuiz } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { log, debug, warn, error } from "@/lib/logger";
 
 type Props = {
   open: boolean;
@@ -17,14 +18,14 @@ type Props = {
   questionCount?: number;
 };
 
-type Q = { question: string; options: any[]; answer: any };
+type Q = { question: string; options: unknown[]; answer: unknown };
 
 // No client-side caching for quizzes to ensure fresh sets per request
 
 async function fetchAndCache(
   topic: string | undefined,
   count: number,
-  sourceType?: string
+  sourceType?: string,
 ) {
   const key = `${topic || "__global__"}:${count}:${sourceType || ""}`;
   // If a sourceType is provided (e.g., 'fun', 'world', 'country'), always fetch
@@ -41,12 +42,27 @@ async function fetchAndCache(
     // random quiz - always fresh
     res = await generateRandomQuiz(count);
   }
-  const qs: Q[] = (res || []).map((q: any) => ({
-    question: q.question || q.title || "Question",
-    options: q.options || q.choices || q.answers || [],
-    answer:
-      q.answer || q.correctAnswer || q.answerText || q.correct_answer || "",
-  }));
+  const qs: Q[] = (res || []).map((q: unknown) => {
+    const rec = (q || {}) as Record<string, unknown>;
+    const questionRaw = rec.question ?? rec.title ?? "Question";
+    const question = String(questionRaw ?? "");
+
+    const optionsRaw = rec.options ?? rec.choices ?? rec.answers ?? [];
+    const options = Array.isArray(optionsRaw) ? (optionsRaw as unknown[]) : [];
+
+    const answer =
+      rec.answer ??
+      rec.correctAnswer ??
+      rec.answerText ??
+      rec.correct_answer ??
+      "";
+
+    return {
+      question,
+      options,
+      answer,
+    } as Q;
+  });
   return qs;
 }
 
@@ -62,7 +78,7 @@ const QuizModal: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [lastPlayedQuestions, setLastPlayedQuestions] = useState<Q[] | null>(
-    null
+    null,
   );
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -86,7 +102,7 @@ const QuizModal: React.FC<Props> = ({
         // store the initially loaded quiz set if not already set
         setLastPlayedQuestions((prev) => prev ?? qs);
       } catch (e) {
-        console.error("Failed to generate quiz", e);
+        error("Failed to generate quiz", e);
       } finally {
         setLoading(false);
       }
@@ -95,26 +111,29 @@ const QuizModal: React.FC<Props> = ({
     return () => {
       mounted = false;
     };
-  }, [open, topic, questionCount]);
+  }, [open, topic, questionCount, sourceType]);
 
   const current = useMemo(() => questions[index], [questions, index]);
   const isCountryQuiz = sourceType === "country";
 
-  const normalizeStr = (v: any) =>
+  const normalizeStr = (v: unknown) =>
     String(v ?? "")
       .trim()
       .toLowerCase();
 
-  const optionId = (o: any) => {
+  const optionId = (o: unknown) => {
     if (o == null) return undefined;
     if (typeof o === "string" || typeof o === "number") return undefined;
-    return o.id ?? o._id ?? o.value ?? o.key ?? undefined;
+    // treat as record
+    const rec = o as Record<string, unknown>;
+    return rec.id ?? rec._id ?? rec.value ?? rec.key ?? undefined;
   };
 
-  const optionLabel = (o: any) => {
+  const optionLabel = (o: unknown) => {
     if (o == null) return "";
     if (typeof o === "string" || typeof o === "number") return normalizeStr(o);
-    return normalizeStr(o.label ?? o.text ?? o.name ?? o.value ?? "");
+    const rec = o as Record<string, unknown>;
+    return normalizeStr(rec.label ?? rec.text ?? rec.name ?? rec.value ?? "");
   };
 
   const resolveAnswerValue = (q: Q) => {
@@ -125,7 +144,7 @@ const QuizModal: React.FC<Props> = ({
     return q?.answer;
   };
 
-  const answersEqual = (opt: any, ansRaw: any) => {
+  const answersEqual = (opt: unknown, ansRaw: unknown) => {
     const ans = resolveAnswerValue(current as Q) ?? ansRaw;
     // If both have id-like properties, compare ids
     const optId = optionId(opt);
@@ -147,7 +166,7 @@ const QuizModal: React.FC<Props> = ({
     return optionLabel(opt) === optionLabel(ans);
   };
 
-  const handleAnswer = (opt: any, idx: number) => {
+  const handleAnswer = (opt: unknown, idx: number) => {
     if (selectedIndex !== null) return;
     setSelectedIndex(idx);
     // Apply robust comparison for all quiz types (country, fun, world, global)
@@ -196,7 +215,7 @@ const QuizModal: React.FC<Props> = ({
         // overwrite lastPlayedQuestions when user requests a new quiz
         setLastPlayedQuestions(qs);
       } catch (e) {
-        console.error("Failed to fetch new quiz set", e);
+        error("Failed to fetch new quiz set", e);
       } finally {
         setLoading(false);
       }
@@ -206,11 +225,11 @@ const QuizModal: React.FC<Props> = ({
   // Compare two question sets by normalized question text and option counts
   const areQuestionSetsEqual = (
     a: Q[] | null | undefined,
-    b: Q[] | null | undefined
+    b: Q[] | null | undefined,
   ) => {
     if (!a || !b) return false;
     if (a.length !== b.length) return false;
-    const normalize = (s: any) =>
+    const normalize = (s: unknown) =>
       String(s ?? "")
         .trim()
         .toLowerCase();
@@ -247,12 +266,12 @@ const QuizModal: React.FC<Props> = ({
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         e.preventDefault();
         setFocusedIndex((f) =>
-          f === null ? 0 : Math.min(opts.length - 1, f + 1)
+          f === null ? 0 : Math.min(opts.length - 1, f + 1),
         );
       } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
         e.preventDefault();
         setFocusedIndex((f) =>
-          f === null ? opts.length - 1 : Math.max(0, f - 1)
+          f === null ? opts.length - 1 : Math.max(0, f - 1),
         );
       } else if (e.key === "Home") {
         e.preventDefault();
@@ -337,10 +356,10 @@ const QuizModal: React.FC<Props> = ({
                 {score === questions.length
                   ? "🎉 Excellent! Perfect Score! 🎉"
                   : score >= Math.ceil(questions.length * 0.8)
-                  ? "👏 Great job! Keep it up!"
-                  : score >= Math.ceil(questions.length * 0.6)
-                  ? "👍 Good effort! Practice more to improve."
-                  : "💪 Nice try — practice more to improve."}
+                    ? "👏 Great job! Keep it up!"
+                    : score >= Math.ceil(questions.length * 0.6)
+                      ? "👍 Good effort! Practice more to improve."
+                      : "💪 Nice try — practice more to improve."}
               </div>
               <div className="flex gap-2 justify-center">
                 <Button onClick={replayLastQuiz}>Replay Last Quiz</Button>

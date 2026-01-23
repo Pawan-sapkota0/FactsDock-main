@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, no-empty */
 import { supabase, SUPABASE_AVAILABLE } from '@/integrations/supabase/client';
+import logger from '@/lib/logger';
 
 // Local lightweight mock generators to replace the missing `mockData` module.
 // These provide deterministic data for local development when Supabase isn't available.
@@ -91,7 +92,7 @@ async function callGenerateContent(body: Record<string, any>) {
     if (res.error) throw res.error;
     return res.data?.data || [];
   } catch (e) {
-    console.warn('Supabase function failed or unreachable - returning empty result', e);
+    logger.warn('Supabase function failed or unreachable - returning empty result', e);
     return [];
   }
 }
@@ -181,13 +182,13 @@ export async function fetchFactsByCategory(
           try {
             const catResp: any = await supabase.from('categories').select('id,name,fact_type_id').eq('name', categoryName).eq('fact_type_id', factTypeId).maybeSingle();
             categoryId = catResp?.data?.id || null;
-          } catch (e) {}
+          } catch (e) { /* ignored - db lookup */ }
         }
         if (!categoryId && factTypeId && categoryName) {
           try {
             const catResp2: any = await supabase.from('categories').select('id,name,fact_type_id').ilike('name', categoryName).eq('fact_type_id', factTypeId).maybeSingle();
             categoryId = catResp2?.data?.id || null;
-          } catch (e) {}
+          } catch (e) { /* ignored - db lookup */ }
         }
         if (!categoryId && factTypeId && categoryName) {
           try {
@@ -210,18 +211,18 @@ export async function fetchFactsByCategory(
               found = list.find((c: any) => slugify(c.name) === targetSlug || normalize(c.name).includes(target) || target.includes(normalize(c.name)));
             }
             if (found) categoryId = found.id;
-          } catch (e) {}
+          } catch (e) { /* ignored - db lookup */ }
         }
         // Resolve subcategory id if needed
         if (categoryId && subName && !subcategoryId) {
           try {
             const subResp: any = await supabase.from('subcategories').select('id,name,category_id').eq('category_id', categoryId).eq('name', subName).maybeSingle();
             subcategoryId = subResp?.data?.id || null;
-          } catch (e) {}
+          } catch (e) { /* ignored - db lookup */ }
         }
       }
       if (process.env.NODE_ENV !== 'production') {
-        try { console.debug('[fetchFactsByCategory] resolved ids', { factTypeId, categoryId, subcategoryId, typeOrFactType, categoryOrCategory }); } catch (e) {}
+        try { logger.debug('[fetchFactsByCategory] resolved ids', { factTypeId, categoryId, subcategoryId, typeOrFactType, categoryOrCategory }); } catch (e) { /* ignored - debug only */ }
       }
       // If we have a categoryId (and optional subcategoryId), query facts directly by ids
       if (categoryId) {
@@ -251,7 +252,7 @@ export async function fetchFactsByCategory(
         if (factTypeId) qBase = qBase.eq('fact_type_id', factTypeId);
         const factsResp: any = await qBase.order('created_at', { ascending: false });
         if (process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchFactsByCategory] factsResp', { factsResp }); } catch (e) {}
+          try { logger.debug('[fetchFactsByCategory] factsResp', { factsResp }); } catch (e) { /* ignored - debug only */ }
         }
         const rows = factsResp?.data || [];
         if (rows && rows.length > 0) {
@@ -268,7 +269,7 @@ export async function fetchFactsByCategory(
             subcategory: null,
           }));
           if (process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchFactsByCategory] returning', { count: normalized.length }); } catch (e) {}
+            try { logger.debug('[fetchFactsByCategory] returning', { count: normalized.length }); } catch (e) { /* ignored - debug only */ }
           }
           memoryCache.set(key, { ts: Date.now(), value: normalized });
           setLocalCache('facts', key, normalized, opts?.ttl || 86400);
@@ -277,7 +278,7 @@ export async function fetchFactsByCategory(
       }
     }
   } catch (e) {
-    console.warn('DB lookup for facts failed, falling back to generator', e);
+    logger.warn('DB lookup for facts failed, falling back to generator', e);
   }
  
 
@@ -285,7 +286,7 @@ export async function fetchFactsByCategory(
   // Return an empty list so the frontend only shows approved facts from the DB.
   if (SUPABASE_AVAILABLE) {
     if (process.env.NODE_ENV !== 'production') {
-      try { console.debug('[fetchFactsByCategory] no approved facts found in DB for', { typeOrFactType, categoryOrCategory }); } catch (e) {}
+      try { logger.debug('[fetchFactsByCategory] no approved facts found in DB for', { typeOrFactType, categoryOrCategory }); } catch (e) { /* ignored - debug only */ }
     }
     const empty: any[] = [];
     memoryCache.set(key, { ts: Date.now(), value: empty });
@@ -308,7 +309,7 @@ export async function fetchFactsByCategory(
   // notify interested components to reload
   try {
     window.dispatchEvent(new CustomEvent('wf:facts-updated'));
-  } catch (e) {}
+  } catch (e) { /* ignored - event dispatch best-effort */ }
   return resultWithLabels;
 }
 
@@ -317,8 +318,8 @@ export function clearFactsCacheForKey(type: string, category: string) {
     const k = `wf:facts:${type.toLowerCase()}:${category.toLowerCase()}`;
     memoryCache.delete(`${type}:${category}`.toLowerCase());
     localStorage.removeItem(k);
-  } catch (e) {}
-  try { window.dispatchEvent(new CustomEvent('wf:facts-updated', { detail: { type, category } })); } catch (e) {}
+  } catch (e) { /* ignored - cache clear best-effort */ }
+  try { window.dispatchEvent(new CustomEvent('wf:facts-updated', { detail: { type, category } })); } catch (e) { /* ignored - event dispatch best-effort */ }
 }
 
 /**
@@ -351,7 +352,7 @@ export function clearFactsCacheAll() {
   } catch (e) {
     // ignore
   }
-  try { window.dispatchEvent(new CustomEvent('wf:facts-updated')); } catch (e) {}
+  try { window.dispatchEvent(new CustomEvent('wf:facts-updated')); } catch (e) { /* ignored - event dispatch best-effort */ }
 }
 
 /**
@@ -482,7 +483,7 @@ export async function fetchCountryFacts(
       // If we can't resolve a country fact_type row, return empty (do not
       // attempt name-only matches across unrelated fact types).
       if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        try { console.debug('[fetchCountryFacts] cannot find fact_type for slug country-facts'); } catch (e) {}
+        try { logger.debug('[fetchCountryFacts] cannot find fact_type for slug country-facts'); } catch (e) { /* ignored - debug only */ }
       }
       const empty: any[] = [];
       memoryCache.set(key, { ts: Date.now(), value: empty });
@@ -561,7 +562,7 @@ export async function fetchCountryFacts(
         // If we couldn't resolve the requested category (within country fact_type), return no results
         if (!categoryId) {
           if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { console.debug('[fetchCountryFacts] category resolution failed, returning empty', { requestedCategory: opts.category }); } catch (e) {}
+            try { logger.debug('[fetchCountryFacts] category resolution failed, returning empty', { requestedCategory: opts.category }); } catch (e) { /* ignored - debug only */ }
           }
           const empty: any[] = [];
           memoryCache.set(key, { ts: Date.now(), value: empty });
@@ -588,16 +589,16 @@ export async function fetchCountryFacts(
             } else {
               // requested subcategory not found -> return empty to avoid broad results
               if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-                try { console.debug('[fetchCountryFacts] requested subcategory not found, returning empty', { requestedSubName, categoryId }); } catch (e) {}
+                try { logger.debug('[fetchCountryFacts] requested subcategory not found, returning empty', { requestedSubName, categoryId }); } catch (e) { /* ignored - debug only */ }
               }
               const empty: any[] = [];
               memoryCache.set(key, { ts: Date.now(), value: empty });
               setLocalCache('facts', key, empty, opts?.ttl || 300);
               return empty;
             }
-          } catch (e) {
+            } catch (e) {
             if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-              try { console.debug('[fetchCountryFacts] subcategory resolution error, returning empty', { err: e }); } catch (er) {}
+              try { logger.debug('[fetchCountryFacts] subcategory resolution error, returning empty', { err: e }); } catch (er) { /* ignored - debug only */ }
             }
             const empty: any[] = [];
             memoryCache.set(key, { ts: Date.now(), value: empty });
@@ -619,13 +620,13 @@ export async function fetchCountryFacts(
             }
           } catch (e) {
             // fallback: only category-level facts
-            try { q = (q as any).is('subcategory_id', null); } catch (err) {}
+            try { q = (q as any).is('subcategory_id', null); } catch (err) { /* ignored - SDK quirk */ }
           }
         }
       } catch (e) {
         // on any resolution error, return empty to avoid broad country-wide results
         if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { console.debug('[fetchCountryFacts] category resolution exception, returning empty', { err: e }); } catch (err) {}
+          try { logger.debug('[fetchCountryFacts] category resolution exception, returning empty', { err: e }); } catch (err) { /* ignored - debug only */ }
         }
         const empty: any[] = [];
         memoryCache.set(key, { ts: Date.now(), value: empty });
@@ -655,7 +656,7 @@ export async function fetchCountryFacts(
         requireSubcategoryOnly = true;
       }
       if (requireSubcategoryOnly) {
-        try { q = (q as any).not('subcategory_id', 'is', null); } catch (err) {}
+        try { q = (q as any).not('subcategory_id', 'is', null); } catch (err) { /* ignored - SDK quirk */ }
       }
     }
 
@@ -663,8 +664,8 @@ export async function fetchCountryFacts(
     if (error) throw error;
     if (typeof window !== 'undefined') {
       try {
-        console.log('[fetchCountryFacts] raw rows:', { country, category: opts?.category, subcategory: opts?.subcategory, rowsCount: (rows || []).length, sample: (rows || []).slice(0, 3) });
-      } catch (e) {}
+        logger.debug('[fetchCountryFacts] raw rows:', { country, category: opts?.category, subcategory: opts?.subcategory, rowsCount: (rows || []).length, sample: (rows || []).slice(0, 3) });
+      } catch (e) { /* ignored - debug only */ }
     }
 
     const filtered = (rows || []).filter((r: any) => {
@@ -702,7 +703,7 @@ export async function fetchCountryFacts(
     // If filtering by fact_type removed all rows but the DB returned rows, fall back to returning the raw rows
     if ((finalRows || []).length === 0 && (rows || []).length > 0) {
       if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        try { console.debug('[fetchCountryFacts] fact_type filtering removed all rows, falling back to raw rows', { rowsCount: (rows || []).length }); } catch (e) {}
+        try { logger.debug('[fetchCountryFacts] fact_type filtering removed all rows, falling back to raw rows', { rowsCount: (rows || []).length }); } catch (e) { /* ignored - debug only */ }
       }
       finalRows = rows || [];
     }
@@ -737,26 +738,26 @@ export async function fetchCountryFacts(
         };
         (window as any).__wf_last_resolve = payload;
         window.dispatchEvent(new CustomEvent('wf:resolve', { detail: payload }));
-      } catch (e) {}
+      } catch (e) { /* ignored - event dispatch best-effort */ }
     }
     memoryCache.set(key, { ts: Date.now(), value: normalized });
     setLocalCache('facts', key, normalized, opts?.ttl || 86400);
     // Additional check: compare each row's category/subcategory ids to requested values
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
       try {
         const requestedCategory = opts?.category || null;
         const requestedSub = opts?.subcategory || null;
-        console.log('[fetchCountryFacts] comparing row ids to requested', {
+        logger.debug('[fetchCountryFacts] comparing row ids to requested', {
           requestedCategory,
           requestedSub,
           rowsCompared: (normalized || []).slice(0, 10).map((r: any) => ({ id: r.id, category_id: r.category_id, subcategory_id: r.subcategory_id })),
         });
-      } catch (e) {}
+      } catch (e) { /* ignored - debug only */ }
     }
 
     return normalized;
   } catch (e) {
-    console.warn('fetchCountryFacts failed', e);
+    logger.warn('fetchCountryFacts failed', e);
     const empty: any[] = [];
     memoryCache.set(key, { ts: Date.now(), value: empty });
     setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -849,7 +850,7 @@ export async function generateQuizForTopic(
       }
       return selected;
     } catch (e) {
-      console.warn('Failed to load quizzes from DB, returning empty', e);
+      logger.warn('Failed to load quizzes from DB, returning empty', e);
       memoryCache.set(key, { ts: Date.now(), value: [] });
       setLocalCache('quiz', key, [], opts?.ttl || 60);
       return [];
@@ -893,12 +894,12 @@ export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: numb
         body: { count: questionCount },
       });
       if (res.error) {
-        console.warn('fetch-random-quiz error:', res.error);
+        logger.warn('fetch-random-quiz error:', res.error);
         return [];
       }
       return res.data?.data || [];
     } catch (e) {
-      console.warn('Failed to invoke fetch-random-quiz', e);
+      logger.warn('Failed to invoke fetch-random-quiz', e);
       return [];
     }
   }
@@ -954,7 +955,7 @@ export async function fetchCountryNews(country: string, options: any = {}) {
       .limit(10);
 
     if (error) {
-      console.error('[fetchCountryNews] Error fetching news:', error);
+      logger.error('[fetchCountryNews] Error fetching news:', error);
       return [];
     }
 
@@ -962,7 +963,7 @@ export async function fetchCountryNews(country: string, options: any = {}) {
     setLocalCache('news', country.toLowerCase(), data || [], 21600);
     return data || [];
   } catch (err) {
-    console.error('[fetchCountryNews] Exception:', err);
+    logger.error('[fetchCountryNews] Exception:', err);
     return [];
   }
 }
@@ -988,7 +989,7 @@ export async function saveCountryNews(articles: any[]) {
     );
 
     if (error) {
-      console.error('[saveCountryNews] Error saving news:', error);
+      logger.error('[saveCountryNews] Error saving news:', error);
       return false;
     }
 
@@ -996,7 +997,7 @@ export async function saveCountryNews(articles: any[]) {
     localStorage.removeItem(cacheKey('news', articles[0]?.country?.toLowerCase()));
     return true;
   } catch (err) {
-    console.error('[saveCountryNews] Exception:', err);
+    logger.error('[saveCountryNews] Exception:', err);
     return false;
   }
 }
@@ -1021,13 +1022,13 @@ export async function cleanupOldNews(country?: string) {
     const { error } = await query;
 
     if (error) {
-      console.error('[cleanupOldNews] Error:', error);
+      logger.error('[cleanupOldNews] Error:', error);
       return false;
     }
 
     return true;
   } catch (err) {
-    console.error('[cleanupOldNews] Exception:', err);
+    logger.error('[cleanupOldNews] Exception:', err);
     return false;
   }
 }
@@ -1039,7 +1040,7 @@ export async function triggerNewsFetch() {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl) {
-      console.error('[triggerNewsFetch] SUPABASE_URL not configured');
+      logger.error('[triggerNewsFetch] SUPABASE_URL not configured');
       return { success: false, error: 'Configuration error' };
     }
 
@@ -1052,12 +1053,12 @@ export async function triggerNewsFetch() {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('[triggerNewsFetch] Error:', error);
+      logger.error('[triggerNewsFetch] Error:', error);
       return { success: false, error };
     }
 
     const data = await response.json();
-    console.log('[triggerNewsFetch] Success:', data);
+    logger.debug('[triggerNewsFetch] Success:', data);
     
     // Clear all cached news from localStorage
     Object.keys(localStorage).forEach(key => {
@@ -1071,7 +1072,7 @@ export async function triggerNewsFetch() {
     
     return { success: true, data };
   } catch (err) {
-    console.error('[triggerNewsFetch] Exception:', err);
+    logger.error('[triggerNewsFetch] Exception:', err);
     return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

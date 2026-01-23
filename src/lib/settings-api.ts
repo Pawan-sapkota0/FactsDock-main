@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { log, debug, warn, error } from "@/lib/logger";
 
 export interface Settings {
   // General Settings
@@ -64,13 +65,13 @@ export const fetchSettings = async (): Promise<Settings> => {
       .single();
 
     if (error) {
-      console.warn("Failed to fetch settings, using defaults:", error);
+      warn("Failed to fetch settings, using defaults:", error);
       return DEFAULT_SETTINGS;
     }
 
     return data || DEFAULT_SETTINGS;
   } catch (err) {
-    console.error("Settings fetch error:", err);
+    error("Settings fetch error:", err);
     return DEFAULT_SETTINGS;
   }
 };
@@ -93,7 +94,7 @@ export const saveSettings = async (settings: Partial<Settings>): Promise<Setting
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error("Failed to save settings:", err);
+    error("Failed to save settings:", err);
     throw err;
   }
 };
@@ -101,19 +102,21 @@ export const saveSettings = async (settings: Partial<Settings>): Promise<Setting
 /**
  * Update a single setting
  */
-export const updateSetting = async (key: keyof Settings, value: any): Promise<void> => {
+export const updateSetting = async (key: keyof Settings, value: unknown): Promise<void> => {
   try {
     const { error } = await supabase
       .from("settings")
       .update({
-        [key]: value,
+        // cast to any at boundary for Supabase client
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/DB boundary: update payload
+        [key]: value as any,
         updated_at: new Date().toISOString(),
       })
       .neq("id", "00000000-0000-0000-0000-000000000000");
 
     if (error) throw error;
   } catch (err) {
-    console.error(`Failed to update ${key}:`, err);
+    error(`Failed to update ${key}:`, err);
     throw err;
   }
 };
@@ -125,7 +128,7 @@ export const cacheSettings = (settings: Settings): void => {
   try {
     localStorage.setItem("wf:settings", JSON.stringify(settings));
   } catch (err) {
-    console.warn("Failed to cache settings:", err);
+    warn("Failed to cache settings:", err);
   }
 };
 
@@ -137,7 +140,7 @@ export const getCachedSettings = (): Settings | null => {
     const cached = localStorage.getItem("wf:settings");
     return cached ? JSON.parse(cached) : null;
   } catch (err) {
-    console.warn("Failed to get cached settings:", err);
+    warn("Failed to get cached settings:", err);
     return null;
   }
 };

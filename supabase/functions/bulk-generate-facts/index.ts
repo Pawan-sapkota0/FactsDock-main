@@ -1,4 +1,4 @@
-/// <reference path="../deno.d.ts" />
+import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -248,6 +248,7 @@ const checkExistingFacts = async (
 
     if (!resp.ok) return [];
     const existing = await resp.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- HTTP/DB response boundary
     return existing.map((f: any) => f.fact_text?.toLowerCase().trim() || "");
   } catch (e) {
     console.warn("Error checking existing facts:", e);
@@ -348,7 +349,8 @@ serve(async (req) => {
 
     // Create a ReadableStream to stream results immediately
     const stream = new ReadableStream({
-      async start(controller: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ReadableStream controller runtime type
+    async start(controller: any) {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY as string);
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const encoder = new TextEncoder();
@@ -392,6 +394,7 @@ Return a JSON array where each item has a "text" field (the fact), and optional 
 Respond with ONLY valid JSON, no markdown or explanation.`;
 
         // Call Gemini
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK response object from Gemini
         const gres: any = await model.generateContent(prompt);
         let generated: string | null = null;
 
@@ -407,6 +410,7 @@ Respond with ONLY valid JSON, no markdown or explanation.`;
         }
 
         // Parse JSON response
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI JSON payload
         let parsed: any = null;
         const candidate = extractJsonLike(stripCodeFences(String(generated)));
         try {
@@ -422,6 +426,7 @@ Respond with ONLY valid JSON, no markdown or explanation.`;
 
         // Filter out duplicates and structure for storage
         const facts = Array.isArray(parsed) ? parsed : [parsed];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI item shape
         const validFacts = facts.filter((f: any) => {
           const text = (f.text || f.fact || f.description || "").toString();
           const normalized = normalizeFact(text);
@@ -438,6 +443,7 @@ Respond with ONLY valid JSON, no markdown or explanation.`;
         // Write result immediately (newline-delimited JSON)
         const countryResult = {
           country,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI item shape
           facts: validFacts.map((f: any) => ({
             text: (f.text || f.fact || f.description || f.title || "")
               .toString()

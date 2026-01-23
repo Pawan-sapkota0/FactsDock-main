@@ -52,7 +52,7 @@ export function getViewedFactIds(): string[] {
 /**
  * Check if a fact was published within the last 48 hours
  */
-export function isFactWithinLatestReleaseWindow(fact: any): boolean {
+export function isFactWithinLatestReleaseWindow(fact: unknown): boolean {
   const factDate = getFactDate(fact);
   const now = new Date();
   const hoursAgo = new Date(now.getTime() - LATEST_RELEASE_WINDOW * 60 * 60 * 1000);
@@ -63,13 +63,13 @@ export function isFactWithinLatestReleaseWindow(fact: any): boolean {
 /**
  * Check if a fact was created/published today
  */
-export function isFactFromToday(fact: any): boolean {
+export function isFactFromToday(fact: unknown): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   // Try multiple date field names
-  const dateStr =
-    fact.created_at || fact.published_at || fact.date || fact.createdAt;
+  const obj = (fact as Record<string, unknown> | null) || null;
+  const dateStr = obj?.created_at ?? obj?.published_at ?? obj?.date ?? obj?.createdAt;
 
   if (!dateStr) return false;
 
@@ -85,14 +85,15 @@ export function isFactFromToday(fact: any): boolean {
 /**
  * Get release/publish date from fact with fallbacks
  */
-export function getFactDate(fact: any): Date {
+export function getFactDate(fact: unknown): Date {
+  const obj = (fact as Record<string, unknown> | null) || null;
   const dateStr =
-    fact.published_at ||
-    fact.release_date ||
-    fact.releaseDate ||
-    fact.created_at ||
-    fact.createdAt ||
-    fact.date;
+    obj?.published_at ??
+    obj?.release_date ??
+    obj?.releaseDate ??
+    obj?.created_at ??
+    obj?.createdAt ??
+    obj?.date;
 
   if (!dateStr) return new Date(0); // Return epoch if no date found
 
@@ -107,10 +108,10 @@ export function getFactDate(fact: any): Date {
  * Apply filtering based on selected filter type
  */
 export function filterFacts(
-  facts: any[],
+  facts: unknown[] | null | undefined,
   filterType: string,
   viewedFactIds?: string[]
-): any[] {
+): unknown[] {
   if (!facts) return [];
 
   switch (filterType) {
@@ -121,17 +122,19 @@ export function filterFacts(
       // Filter facts published within last 48 hours, sorted newest first
       return [...facts]
         .filter((f) => isFactWithinLatestReleaseWindow(f))
-        .sort(
-          (a, b) => getFactDate(b).getTime() - getFactDate(a).getTime()
-        );
+        .sort((a, b) => getFactDate(b).getTime() - getFactDate(a).getTime());
 
-    case "notseen":
+    case "notseen": {
       const viewed = viewedFactIds || getViewedFactIds();
-      return facts.filter((f) => !viewed.includes(String(f.id || f.fact_id)));
+      return facts.filter((f) => {
+        const obj = (f as Record<string, unknown> | null) || null;
+        return !viewed.includes(String(obj?.id ?? obj?.fact_id ?? ''));
+      });
+    }
 
     case "all":
     default:
-      return facts;
+        return facts;
   }
 }
 

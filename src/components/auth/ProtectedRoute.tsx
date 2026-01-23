@@ -6,6 +6,7 @@ import {
   AdminPermission,
   canPerformAction,
 } from "@/lib/admin-auth";
+import { log, debug, warn, error } from "@/lib/logger";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -51,7 +52,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
         setIsAuthorized(true);
       } catch (err) {
-        console.error("[ProtectedRoute] Authorization error:", err);
+        error("[ProtectedRoute] Authorization error:", err);
         setError("Authorization error");
         setIsAuthorized(false);
       }

@@ -23,16 +23,18 @@ const ContactMessages: React.FC = () => {
     queryFn: fetchMessages,
   });
 
+  const msgs = (messages as unknown as Record<string, unknown>[]) || [];
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Contact Messages</h1>
       {isLoading && <div>Loading messages...</div>}
       {error && <div className="text-red-600">Failed to load messages</div>}
-      {!isLoading && (!messages || (messages as any).length === 0) && (
+      {!isLoading && msgs.length === 0 && (
         <div className="p-4 bg-muted rounded">No messages found.</div>
       )}
 
-      {messages && (messages as any).length > 0 && (
+      {msgs.length > 0 && (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y table-auto">
             <thead>
@@ -45,26 +47,34 @@ const ContactMessages: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {(messages as any).map((m: any) => (
-                <tr key={m.id}>
-                  <td className="px-4 py-2 align-top">{m.name}</td>
-                  <td className="px-4 py-2 align-top">{m.email}</td>
-                  <td className="px-4 py-2 align-top whitespace-pre-wrap max-w-xl">
-                    {m.message}
-                  </td>
-                  <td className="px-4 py-2 align-top">
-                    {new Date(m.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2 align-top">
-                    <a
-                      href={`mailto:${m.email}?subject=Reply from World Facts`}
-                      className="text-primary underline"
-                    >
-                      Reply
-                    </a>
-                  </td>
-                </tr>
-              ))}
+              {msgs.map((m) => {
+                const row = m as Record<string, unknown>;
+                const id = String(row.id);
+                const name = String(row.name || "");
+                const email = String(row.email || "");
+                const message = String(row.message || "");
+                const created = String(row.created_at || "");
+                return (
+                  <tr key={id}>
+                    <td className="px-4 py-2 align-top">{name}</td>
+                    <td className="px-4 py-2 align-top">{email}</td>
+                    <td className="px-4 py-2 align-top whitespace-pre-wrap max-w-xl">
+                      {message}
+                    </td>
+                    <td className="px-4 py-2 align-top">
+                      {new Date(created).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 align-top">
+                      <a
+                        href={`mailto:${email}?subject=Reply from World Facts`}
+                        className="text-primary underline"
+                      >
+                        Reply
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

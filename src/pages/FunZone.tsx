@@ -7,6 +7,7 @@ import DidYouKnowModal from "@/components/modals/DidYouKnowModal";
 import { Brain, MapPin, BarChart3, Lightbulb } from "lucide-react";
 import { generateRandomQuiz } from "@/lib/api";
 import { SEOMeta } from "@/components/common/SEOMeta";
+import logger from "@/lib/logger";
 import { PAGE_TEMPLATES, generateArticleSchema } from "@/lib/seo-utils";
 
 interface GameCategory {
@@ -124,62 +125,57 @@ const fallbackQuestions: DidYouKnowQuestion[] = [
  * Extracts the question text and correct answer from the quiz data structure
  * Database stores questions with: { question, options[], correct_answer }
  */
-function convertQuizToDidYouKnow(quiz: any): DidYouKnowQuestion | null {
-  if (!quiz || !quiz.question) return null;
+function convertQuizToDidYouKnow(quiz: unknown): DidYouKnowQuestion | null {
+  if (!quiz || typeof quiz !== "object") return null;
+  const q = quiz as Record<string, unknown>;
+  const question =
+    typeof q.question === "string"
+      ? q.question
+      : typeof q.question === "object" && q.question
+        ? String(q.question)
+        : "";
+  if (!question) return null;
 
-  // Extract the correct answer from various possible field names and structures
   let answer = "No answer available";
 
-  // Try different answer field names in order of likelihood
-  if (
-    quiz.correct_answer &&
-    typeof quiz.correct_answer === "string" &&
-    quiz.correct_answer.trim().length > 0
-  ) {
-    // Most common: correct_answer field with string value
-    answer = quiz.correct_answer;
+  const correct_answer = q.correct_answer;
+  const answerField = q.answer;
+  const correctAnswer = q.correctAnswer;
+  const options = Array.isArray(q.options)
+    ? (q.options as unknown[])
+    : undefined;
+
+  if (typeof correct_answer === "string" && correct_answer.trim().length > 0) {
+    answer = correct_answer;
+  } else if (typeof answerField === "string" && answerField.trim().length > 0) {
+    answer = answerField;
   } else if (
-    quiz.answer &&
-    typeof quiz.answer === "string" &&
-    quiz.answer.trim().length > 0
+    typeof correctAnswer === "number" &&
+    Array.isArray(options) &&
+    options.length > correctAnswer
   ) {
-    // Alternative: answer field
-    answer = quiz.answer;
+    answer = String(options[correctAnswer]);
   } else if (
-    typeof quiz.correctAnswer === "number" &&
-    Array.isArray(quiz.options) &&
-    quiz.options.length > quiz.correctAnswer
+    typeof correctAnswer === "string" &&
+    correctAnswer.trim().length > 0
   ) {
-    // correctAnswer as index into options
-    answer = quiz.options[quiz.correctAnswer];
-  } else if (
-    typeof quiz.correctAnswer === "string" &&
-    quiz.correctAnswer.trim().length > 0
-  ) {
-    // correctAnswer as direct string
-    answer = quiz.correctAnswer;
-  } else if (Array.isArray(quiz.answer)) {
-    // answer is an array, take first non-empty element
-    const validAnswers = quiz.answer.filter(
-      (a: any) => a && String(a).trim().length > 0,
+    answer = correctAnswer;
+  } else if (Array.isArray(answerField)) {
+    const valid = (answerField as unknown[]).filter(
+      (a) => a && String(a).trim().length > 0,
     );
-    if (validAnswers.length > 0) {
-      answer = String(validAnswers[0]);
-    }
-  } else if (Array.isArray(quiz.options) && quiz.options.length > 0) {
-    // Fallback: if correct_answer is missing, try first option
-    const validOptions = quiz.options.filter(
-      (o: any) => o && String(o).trim().length > 0,
+    if (valid.length > 0) answer = String(valid[0]);
+  } else if (Array.isArray(options) && options.length > 0) {
+    const validOptions = options.filter(
+      (o) => o && String(o).trim().length > 0,
     );
-    if (validOptions.length > 0) {
-      answer = String(validOptions[0]);
-    }
+    if (validOptions.length > 0) answer = String(validOptions[0]);
   }
 
   return {
-    id: quiz.id || `db-${Math.random()}`,
-    question: quiz.question,
-    answer: answer,
+    id: String(q.id ?? `db-${Math.random()}`),
+    question: String(question),
+    answer,
   };
 }
 
@@ -222,7 +218,7 @@ const FunZone = () => {
         setCurrentQuestion(randomFallback);
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         "Failed to fetch random quiz, using fallback question",
         error,
       );

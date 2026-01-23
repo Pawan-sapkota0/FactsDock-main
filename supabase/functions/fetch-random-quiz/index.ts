@@ -1,4 +1,4 @@
-/// <reference path="../deno.d.ts" />
+import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 /**
@@ -33,6 +33,7 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     // Read parameters from request body first, fall back to query params
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed request body from incoming HTTP request
     let body: any = {};
     try {
       body = await req.json();
@@ -116,6 +117,7 @@ serve(async (req) => {
         );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/HTTP response boundary
       let rows: any[] = await fallbackRes.json();
 
       // Filter by topic/sourceType in JS if needed
@@ -133,6 +135,7 @@ serve(async (req) => {
       }
 
       // Flatten and select
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/DB row shape (questions array)
       const allQuestions: any[] = [];
       for (const r of rows) {
         const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
@@ -147,9 +150,11 @@ serve(async (req) => {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/HTTP response boundary
     const rows: any[] = await response.json();
 
     // Flatten questions from result rows
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/DB row shape (questions array)
     const allQuestions: any[] = [];
     for (const r of rows) {
       const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);

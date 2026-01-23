@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateQuizForTopic } from "@/lib/api";
 import { SEOMeta } from "@/components/common/SEOMeta";
 import { PAGE_TEMPLATES, generateArticleSchema } from "@/lib/seo-utils";
+import { log, debug, warn, error } from "@/lib/logger";
 
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
@@ -26,7 +27,9 @@ const Quiz = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [autoQuiz, setAutoQuiz] = useState<any[] | null>(null);
+  const [autoQuiz, setAutoQuiz] = useState<Record<string, unknown>[] | null>(
+    null,
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResults, setShowResults] = useState(false);
@@ -66,7 +69,7 @@ const Quiz = () => {
         description: `Starting quiz ${topic ? `for ${topic}` : "random"}`,
       });
     } catch (error) {
-      console.error("Error preparing quiz:", error);
+      error("Error preparing quiz:", error);
       toast({
         title: "Error",
         description: "Failed to prepare quiz. Please try again.",
@@ -90,10 +93,12 @@ const Quiz = () => {
         if (parsed && parsed.data && Array.isArray(parsed.data))
           parsed = parsed.data;
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setAutoQuiz(parsed.map((q: any) => ({ ...q })));
+          setAutoQuiz(
+            parsed.map((q: unknown) => ({ ...(q as Record<string, unknown>) })),
+          );
         }
       } catch (e) {
-        console.error("Invalid stored quiz:", e);
+        error("Invalid stored quiz:", e);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +139,7 @@ const Quiz = () => {
           });
         }
       } catch (e) {
-        console.error("Scroll error:", e);
+        error("Scroll error:", e);
       }
     }, 100); // Increased delay for better DOM rendering
 
@@ -169,7 +174,8 @@ const Quiz = () => {
       autoQuiz.forEach((q, idx) => {
         const ans = answers[idx];
         if (!ans && idx === currentIndex) return; // skip
-        if (ans && q.answer && ans === q.answer) correct++;
+        const qAnswer = String((q as Record<string, unknown>).answer ?? "");
+        if (ans && qAnswer && ans === qAnswer) correct++;
       });
       setShowResults(true);
       setLastScore(correct);
@@ -178,7 +184,9 @@ const Quiz = () => {
           "lastQuizScore",
           JSON.stringify({ total: autoQuiz.length, correct }),
         );
-      } catch (e) {}
+      } catch (e) {
+        /* ignored - storage best-effort */
+      }
     }
   };
 
@@ -250,7 +258,11 @@ const Quiz = () => {
                             return (
                               <Button
                                 key={i}
-                                variant={variant as any}
+                                variant={
+                                  variant as React.ComponentProps<
+                                    typeof Button
+                                  >["variant"]
+                                }
                                 onClick={() => handleAnswer(opt)}
                                 disabled={!!selectedChoice}
                               >

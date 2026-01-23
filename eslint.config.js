@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+const base = tseslint.config(
   { ignores: ["dist"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -24,3 +24,21 @@ export default tseslint.config(
     },
   },
 );
+
+export default [
+  ...base,
+  // Enable no-console only for client-side source
+  {
+    files: ["src/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-console": "error",
+    },
+  },
+  // Allow console usage in serverless functions, server, and scripts
+  {
+    files: ["supabase/**", "server/**", "scripts/**"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+];

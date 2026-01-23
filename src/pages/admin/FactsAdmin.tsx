@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { BulkCountryFactsModal } from "@/components/admin/BulkCountryFactsModal";
+import logger from "@/lib/logger";
 
 const PAGE_SIZE = 10;
 
@@ -71,22 +72,22 @@ const FactsAdmin: React.FC = () => {
           if (!cats.length) {
             const resp3: any = await supabase.from("categories").select("*");
             cats = resp3?.data || [];
-            console.warn(
-              "[FactsAdmin] No 'country' categories found; falling back to all categories."
+            logger.warn(
+              "[FactsAdmin] No 'country' categories found; falling back to all categories.",
             );
           }
         } catch (e) {
-          console.error("[FactsAdmin] Error loading categories:", e);
+          logger.error("[FactsAdmin] Error loading categories:", e);
         }
 
         if (mounted) {
           setFactTypes(ftypes || []);
           setCategories(cats || []);
         }
-        console.log("[FactsAdmin] Loaded categories:", cats);
-        console.log("[FactsAdmin] Loaded fact types:", ftypes);
+        logger.debug("[FactsAdmin] Loaded categories:", cats);
+        logger.debug("[FactsAdmin] Loaded fact types:", ftypes);
       } catch (e) {
-        console.error("Failed to load fact types/categories:", e);
+        logger.error("Failed to load fact types/categories:", e);
       }
     })();
     return () => {
@@ -149,9 +150,8 @@ const FactsAdmin: React.FC = () => {
       try {
         clearFactsCacheAll();
       } catch (e) {
-        console.warn("Failed to clear facts cache", e);
+        logger.warn("Failed to clear facts cache", e);
       }
-      toast({ title: "Approved", description: "Fact approved." });
     },
     onError: (err: any) => {
       const message =
@@ -215,7 +215,7 @@ const FactsAdmin: React.FC = () => {
           if (label) clearFactsCacheForKey(typeSlug, label);
         }
       } catch (e) {
-        console.warn("Failed to clear targeted facts cache", e);
+        logger.warn("Failed to clear targeted facts cache", e);
       }
     } finally {
       setActionLoading(null);
@@ -233,7 +233,7 @@ const FactsAdmin: React.FC = () => {
       try {
         clearFactsCacheAll();
       } catch (e) {
-        console.warn("Failed to clear facts cache", e);
+        logger.warn("Failed to clear facts cache", e);
       }
       toast({ title: "Deleted", description: "Fact deleted." });
     },
@@ -249,7 +249,7 @@ const FactsAdmin: React.FC = () => {
     setActionLoading(id);
     try {
       setLastError(null);
-      console.debug("[Admin] removing fact", id);
+      logger.debug("[Admin] removing fact", id);
       // read metadata so we can invalidate the affected cache after deletion
       let meta: any = null;
       try {
@@ -264,12 +264,12 @@ const FactsAdmin: React.FC = () => {
       }
 
       const res: any = await deleteMutation.mutateAsync(id);
-      console.debug("[Admin] delete result", res);
+      logger.debug("[Admin] delete result", res);
       // Supabase responses are { data, error }; handle error explicitly so UI isn't silent
       if (res && res.error) {
         const message =
           res.error?.message || "Failed to delete fact (server error).";
-        console.error("[Admin] delete error", res.error);
+        logger.error("[Admin] delete error", res.error);
         setLastError(message);
         toast({ title: "Error", description: message, variant: "destructive" });
         return;
@@ -300,11 +300,11 @@ const FactsAdmin: React.FC = () => {
           if (label) clearFactsCacheForKey(typeSlug, label);
         }
       } catch (e) {
-        console.warn("Failed to clear targeted facts cache", e);
+        logger.warn("Failed to clear targeted facts cache", e);
       }
     } catch (e: any) {
       const message = e?.message || String(e);
-      console.error("[Admin] remove caught error", e);
+      logger.error("[Admin] remove caught error", e);
       setLastError(message);
       toast({ title: "Error", description: message, variant: "destructive" });
     } finally {

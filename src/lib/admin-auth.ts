@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import logger from "@/lib/logger";
 
 export interface AdminUser {
   id: string;
@@ -41,18 +42,18 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 min before expiry
 export const signInWithEmailPassword = async (
   email: string,
   password: string,
-): Promise<{ user: AdminUser | null; error: any }> => {
+): Promise<{ user: AdminUser | null; error: unknown }> => {
   try {
-    console.log("[AdminAuth] Starting email/password login for:", email);
+    logger.debug("[AdminAuth] Starting email/password login for:", email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    console.log("[AdminAuth] Supabase auth response:", { 
-      hasSession: !!data.session, 
+    logger.debug("[AdminAuth] Supabase auth response:", {
+      hasSession: !!data.session,
       hasError: !!error,
-      error: error?.message 
+      error: error?.message,
     });
 
     if (error) {
@@ -64,12 +65,12 @@ export const signInWithEmailPassword = async (
     }
 
     // Verify admin credentials and get permissions
-    console.log("[AdminAuth] Calling verifyAdminCredentials...");
+    logger.debug("[AdminAuth] Calling verifyAdminCredentials...");
     const adminUser = await verifyAdminCredentials();
-    console.log("[AdminAuth] verifyAdminCredentials returned:", adminUser ? "user found" : "null");
+    logger.debug("[AdminAuth] verifyAdminCredentials returned:", adminUser ? "user found" : "null");
     return { user: adminUser, error: null };
   } catch (err) {
-    console.error("[AdminAuth] Email/password login error:", err);
+    logger.error("[AdminAuth] Email/password login error:", err);
     return { user: null, error: err };
   }
 };
@@ -77,7 +78,7 @@ export const signInWithEmailPassword = async (
 /**
  * Sign in with Google OAuth
  */
-export const signInWithGoogle = async (): Promise<{ error: any }> => {
+export const signInWithGoogle = async (): Promise<{ error: unknown }> => {
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -102,7 +103,7 @@ export const signInWithGoogle = async (): Promise<{ error: any }> => {
 export const signUpAdmin = async (
   email: string,
   password: string,
-): Promise<{ user: any; error: any }> => {
+): Promise<{ user: Record<string, unknown> | null; error: unknown }> => {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -125,7 +126,7 @@ export const signUpAdmin = async (
 /**
  * Reset password
  */
-export const resetPassword = async (email: string): Promise<{ error: any }> => {
+export const resetPassword = async (email: string): Promise<{ error: unknown }> => {
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/admin/reset-password`,
@@ -142,7 +143,7 @@ export const resetPassword = async (email: string): Promise<{ error: any }> => {
  */
 export const updatePassword = async (
   newPassword: string,
-): Promise<{ error: any }> => {
+): Promise<{ error: unknown }> => {
   try {
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
@@ -196,7 +197,7 @@ export const getCurrentAdminUser = async (): Promise<AdminUser | null> => {
       isActive: data.is_active,
     };
   } catch (error) {
-    console.error("[AdminAuth] Error getting current user:", error);
+    logger.error("[AdminAuth] Error getting current user:", error);
     return null;
   }
 };
@@ -231,10 +232,10 @@ export const hasAdminPermission = async (
 export const verifyAdminCredentials = async (): Promise<AdminUser | null> => {
   try {
     const authUser = await supabase.auth.getUser();
-    console.log("[AdminAuth] Auth user:", authUser.data?.user?.id);
+    logger.debug("[AdminAuth] Auth user:", authUser.data?.user?.id);
     
     if (!authUser.data?.user) {
-      console.warn("[AdminAuth] No auth user found");
+      logger.warn("[AdminAuth] No auth user found");
       return null;
     }
 
@@ -246,10 +247,10 @@ export const verifyAdminCredentials = async (): Promise<AdminUser | null> => {
       .eq("is_active", true)
       .maybeSingle();
 
-    console.log("[AdminAuth] Admin query result:", { data, error });
+    logger.debug("[AdminAuth] Admin query result:", { data, error });
 
     if (error || !data) {
-      console.warn("[AdminAuth] User is not an authorized admin - Error:", error);
+      logger.warn("[AdminAuth] User is not an authorized admin - Error:", error);
       return null;
     }
 
@@ -269,7 +270,7 @@ export const verifyAdminCredentials = async (): Promise<AdminUser | null> => {
         .update({ last_login: new Date().toISOString() })
         .eq("id", data.id);
     } catch (updateError) {
-      console.warn("[AdminAuth] Failed to update last_login:", updateError);
+      logger.warn("[AdminAuth] Failed to update last_login:", updateError);
       // Continue anyway - this is not critical
     }
 
@@ -281,10 +282,10 @@ export const verifyAdminCredentials = async (): Promise<AdminUser | null> => {
     };
     setSessionInStorage(session);
 
-    console.log("[AdminAuth] Successfully verified and stored admin session");
+    logger.debug("[AdminAuth] Successfully verified and stored admin session");
     return adminUser;
   } catch (error) {
-    console.error("[AdminAuth] Error verifying credentials:", error);
+    logger.error("[AdminAuth] Error verifying credentials:", error);
     return null;
   }
 };
@@ -297,7 +298,7 @@ export const adminLogout = async (): Promise<void> => {
     clearSessionStorage();
     await supabase.auth.signOut();
   } catch (error) {
-    console.error("[AdminAuth] Error during logout:", error);
+    logger.error("[AdminAuth] Error during logout:", error);
   }
 };
 
@@ -323,7 +324,7 @@ export const canPerformAction = async (
  */
 export const logAdminActivity = async (
   action: string,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): Promise<void> => {
   try {
     const user = await getCurrentAdminUser();
@@ -336,8 +337,8 @@ export const logAdminActivity = async (
       timestamp: new Date().toISOString(),
       ip_address: await getClientIP(),
     });
-  } catch (error) {
-    console.error("[AdminAuth] Error logging activity:", error);
+    } catch (error: unknown) {
+      logger.error("[AdminAuth] Error logging activity:", error);
   }
 };
 
@@ -348,7 +349,7 @@ function setSessionInStorage(session: AdminSession): void {
   try {
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   } catch (error) {
-    console.error("[AdminAuth] Error storing session:", error);
+    logger.error("[AdminAuth] Error storing session:", error);
   }
 }
 
@@ -357,7 +358,7 @@ function getSessionFromStorage(): AdminSession | null {
     const stored = localStorage.getItem(SESSION_STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch (error) {
-    console.error("[AdminAuth] Error retrieving session:", error);
+    logger.error("[AdminAuth] Error retrieving session:", error);
     return null;
   }
 }
@@ -366,7 +367,7 @@ function clearSessionStorage(): void {
   try {
     localStorage.removeItem(SESSION_STORAGE_KEY);
   } catch (error) {
-    console.error("[AdminAuth] Error clearing session:", error);
+    logger.error("[AdminAuth] Error clearing session:", error);
   }
 }
 

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { ExternalLink, AlertCircle } from "lucide-react";
 import NewsSkeleton from "@/components/country/NewsSkeleton";
 import { fetchCountryNews } from "@/lib/api";
+import { log, debug, warn, error } from "@/lib/logger";
 
 interface NewsItem {
   id?: string;
@@ -34,7 +35,7 @@ export default function NewsSection({ country }: NewsSectionProps) {
         const newsData = await fetchCountryNews(country);
         setNews(newsData || []);
       } catch (err) {
-        console.debug("[NewsSection] Failed to fetch news", err);
+        debug("[NewsSection] Failed to fetch news", err);
         setNews([]);
       } finally {
         setIsLoading(false);

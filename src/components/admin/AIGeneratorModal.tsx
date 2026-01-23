@@ -20,6 +20,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import logger from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { generateQuizWithGemini } from "@/lib/gemini-quiz";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,9 +28,22 @@ import { useQueryClient } from "@tanstack/react-query";
 interface AIGeneratorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  factTypes: any[];
-  onAcceptQuestions: (questions: any[]) => void;
+  factTypes: FactType[];
+  onAcceptQuestions: (questions: GeneratedQuestion[]) => void;
   isLoading?: boolean;
+}
+
+interface FactType {
+  id: string;
+  name: string;
+}
+
+interface GeneratedQuestion {
+  question: string;
+  q?: string;
+  options: string[];
+  correct_answer?: string;
+  difficulty?: string;
 }
 
 type ModalStep = "config" | "preview";
@@ -57,10 +71,12 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   const [difficulty, setDifficulty] = useState("medium");
   const [questionCount, setQuestionCount] = useState(5);
   const [isRandom, setIsRandom] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<FactType[]>([]);
 
   // Preview step state
-  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<
+    GeneratedQuestion[]
+  >([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const qc = useQueryClient();
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
@@ -81,7 +97,7 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
           .order("name");
         setCategories(data || []);
       } catch (error) {
-        console.error("Failed to load categories:", error);
+        logger.error("Failed to load categories:", error);
         setCategories([]);
       }
     };
@@ -109,10 +125,12 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
     let mounted = true;
     (async () => {
       try {
+        // SDK boundary: narrow with an inline cast to access user. Keep minimal runtime change.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK auth response
         const resp: any = await supabase.auth.getUser();
         const user = resp?.data?.user || null;
         if (mounted && user) setAdminUserId(user.id);
-      } catch (e) {
+      } catch (_e: unknown) {
         // ignore
       }
     })();
@@ -150,13 +168,13 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
     try {
       // Get fact type name
       const selectedFactType = factTypes.find(
-        (ft) => ft.id === selectedFactTypeId
+        (ft) => ft.id === selectedFactTypeId,
       );
       const factTypeName = selectedFactType?.name || "Unknown";
 
       // Get category name if selected
       const selectedCategory = categories.find(
-        (c) => c.id === selectedCategoryId
+        (c) => c.id === selectedCategoryId,
       );
       const categoryName = selectedCategory?.name;
 
@@ -187,13 +205,17 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
         title: "Generated",
         description: `${questions.length} questions generated. Review before accepting.`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message ?? "")
+          : "Failed to generate questions";
       toast({
         title: "Generation Failed",
-        description: error?.message || "Failed to generate questions",
+        description: message,
         variant: "destructive",
       });
-      console.error("Generation error:", error);
+      logger.error("Generation error:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -219,7 +241,7 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
     }
     try {
       // Create individual quiz entries for each generated question set
-      const payload = generatedQuestions.map((g: any) => ({
+      const payload = generatedQuestions.map((g: GeneratedQuestion) => ({
         questions: [
           {
             question: g.question || g.q || "",
@@ -252,10 +274,14 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       });
       // Close modal after save, but do NOT populate manual editor
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message =
+        e && typeof e === "object" && "message" in e
+          ? String((e as { message?: unknown }).message ?? "")
+          : "Save failed";
       toast({
         title: "Error",
-        description: e?.message || "Save failed",
+        description: message,
         variant: "destructive",
       });
     }
@@ -391,7 +417,7 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
                   value={questionCount}
                   onChange={(e) =>
                     setQuestionCount(
-                      Math.max(1, Math.min(50, Number(e.target.value) || 1))
+                      Math.max(1, Math.min(50, Number(e.target.value) || 1)),
                     )
                   }
                 />

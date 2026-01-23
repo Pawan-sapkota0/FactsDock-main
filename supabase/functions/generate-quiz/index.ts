@@ -38,14 +38,15 @@ serve(async (req) => {
     };
 
     // Helper: fetch facts matching criteria via REST, then filter out existing
-    const fetchFacts = async (): Promise<any[]> => {
+    const fetchFacts = async (): Promise<unknown[]> => {
       let factsUrl = `${supaUrl}/rest/v1/facts?select=*&status=eq.approved`;
       if (mode === 'fact_type' || fact_type_slug) {
         // resolve fact_type id by slug
         const ftRes = await fetch(`${supaUrl}/rest/v1/fact_types?select=id&slug=eq.${encodeURIComponent(fact_type_slug)}`, { headers });
         if (!ftRes.ok) return [];
-        const fts = await ftRes.json();
-        const ftId = fts && fts[0] && fts[0].id;
+        const fts = (await ftRes.json()) as unknown;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- REST API response shape
+        const ftId = (fts && (fts as any)[0] && (fts as any)[0].id) ?? null;
         if (ftId) factsUrl += `&fact_type_id=eq.${ftId}`;
       }
       if (mode === 'country' || country) {
@@ -53,17 +54,18 @@ serve(async (req) => {
       }
       const res = await fetch(factsUrl, { headers });
       if (!res.ok) return [];
-      const facts = await res.json();
-      return facts || [];
+      const facts = (await res.json()) as unknown;
+      return (Array.isArray(facts) ? facts : []) || [];
     };
 
     // fetch existing fact_ids in quizzes to avoid duplicates
     const existingRes = await fetch(`${supaUrl}/rest/v1/quizzes?select=fact_id`, { headers });
-    const existing = existingRes.ok ? (await existingRes.json()).map((r:any)=>r.fact_id).filter(Boolean) : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- REST API response shape
+    const existing = existingRes.ok ? ((await existingRes.json()) as any[]).map((r: Record<string, unknown>)=>r.fact_id).filter(Boolean) : [];
 
     const allFacts = await fetchFacts();
     // Filter out already-queried facts
-    const newFacts = (allFacts || []).filter((f:any) => !existing.includes(f.id));
+    const newFacts = (Array.isArray(allFacts) ? allFacts : []).filter((f: unknown) => !existing.includes((f as Record<string, unknown>)?.id));
     // Shuffle and take questionCount
     for (let i = newFacts.length -1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [newFacts[i], newFacts[j]] = [newFacts[j], newFacts[i]]; }
     const chosen = newFacts.slice(0, questionCount || 10);
@@ -73,7 +75,7 @@ serve(async (req) => {
     }
 
     // Build insert payload
-    const inserts = chosen.map((f:any) => ({
+    const inserts = chosen.map((f: Record<string, unknown>) => ({
       question: f.fact_text,
       options: ['Option 1','Option 2','Option 3','Option 4'],
       correct_answer: 'Option 1',

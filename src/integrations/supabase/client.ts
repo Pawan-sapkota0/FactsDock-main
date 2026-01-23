@@ -12,19 +12,36 @@ export const SUPABASE_AVAILABLE = Boolean(supabaseUrl && supabaseAnonKey);
 // available, export a lightweight stub that surfaces friendly errors at call
 // time. Consumers should check `SUPABASE_AVAILABLE` when they want to run
 // server-backed flows in development without configuring Supabase.
-let supabaseClient: any = null;
+let supabaseClient: unknown = null;
 
 if (SUPABASE_AVAILABLE) {
   supabaseClient = createClient(supabaseUrl as string, supabaseAnonKey as string);
 } else {
-  console.error('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Supabase client will be disabled.');
+  // Use centralized logger so production builds do not leak messages at module init
+  try {
+    // lazy import to avoid circular issues during module evaluation
+    import('@/lib/logger')
+      .then(({ error }) => {
+        try {
+          error('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Supabase client will be disabled.');
+        } catch (e) {
+          /* ignored */
+        }
+      })
+      .catch(() => {
+        /* ignore import failure during module init */
+      });
+  } catch (e) {
+    // If logger isn't available during module init, swallow the message
+    // to avoid throwing during evaluation. Intentionally silent.
+  }
 
   // Minimal stub matching the subset of the Supabase client surface used in
   // the app. This prevents module-evaluation errors while making it obvious
   // at runtime that Supabase is unavailable.
-  supabaseClient = {
+  const stub = {
     functions: {
-      invoke: async (_name: string, _opts?: any) => ({ error: new Error('Supabase is not configured (VITE_SUPABASE_URL missing)') }),
+      invoke: async (_name: string, _opts?: unknown) => ({ error: new Error('Supabase is not configured (VITE_SUPABASE_URL missing)') }),
     },
     auth: {
       // callers may await auth.getUser() or similar - return a shaped response
@@ -36,10 +53,14 @@ if (SUPABASE_AVAILABLE) {
       update: async () => ({ data: null, error: new Error('Supabase is not configured') }),
       delete: async () => ({ data: null, error: new Error('Supabase is not configured') }),
     }),
-  } as any;
+  };
+
+  supabaseClient = stub;
 }
 
-export const supabase = supabaseClient;
+// Export as `any` at the SDK boundary to preserve the supabase-js client shape
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK boundary: supabase-js client
+export const supabase = supabaseClient as any;
 
 // Expose a tiny debug shim in development so the app can quickly detect
 // whether the Supabase client was configured at runtime. This helps when

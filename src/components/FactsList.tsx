@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 import { FactCardSkeleton } from "@/components/cards/FactCardSkeleton";
 import { fetchFactsInitialBatch, fetchFactsNextBatch } from "@/lib/facts";
+import { log, debug, warn, error } from "@/lib/logger";
 
 interface FactsListProps {
   factType: string;
@@ -26,13 +27,13 @@ export const FactsList = ({
   pageSize = 8,
   onLoadComplete,
 }: FactsListProps) => {
-  const [facts, setFacts] = useState<any[]>([]);
+  const [facts, setFacts] = useState<unknown[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [totalFacts, setTotalFacts] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Load initial batch on mount or when category changes
   useEffect(() => {
@@ -51,7 +52,7 @@ export const FactsList = ({
       );
 
       if (result.facts.length === 0 && result.total === 0) {
-        setError("No facts found for this category.");
+        setErrorMessage("No facts found for this category.");
       }
 
       setFacts(result.facts);
@@ -60,8 +61,8 @@ export const FactsList = ({
       setTotalFacts(result.total);
       onLoadComplete?.();
     } catch (err) {
-      console.error("Error loading initial facts:", err);
-      setError("Failed to load facts. Please try again.");
+      error("Error loading initial facts:", err);
+      setErrorMessage("Failed to load facts. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +70,7 @@ export const FactsList = ({
 
   const loadMore = async () => {
     setIsLoadingMore(true);
-    setError(null);
+    setErrorMessage(null);
     try {
       const result = await fetchFactsNextBatch(
         factType,
@@ -83,8 +84,8 @@ export const FactsList = ({
       setCurrentPage((prev) => prev + 1);
       setHasMore(result.hasMore);
     } catch (err) {
-      console.error("Error loading more facts:", err);
-      setError("Failed to load more facts. Please try again.");
+      error("Error loading more facts:", err);
+      setErrorMessage("Failed to load more facts. Please try again.");
     } finally {
       setIsLoadingMore(false);
     }
@@ -101,10 +102,10 @@ export const FactsList = ({
     );
   }
 
-  if (error && facts.length === 0) {
+  if (errorMessage && facts.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground mb-4">{error}</p>
+        <p className="text-muted-foreground mb-4">{errorMessage}</p>
         <Button onClick={loadInitial} variant="outline">
           Try Again
         </Button>
@@ -116,8 +117,11 @@ export const FactsList = ({
     <div className="space-y-8">
       {/* Facts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {facts.map((fact) => (
-          <LazyFactCard key={fact.id} fact={fact} />
+        {facts.map((fact, i) => (
+          <LazyFactCard
+            key={(fact as { id?: string | number })?.id ?? `fact-${i}`}
+            fact={fact}
+          />
         ))}
       </div>
 
@@ -151,9 +155,9 @@ export const FactsList = ({
       )}
 
       {/* Error message for load more failures */}
-      {error && facts.length > 0 && (
+      {errorMessage && facts.length > 0 && (
         <div className="text-center py-4">
-          <p className="text-destructive mb-3">{error}</p>
+          <p className="text-destructive mb-3">{errorMessage}</p>
           <Button onClick={loadMore} variant="outline" size="sm">
             Try Again
           </Button>

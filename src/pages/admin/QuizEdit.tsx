@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -15,11 +14,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { AIGeneratorModal } from "@/components/admin/AIGeneratorModal";
+import logger from "@/lib/logger";
 
 // Dynamic loader for DnD builder with fallback to static UI
-function DynamicQuizBuilder(props: any) {
+function DynamicQuizBuilder(props: {
+  questions: unknown[];
+  setQuestions: (q: unknown[]) => void;
+  setQuestionsJson: (s: string) => void;
+}) {
   const { questions, setQuestions, setQuestionsJson } = props;
-  const [Comp, setComp] = React.useState<React.ComponentType<any> | null>(null);
+  const [Comp, setComp] = React.useState<React.ComponentType<
+    Record<string, unknown>
+  > | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -28,9 +34,9 @@ function DynamicQuizBuilder(props: any) {
         const mod = await import("./QuizBuilderDnd");
         if (mounted && mod && mod.default) setComp(() => mod.default);
       } catch (e) {
-        console.warn(
+        logger.warn(
           "Failed to load QuizBuilderDnd, falling back to static builder",
-          e
+          e,
         );
       }
     })();
@@ -49,11 +55,15 @@ function DynamicQuizBuilder(props: any) {
     );
   return (
     <div className="space-y-3">
-      {questions.map((qq: any, qi: number) => (
+      {questions.map((qq, qi: number) => (
         <StaticQuestion
-          key={qq.id || qq._localId || qi}
+          key={String(
+            (qq as Record<string, unknown>)?.id ??
+              (qq as Record<string, unknown>)?._localId ??
+              qi,
+          )}
           qi={qi}
-          qq={qq}
+          qq={qq as Record<string, unknown>}
           questions={questions}
           setQuestions={setQuestions}
           setQuestionsJson={setQuestionsJson}
@@ -81,8 +91,8 @@ class ErrorBoundary extends React.Component<
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch(error: any) {
-    console.error("ErrorBoundary caught", error);
+  componentDidCatch(error: unknown) {
+    logger.error("ErrorBoundary caught", error);
   }
   render() {
     if (this.state.hasError) {
@@ -93,7 +103,7 @@ class ErrorBoundary extends React.Component<
 }
 
 // Helper to move array elements
-function arrayMoveLocal(arr: any[], from: number, to: number) {
+function arrayMoveLocal(arr: unknown[], from: number, to: number) {
   const copy = arr.slice();
   if (from < 0 || from >= copy.length || to < 0 || to >= copy.length)
     return copy;
@@ -103,23 +113,31 @@ function arrayMoveLocal(arr: any[], from: number, to: number) {
 }
 
 // Static (non-draggable) question card with up/down buttons
+type StaticQuestionProps = {
+  qi: number;
+  qq: Record<string, unknown>;
+  questions: unknown[];
+  setQuestions: (q: unknown[]) => void;
+  setQuestionsJson: (s: string) => void;
+};
+
 function StaticQuestion({
   qi,
   qq,
   questions,
   setQuestions,
   setQuestionsJson,
-}: any) {
-  const updateQuestion = (updater: (q: any) => void) => {
+}: StaticQuestionProps) {
+  const updateQuestion = (updater: (q: Record<string, unknown>) => void) => {
     const copy = [...questions];
-    updater(copy[qi]);
+    updater(copy[qi] as Record<string, unknown>);
     setQuestions(copy);
     setQuestionsJson(JSON.stringify(copy, null, 2));
   };
 
-  const qText = qq.question || qq.q || "";
-  const opts = qq.options || [];
-  const correct = qq.correct_answer || null;
+  const qText = String(qq.question ?? qq.q ?? "");
+  const opts = Array.isArray(qq.options) ? (qq.options as unknown[]) : [];
+  const correct = qq.correct_answer ?? null;
 
   return (
     <div className="p-3 border rounded">
@@ -189,7 +207,7 @@ const QuizEdit: React.FC = () => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [country, setCountry] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<unknown[]>([]);
   const [questionsJson, setQuestionsJson] = useState("[]");
   const [status, setStatus] = useState<string>("draft");
   const [saving, setSaving] = useState(false);
@@ -224,7 +242,18 @@ const QuizEdit: React.FC = () => {
       return data || [];
     },
   });
-  const factTypes = (factTypesQ?.data as any) || [];
+  // Ensure we have a minimal FactType shape (id + name) so the modal prop typing is satisfied.
+  type LocalFactType = { id: string; name: string; [k: string]: unknown };
+
+  const factTypes: LocalFactType[] =
+    (factTypesQ?.data as unknown as Record<string, unknown>[])?.map(
+      (ft) =>
+        ({
+          id: String((ft as Record<string, unknown>)?.id ?? ""),
+          name: String((ft as Record<string, unknown>)?.name ?? ""),
+          ...(ft as Record<string, unknown>),
+        }) as LocalFactType,
+    ) || [];
 
   const categoriesByFactTypeQ = useQuery({
     queryKey: ["admin", "categories", "byFactTypeForSave", factTypeId],
@@ -239,19 +268,22 @@ const QuizEdit: React.FC = () => {
     },
     enabled: !!factTypeId,
   });
-  const categories = (categoriesByFactTypeQ?.data as any) || [];
+  const categories =
+    (categoriesByFactTypeQ?.data as unknown as Record<string, unknown>[]) || [];
 
   // Load quiz data when editing
   useEffect(() => {
     if (!quizQ?.data) return;
-    const row = quizQ.data as any;
-    setCountry(row.country || "");
-    setDifficulty(row.difficulty || "medium");
-    setQuestions(row.questions || []);
-    setQuestionsJson(JSON.stringify(row.questions || [], null, 2));
-    setFactTypeId(row.fact_type_id || null);
-    setCategoryId(row.category_id || null);
-    setStatus(row.status || "draft");
+    const row = quizQ.data as Record<string, unknown>;
+    setCountry(String(row.country || ""));
+    setDifficulty(String(row.difficulty || "medium"));
+    setQuestions((row.questions as unknown[]) || []);
+    setQuestionsJson(
+      JSON.stringify((row.questions as unknown[]) || [], null, 2),
+    );
+    setFactTypeId((row.fact_type_id as string) || null);
+    setCategoryId((row.category_id as string) || null);
+    setStatus(String(row.status || "draft"));
   }, [quizQ?.data]);
 
   // Load admin user
@@ -259,9 +291,12 @@ const QuizEdit: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const resp: any = await supabase.auth.getUser();
-        const user = resp?.data?.user || null;
-        if (mounted && user) setAdminUserId(user.id);
+        const resp = (await supabase.auth.getUser()) as unknown;
+        // supabase.auth.getUser() is an SDK call; narrow safely
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK return shape
+        const user = (resp as any)?.data?.user || null;
+        if (mounted && user)
+          setAdminUserId(String((user as Record<string, unknown>)?.id ?? ""));
       } catch (e) {
         // ignore
       }
@@ -308,12 +343,13 @@ const QuizEdit: React.FC = () => {
           }
         }
       } catch (e) {
-        console.debug("validate-quiz call failed or not available:", e);
+        logger.debug("validate-quiz call failed or not available:", e);
       }
 
       // Determine status and approval metadata.
       const nowIso = new Date().toISOString();
-      const payload: any = {
+      // Payload is sent to Supabase (DB boundary)
+      const payload: Record<string, unknown> = {
         fact_type_id: factTypeId,
         country: country || null,
         difficulty,
@@ -352,14 +388,21 @@ const QuizEdit: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
     },
-    onError: (err: any) => {
-      const message =
-        err?.message || err?.error?.message || "Failed to save quiz.";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+    onError: (err: unknown) => {
+      const getErrorMessage = (e: unknown) => {
+        if (!e) return "Failed to save quiz.";
+        if (typeof e === "string") return e;
+        if (typeof e === "object") {
+          const o = e as Record<string, unknown>;
+          const m =
+            o.message ??
+            (o.error as Record<string, unknown> | undefined)?.message;
+          if (typeof m === "string") return m;
+        }
+        return "Failed to save quiz.";
+      };
+      const message = getErrorMessage(err);
+      toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
 
@@ -398,24 +441,43 @@ const QuizEdit: React.FC = () => {
 
     setSaving(true);
     try {
-      const res: any = await saveMut.mutateAsync({ publish });
-      if (!editId && res && res.data && res.data.length && res.data[0].id) {
-        const newId = res.data[0].id;
-        toast({
-          title: publish ? "Published" : "Created",
-          description: publish ? "Quiz published." : "Quiz created.",
-        });
-        navigate(`/admin/quizzes/${newId}/edit`);
-        return;
+      const res: unknown = await saveMut.mutateAsync({ publish });
+      if (!editId && res && typeof res === "object") {
+        const r = res as Record<string, unknown>;
+        const data = r.data as unknown;
+        if (
+          Array.isArray(data) &&
+          data.length &&
+          (data[0] as Record<string, unknown>).id
+        ) {
+          const newId = String((data[0] as Record<string, unknown>).id);
+          toast({
+            title: publish ? "Published" : "Created",
+            description: publish ? "Quiz published." : "Quiz created.",
+          });
+          navigate(`/admin/quizzes/${newId}/edit`);
+          return;
+        }
       }
       toast({
         title: publish ? "Published" : "Saved",
         description: publish ? "Quiz published." : "Quiz saved.",
       });
       navigate("/admin/quizzes");
-    } catch (e: any) {
-      // show a clearer error if supabase returned details
-      const msg = e?.message || e?.error?.message || "Failed to save quiz.";
+    } catch (e: unknown) {
+      const getErrorMessage = (er: unknown) => {
+        if (!er) return "Failed to save quiz.";
+        if (typeof er === "string") return er;
+        if (typeof er === "object") {
+          const o = er as Record<string, unknown>;
+          const m =
+            o.message ??
+            (o.error as Record<string, unknown> | undefined)?.message;
+          if (typeof m === "string") return m;
+        }
+        return "Failed to save quiz.";
+      };
+      const msg = getErrorMessage(e);
       toast({ title: "Save Error", description: msg, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -423,40 +485,35 @@ const QuizEdit: React.FC = () => {
   };
 
   // Handle accepting AI-generated questions
-  const handleAcceptAIQuestions = (questions: any[]) => {
-    // Normalize questions from Gemini format to internal format
-    // Gemini: { question, options[], correct_answer }
-    // Internal: { question, options[], correct_answer } (for storage)
+  const handleAcceptAIQuestions = (aiQuestions: unknown[]) => {
+    const normalizedQuestions = aiQuestions.map((item) => {
+      const q = (item as Record<string, unknown>) || {};
+      const questionText = String(q.question ?? q.q ?? "");
+      const opts = Array.isArray(q.options) ? (q.options as unknown[]) : [];
+      const optsStrings = opts.map((o) => String(o));
+      const correct = q.correct_answer ?? "";
+      const idx = optsStrings.indexOf(String(correct));
+      return {
+        question: questionText,
+        options: optsStrings,
+        correct_answer: String(correct ?? ""),
+        q: questionText,
+        answer: idx >= 0 ? idx : 0,
+        fact_type_id: q.fact_type_id,
+        category_id: q.category_id,
+        country: q.country,
+        difficulty: q.difficulty,
+      };
+    });
 
-    const normalizedQuestions = questions.map((q) => ({
-      question: q.question || q.q || "",
-      options: Array.isArray(q.options) ? q.options : [],
-      correct_answer: q.correct_answer || "",
-      // Provide fields expected by the DnD/static editor:
-      q: q.question || q.q || "",
-      // Map correct_answer (value) to answer (index). If not found, default to 0.
-      answer: (() => {
-        const opts = Array.isArray(q.options) ? q.options : [];
-        const idx = opts.indexOf(q.correct_answer);
-        if (idx >= 0) return idx;
-        return 0;
-      })(),
-      fact_type_id: q.fact_type_id,
-      category_id: q.category_id,
-      country: q.country,
-      difficulty: q.difficulty,
-    }));
-
-    // Apply generated questions to form
     setQuestions(normalizedQuestions);
     setQuestionsJson(JSON.stringify(normalizedQuestions, null, 2));
-    // Extract metadata from first question to set form fields
-    if (questions.length > 0) {
-      const firstQ = normalizedQuestions[0];
-      if (firstQ.fact_type_id) setFactTypeId(firstQ.fact_type_id);
-      if (firstQ.category_id) setCategoryId(firstQ.category_id);
-      if (firstQ.country) setCountry(firstQ.country);
-      if (firstQ.difficulty) setDifficulty(firstQ.difficulty);
+    if (normalizedQuestions.length > 0) {
+      const firstQ = normalizedQuestions[0] as Record<string, unknown>;
+      if (firstQ.fact_type_id) setFactTypeId(String(firstQ.fact_type_id));
+      if (firstQ.category_id) setCategoryId(String(firstQ.category_id));
+      if (firstQ.country) setCountry(String(firstQ.country));
+      if (firstQ.difficulty) setDifficulty(String(firstQ.difficulty));
     }
   };
 
@@ -492,9 +549,9 @@ const QuizEdit: React.FC = () => {
                   <SelectValue placeholder="Select a fact type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {factTypes.map((ft: any) => (
-                    <SelectItem key={ft.id} value={String(ft.id)}>
-                      {ft.name}
+                  {factTypes.map((ft: Record<string, unknown>) => (
+                    <SelectItem key={String(ft.id)} value={String(ft.id)}>
+                      {String(ft.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -513,9 +570,9 @@ const QuizEdit: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No category</SelectItem>
-                  {categories.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
+                  {categories.map((c: Record<string, unknown>) => (
+                    <SelectItem key={String(c.id)} value={String(c.id)}>
+                      {String(c.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -575,9 +632,13 @@ const QuizEdit: React.FC = () => {
                 <div className="space-y-3">
                   {questions.map((qq, qi) => (
                     <StaticQuestion
-                      key={qq.id || qq._localId || qi}
+                      key={String(
+                        (qq as Record<string, unknown>)?.id ??
+                          (qq as Record<string, unknown>)?._localId ??
+                          qi,
+                      )}
                       qi={qi}
-                      qq={qq}
+                      qq={qq as Record<string, unknown>}
                       questions={questions}
                       setQuestions={setQuestions}
                       setQuestionsJson={setQuestionsJson}
@@ -591,9 +652,13 @@ const QuizEdit: React.FC = () => {
                   <div className="space-y-3">
                     {questions.map((qq, qi) => (
                       <StaticQuestion
-                        key={qq.id || qq._localId || qi}
+                        key={String(
+                          (qq as Record<string, unknown>)?.id ??
+                            (qq as Record<string, unknown>)?._localId ??
+                            qi,
+                        )}
                         qi={qi}
-                        qq={qq}
+                        qq={qq as Record<string, unknown>}
                         questions={questions}
                         setQuestions={setQuestions}
                         setQuestionsJson={setQuestionsJson}
