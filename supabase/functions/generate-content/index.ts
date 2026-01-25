@@ -133,13 +133,14 @@ REQUIREMENTS:
 - Each question must have exactly 4 options (A, B, C, D)
 - Only ONE correct answer per question
 - The correct answer can be any of the 4 options
-- Keep questions concise (under 20 words)
+- Keep questions concise (under 15 words)
 - Make questions challenging but fair according to difficulty:
   - easy: basic knowledge, simple facts
   - medium: requires some thinking or awareness
   - hard: detailed, less-known facts
 - Do NOT generate questions about other categories, types, countries, or difficulty levels
 - Ensure all questions are unique and not repetitive
+- Ensure all questions are human-friendly and use simple words 
 - Return ONLY a JSON array, no markdown or explanation
 
 Example format:

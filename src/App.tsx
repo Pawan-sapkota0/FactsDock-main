@@ -12,6 +12,7 @@ import FunFacts from "./pages/FunFacts";
 import FunZone from "./pages/FunZone";
 import GamesList from "./pages/GamesList";
 import WorldFacts from "./pages/WorldFacts";
+import TheWorld from "./pages/TheWorld";
 import CategoryView from "./pages/CategoryView";
 import CountryCategoryPage from "./pages/CountryCategoryPage";
 import Quiz from "./pages/Quiz";
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/fun-facts/:slug" element={<CategoryView />} />
             <Route path="/world-facts" element={<WorldFacts />} />
             <Route path="/world-facts/:slug" element={<CategoryView />} />
+            <Route path="/the-world" element={<TheWorld />} />
             <Route
               path="/countries/:country/:category"
               element={<CountryCategoryPage />}

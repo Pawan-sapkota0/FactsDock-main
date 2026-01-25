@@ -87,7 +87,7 @@ const Navbar = () => {
     { path: "/", label: "Home" },
     { path: "/world-facts", label: "Facts" },
     { path: "/quiz", label: "Quizzes" },
-    { path: "/categories", label: "Countries" },
+    { path: "/the-world", label: "Countries" },
   ];
 
   return (

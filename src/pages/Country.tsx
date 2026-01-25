@@ -780,6 +780,11 @@ const Country = () => {
 
             {/* previous category button removed; main category cards shown below */}
 
+            {/* Heading for categories */}
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+              View facts about {countryData.name} by categories
+            </h2>
+
             {/* Main categories cards for the country */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
               {categories.map((c) => (

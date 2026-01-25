@@ -126,8 +126,8 @@ REQUIREMENTS:
 - Generate exactly ${count} facts
 - Each fact MUST match the Fact Type: ${factTypeName || 'General'}
 - Each fact MUST match the Category: ${categoryName || 'General'}${subcategoryName ? ` and Subcategory: ${subcategoryName}` : ''}${country ? ` and be specific to ${country}` : ''}
-- Each fact must be one sentence (max 25 words), interesting, and verifiable
-- Facts must be factual and accurate
+- Each fact must be one sentence (max 15 words), interesting, and verifiable
+- Facts must be factual, accurate, specific, human-friendly, use simple words, and diverse
 - Do NOT generate facts about other categories, types, countries, or fact types
 - Do NOT repeat similar facts
 - Ensure all facts are unique and not repetitive

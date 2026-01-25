@@ -478,8 +478,8 @@ serve(async (req) => {
         }.
 
       Requirements:
-      - Each fact must be one sentence (max 25 words), interesting, and verifiable
-      - Facts should be specific, accurate, and diverse
+      - Each fact must be one sentence (max 15 words), interesting, and verifiable
+      - Facts should be specific, accurate, human-friendly, use simple words and diverse
       - Do NOT repeat similar facts or paraphrase the same information
       - Return ONLY a JSON array with each item having a "text" field
       - No markdown, no explanation, no surrounding prose
