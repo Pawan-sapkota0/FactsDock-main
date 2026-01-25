@@ -52,13 +52,13 @@ const Contact = () => {
         description: "Thank you for contacting us. We'll get back to you soon.",
       });
       formElement.reset(); // Reset form
-    } catch (error) {
-      error("🚨 Email sending failed.", error);
-      const err = "Failed to send email, please try again.";
-      setErrorMsg(err);
+    } catch (err) {
+      error("🚨 Email sending failed.", err);
+      const errorMsg = "Failed to send email, please try again.";
+      setErrorMsg(errorMsg);
       toast({
         title: "Error",
-        description: err,
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

@@ -43,13 +43,24 @@ import { log, debug, warn, error } from "@/lib/logger";
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 import { Button } from "@/components/ui/button";
 
+// Type definition for fact objects
+interface Fact {
+  id?: string;
+  fact_id?: string;
+  fact_text?: string;
+  fact?: string;
+  title?: string;
+  subcategory_id?: string;
+  [key: string]: unknown;
+}
+
 const FunFacts = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [facts, setFacts] = useState<unknown[]>([]);
+  const [facts, setFacts] = useState<Fact[]>([]);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [openQuizModal, setOpenQuizModal] = useState(false);
   const [quizModalTopic, setQuizModalTopic] = useState<string | undefined>(
@@ -252,7 +263,7 @@ const FunFacts = () => {
       const key = main;
       if (subCacheRef.has(key)) {
         const cached = subCacheRef.get(key) || [];
-        setFacts(cached);
+        setFacts(cached as Fact[]);
         toast({
           title: "Loaded from cache",
           description: `Loaded ${cached.length} cached facts for ${main}.`,
@@ -263,7 +274,7 @@ const FunFacts = () => {
       if (pendingRef.has(key)) {
         const pending = pendingRef.get(key)!;
         const result = await pending;
-        setFacts(result || []);
+        setFacts((result || []) as Fact[]);
         toast({
           title: "Facts Loaded",
           description: `Loaded ${result?.length || 0} facts for ${main}.`,
@@ -272,7 +283,13 @@ const FunFacts = () => {
       }
       const promise = (async () => {
         // prefer ID-based lookup when available
-        const opts = { force: true };
+        const opts: {
+          ttl?: number;
+          force?: boolean;
+          fact_type_id?: string;
+          category_id?: string;
+          subcategory_id?: string;
+        } = { force: true };
         if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
         const res = await fetchFactsByCategory("fun-facts", key, opts);
         subCacheRef.set(key, res || []);
@@ -281,7 +298,7 @@ const FunFacts = () => {
       })();
       pendingRef.set(key, promise);
       const result = await promise;
-      setFacts(result || []);
+      setFacts((result || []) as Fact[]);
       try {
         debug("[FunFacts] handleMainFetch setFacts", {
           key,
@@ -319,7 +336,7 @@ const FunFacts = () => {
       // Return cached immediately if present
       if (subCacheRef.has(key)) {
         const cached = subCacheRef.get(key) || [];
-        setFacts(cached);
+        setFacts(cached as Fact[]);
         toast({
           title: "Loaded from cache",
           description: `Loaded ${cached.length} cached facts for ${sub}.`,
@@ -332,7 +349,7 @@ const FunFacts = () => {
       if (pendingRef.has(key)) {
         const pending = pendingRef.get(key)!;
         const result = await pending;
-        setFacts(result || []);
+        setFacts((result || []) as Fact[]);
         toast({
           title: "Facts Loaded",
           description: `Loaded ${result?.length || 0} facts for ${sub}.`,
@@ -341,7 +358,13 @@ const FunFacts = () => {
       }
 
       const promise = (async () => {
-        const opts = { force: true };
+        const opts: {
+          ttl?: number;
+          force?: boolean;
+          fact_type_id?: string;
+          category_id?: string;
+          subcategory_id?: string;
+        } = { force: true };
         if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
         const res = await fetchFactsByCategory("fun-facts", key, opts);
         subCacheRef.set(key, res || []);
@@ -351,7 +374,7 @@ const FunFacts = () => {
 
       pendingRef.set(key, promise);
       const result = await promise;
-      setFacts(result || []);
+      setFacts((result || []) as Fact[]);
       try {
         debug("[FunFacts] handleSubClick setFacts", {
           main,
@@ -520,7 +543,10 @@ const FunFacts = () => {
                     });
 
                     // Apply filter
-                    const filtered = filterFacts(displayed, filterType);
+                    const filtered = filterFacts(
+                      displayed,
+                      filterType,
+                    ) as Fact[];
 
                     if (filtered.length === 0) {
                       return (
@@ -541,16 +567,18 @@ const FunFacts = () => {
                               className="transform transition-all duration-400 opacity-0 animate-fade-in"
                               style={{ animationDelay: `${idx * 60}ms` }}
                               onMouseEnter={() =>
-                                markFactViewed(fact?.id || fact?.fact_id)
+                                markFactViewed(
+                                  String(fact.id || fact.fact_id || ""),
+                                )
                               }
                             >
                               <LazyFactCard
-                                fact={
-                                  fact?.fact_text ||
-                                  fact?.fact ||
-                                  fact?.title ||
-                                  ""
-                                }
+                                fact={String(
+                                  fact.fact_text ||
+                                    fact.fact ||
+                                    fact.title ||
+                                    "",
+                                )}
                               />
                             </div>
                           ))}
@@ -614,7 +642,9 @@ const FunFacts = () => {
                 {facts.map((fact, index) => (
                   <div key={index} className="p-6">
                     <LazyFactCard
-                      fact={fact?.fact_text || fact?.fact || fact?.title || ""}
+                      fact={String(
+                        fact.fact_text || fact.fact || fact.title || "",
+                      )}
                     />
                   </div>
                 ))}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Shuffle, MapPin, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -237,40 +238,46 @@ const Quiz = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="mb-4">{autoQuiz[currentIndex].question}</p>
-                      <div className="grid gap-3">
-                        {(autoQuiz[currentIndex].options || []).map(
-                          (opt: string, i: number) => {
-                            const isSelected =
-                              answers[currentIndex] === opt ||
-                              selectedChoice === opt;
-                            const isCorrect =
-                              autoQuiz[currentIndex].answer === opt;
-                            const variant = selectedChoice
-                              ? isCorrect
-                                ? "default"
-                                : isSelected
-                                  ? "destructive"
-                                  : "outline"
-                              : answers[currentIndex] === opt
-                                ? "default"
-                                : "outline";
-                            return (
-                              <Button
-                                key={i}
-                                variant={
-                                  variant as React.ComponentProps<
-                                    typeof Button
-                                  >["variant"]
-                                }
-                                onClick={() => handleAnswer(opt)}
-                                disabled={!!selectedChoice}
-                              >
-                                {opt}
-                              </Button>
-                            );
-                          },
+                      <p className="mb-4">
+                        {String(
+                          (autoQuiz[currentIndex] as Record<string, unknown>)
+                            .question ?? "",
                         )}
+                      </p>
+                      <div className="grid gap-3">
+                        {(
+                          ((autoQuiz[currentIndex] as Record<string, unknown>)
+                            .options as string[]) || []
+                        ).map((opt: string, i: number) => {
+                          const isSelected =
+                            answers[currentIndex] === opt ||
+                            selectedChoice === opt;
+                          const isCorrect =
+                            autoQuiz[currentIndex].answer === opt;
+                          const variant = selectedChoice
+                            ? isCorrect
+                              ? "default"
+                              : isSelected
+                                ? "destructive"
+                                : "outline"
+                            : answers[currentIndex] === opt
+                              ? "default"
+                              : "outline";
+                          return (
+                            <Button
+                              key={i}
+                              variant={
+                                variant as React.ComponentProps<
+                                  typeof Button
+                                >["variant"]
+                              }
+                              onClick={() => handleAnswer(opt)}
+                              disabled={!!selectedChoice}
+                            >
+                              {opt}
+                            </Button>
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
@@ -298,13 +305,17 @@ const Quiz = () => {
                     {autoQuiz.map((q, idx) => (
                       <Card key={idx} className="p-4">
                         <div className="font-semibold mb-2">
-                          Q{idx + 1}: {q.question}
+                          Q{idx + 1}:{" "}
+                          {String(
+                            (q as Record<string, unknown>).question ?? "",
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Your answer: {answers[idx] ?? "—"}
                         </div>
                         <div className="text-sm text-primary">
-                          Correct answer: {q.answer}
+                          Correct answer:{" "}
+                          {String((q as Record<string, unknown>).answer ?? "")}
                         </div>
                       </Card>
                     ))}

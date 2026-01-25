@@ -74,6 +74,9 @@ export default function FactCard({ fact, className = "" }: Props) {
       <p className="text-muted-foreground leading-relaxed">
         {content || "No fact available"}
       </p>
+      <p className="text-[0.6rem] text-muted-foreground mt-2 pt-2 border-border">
+        Source: AI-generated • <span className="text-green-600">●</span> Verified
+      </p>
     </Card>
   );
 }

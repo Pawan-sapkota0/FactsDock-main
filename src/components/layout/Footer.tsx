@@ -11,7 +11,7 @@ const Footer = () => {
         { label: "Facts", href: "/world-facts" },
         { label: "Quizzes", href: "/quiz" },
         { label: "Game Zone", href: "/fun-zone" },
-        { label: "Countries", href: "/" },
+        // { label: "Countries", href: "/" },
       ],
     },
     {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+
 import GameCategoryCard from "@/components/cards/GameCategoryCard";
 import DidYouKnowCard from "@/components/cards/DidYouKnowCard";
 import DidYouKnowModal from "@/components/modals/DidYouKnowModal";

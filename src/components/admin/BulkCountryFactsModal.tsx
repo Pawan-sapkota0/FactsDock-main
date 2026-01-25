@@ -372,6 +372,9 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
             status: publish ? "approved" : "draft",
             created_by: adminUserId,
             metadata: fact.metadata || {},
+            ai_generated: fact.source === "ai" ? true : false,
+            content_hash:
+              fact.source === "ai" ? fact._contentHash || null : null,
           });
         }
       }
@@ -596,7 +599,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                     countries
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
@@ -638,7 +641,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                   key={countryResult.country}
                   className={`p-3 cursor-pointer transition ${
                     countryResult.selected
-                      ? "border-green-500 bg-green-50"
+                      ? "border-green-500 bg-green-500/10"
                       : "border-muted bg-muted/30"
                   }`}
                   onClick={() => toggleCountrySelection(countryResult.country)}
@@ -675,7 +678,10 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                             {countryResult.facts
                               .slice(0, 2)
                               .map((fact, idx) => (
-                                <p key={idx} className="text-xs text-gray-700">
+                                <p
+                                  key={idx}
+                                  className="text-xs text-foreground/70"
+                                >
                                   • {fact.text.substring(0, 100)}...
                                 </p>
                               ))}

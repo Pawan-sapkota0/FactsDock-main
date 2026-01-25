@@ -68,7 +68,7 @@ export default function Login() {
               title: "Success!",
               description: "You are now logged in as an admin.",
             });
-            setTimeout(() => navigate("/admin"), 1000);
+            setTimeout(() => navigate("/admin"), 2500);
           } else {
             setError("Access Denied: You do not have admin permissions");
             setStep("error");
@@ -109,7 +109,10 @@ export default function Login() {
     );
 
     if (authError) {
-      setError(authError.message || "Invalid email or password");
+      const errorMessage =
+        (authError as Record<string, unknown>)?.message ||
+        "Invalid email or password";
+      setError(String(errorMessage));
       setStep("error");
       setLoading(false);
     } else if (user) {
@@ -118,7 +121,7 @@ export default function Login() {
         title: "Success!",
         description: `Welcome back, ${user.email}!`,
       });
-      setTimeout(() => navigate("/admin"), 1000);
+      setTimeout(() => navigate("/admin"), 2500);
     } else {
       setError("Access Denied: You do not have admin permissions");
       setStep("error");
@@ -134,7 +137,10 @@ export default function Login() {
     const { error: oauthError } = await signInWithGoogle();
 
     if (oauthError) {
-      setError(oauthError.message || "Failed to initiate Google login");
+      const errorMessage =
+        (oauthError as Record<string, unknown>)?.message ||
+        "Failed to initiate Google login";
+      setError(String(errorMessage));
       setStep("error");
       setLoading(false);
     }

@@ -8,6 +8,8 @@ interface QuizGenerationConfig {
   factTypeName: string;
   categoryId?: string;
   categoryName?: string;
+  subcategoryId?: string;
+  subcategoryName?: string;
   country?: string;
   difficulty: string;
   questionCount: number;
@@ -48,6 +50,10 @@ export async function generateQuizWithGemini(
     contextParts.push(`Category: ${config.categoryName}`);
   }
 
+  if (config.subcategoryName) {
+    contextParts.push(`Subcategory: ${config.subcategoryName}`);
+  }
+
   if (config.country) {
     contextParts.push(`Country: ${config.country}`);
   }
@@ -66,7 +72,7 @@ REQUIREMENTS:
 - Each question must have exactly 4 options (A, B, C, D)
 - Exactly one option must be the correct answer
 - The correct answer can be any of the 4 options
-- Content must strictly match the fact type${config.categoryName ? ', category' : ''}${config.country ? ', and country' : ''} specified
+- Content must strictly match the fact type${config.categoryName ? ', category' : ''}${config.subcategoryName ? ', subcategory' : ''}${config.country ? ', and country' : ''} specified
 - Difficulty level must be ${config.difficulty}
 - Questions must be factual and accurate
 

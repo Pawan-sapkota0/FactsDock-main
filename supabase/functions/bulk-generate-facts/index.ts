@@ -2,6 +2,98 @@ import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// ========== UNIQUENESS CHECKING UTILITIES ==========
+function normalizeForComparison(text: string): string {
+  return text.toLowerCase().replace(/[^\w\s]/g, '').trim();
+}
+
+function hashContent(text: string): string {
+  const normalized = normalizeForComparison(text);
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16);
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const aLen = a.length, bLen = b.length;
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () => Array(bLen + 1).fill(0));
+  for (let i = 0; i <= aLen; i++) dp[i][0] = i;
+  for (let j = 0; j <= bLen; j++) dp[0][j] = j;
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return dp[aLen][bLen];
+}
+
+function calculateSimilarity(a: string, b: string): number {
+  const normalized1 = normalizeForComparison(a);
+  const normalized2 = normalizeForComparison(b);
+  const maxLen = Math.max(normalized1.length, normalized2.length);
+  if (maxLen === 0) return 1;
+  const distance = levenshteinDistance(normalized1, normalized2);
+  return 1 - (distance / maxLen);
+}
+
+async function checkBulkFactUniqueness(
+  factText: string,
+  supaUrl: string,
+  svcKey: string,
+  filters: Record<string, unknown>
+): Promise<{ isUnique: boolean; duplicateCount: number; potentialMatches: unknown[]; hash: string }> {
+  try {
+    const headers = {
+      'apikey': svcKey,
+      'Authorization': `Bearer ${svcKey}`,
+      'Content-Type': 'application/json'
+    };
+    
+    let url = `${supaUrl}/rest/v1/facts?select=fact_text`;
+    if (filters.factTypeId) url += `&fact_type_id=eq.${filters.factTypeId}`;
+    if (filters.country) url += `&country=eq.${encodeURIComponent(filters.country as string)}`;
+    if (filters.categoryId) url += `&category_id=eq.${filters.categoryId}`;
+    
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      console.warn('[checkBulkFactUniqueness] Failed to fetch existing facts');
+      return { isUnique: true, duplicateCount: 0, potentialMatches: [], hash: hashContent(factText) };
+    }
+
+    const existingFacts = (await res.json()) as unknown[];
+    const potentialMatches: unknown[] = [];
+    
+    for (const fact of existingFacts) {
+      const existingText = (fact as Record<string, unknown>)?.fact_text as string;
+      if (!existingText) continue;
+      
+      const similarity = calculateSimilarity(factText, existingText);
+      if (similarity > 0.8) {
+        potentialMatches.push({ similarity, text: existingText });
+      }
+    }
+
+    return {
+      isUnique: potentialMatches.length === 0,
+      duplicateCount: potentialMatches.length,
+      potentialMatches,
+      hash: hashContent(factText)
+    };
+  } catch (e) {
+    console.error('[checkBulkFactUniqueness] Error:', e);
+    return { isUnique: true, duplicateCount: 0, potentialMatches: [], hash: hashContent(factText) };
+  }
+}
+// ========== END UNIQUENESS CHECKING ==========
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -286,6 +378,7 @@ serve(async (req) => {
       factsPerCountry = 5,
       countries = null,
       factTypeId = null,
+      checkUniqueness = false,
     } = body;
 
     // Only allow bulk mode for country_facts
@@ -327,7 +420,7 @@ serve(async (req) => {
     // Get API credentials
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const GEMINI_MODEL =
-      Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+      Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash-lite";
     const svcRole =
       Deno.env.get("SUPABASE_SERVICE_ROLE") ||
       Deno.env.get("service_role") ||
@@ -345,7 +438,11 @@ serve(async (req) => {
     }
 
     // Determine which countries to process
-    const countriesToProcess = countries || COUNTRIES_A_TO_Z;
+    const countriesToProcess = countries && Array.isArray(countries) && countries.length > 0 
+      ? countries 
+      : COUNTRIES_A_TO_Z;
+    
+    console.log(`[bulk-generate-facts] Processing ${countriesToProcess.length} countries`);
 
     // Create a ReadableStream to stream results immediately
     const stream = new ReadableStream({
@@ -357,12 +454,9 @@ serve(async (req) => {
 
         for (let i = 0; i < countriesToProcess.length; i++) {
           const country = countriesToProcess[i];
+          console.log(`[bulk-generate-facts] Processing country ${i + 1}/${countriesToProcess.length}: ${country}`);
 
       try {
-        console.log(
-          `[Bulk] Processing country ${i + 1}/${countriesToProcess.length}: ${country}`
-        );
-
         // Check for existing facts to avoid duplicates
         const existingTexts: string[] = [];
         if (svcRole && supaUrl) {
@@ -379,29 +473,38 @@ serve(async (req) => {
         }
 
         // Build prompt for this country
-        const promptParts: string[] = [
-          `Country: ${country}`,
-          `Category: ${category || "Unknown"}`,
-        ];
-        if (subcategory) {
-          promptParts.push(`Subcategory: ${subcategory}`);
-        }
-        const promptTarget = promptParts.join(" | ");
+        const prompt = `Generate ${factsPerCountry} unique, factual, and neutral statements about ${country} regarding ${category}${
+          subcategory ? ` - ${subcategory}` : ""
+        }.
 
-        const prompt = `Generate ${factsPerCountry} unique, factual, and neutral statements about ${country} regarding ${category}${subcategory ? " - " + subcategory : ""}. 
-Make facts concise (one sentence), interesting, and verifiable. 
-Return a JSON array where each item has a "text" field (the fact), and optional "source" field.
-Respond with ONLY valid JSON, no markdown or explanation.`;
+      Requirements:
+      - Each fact must be one sentence (max 25 words), interesting, and verifiable
+      - Facts should be specific, accurate, and diverse
+      - Do NOT repeat similar facts or paraphrase the same information
+      - Return ONLY a JSON array with each item having a "text" field
+      - No markdown, no explanation, no surrounding prose
+
+      Example format:
+      [
+        { "text": "Your fact here" },
+        { "text": "Another fact here" }
+      ]`;
 
         // Call Gemini
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK response object from Gemini
-        const gres: any = await model.generateContent(prompt);
         let generated: string | null = null;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK response object from Gemini
+          const gres: any = await model.generateContent(prompt);
 
-        if (gres?.response && typeof gres.response.text === "function") {
-          generated = await gres.response.text();
-        } else if (typeof gres === "string") {
-          generated = gres;
+          if (gres?.response && typeof gres.response.text === "function") {
+            generated = await gres.response.text();
+          } else if (typeof gres === "string") {
+            generated = gres;
+          }
+        } catch (geminiError: unknown) {
+          console.error(`Gemini API error for ${country}:`, geminiError);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `Gemini API error for ${country}` })}\n\n`));
+          continue;
         }
 
         if (!generated) {
@@ -424,21 +527,34 @@ Respond with ONLY valid JSON, no markdown or explanation.`;
           }
         }
 
-        // Filter out duplicates and structure for storage
+        // Filter out duplicates and structure for storage with uniqueness check
         const facts = Array.isArray(parsed) ? parsed : [parsed];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI item shape
-        const validFacts = facts.filter((f: any) => {
+        const validFacts = [];
+
+        for (const f of facts) {
           const text = (f.text || f.fact || f.description || "").toString();
+          if (!text) continue;
+          
           const normalized = normalizeFact(text);
-          return (
-            text &&
-            !existingTexts.some(
-              (e) =>
-                e === normalized || e.includes(normalized) ||
-                normalized.includes(e)
-            )
-          );
-        });
+          // Check against existing texts first (quick filter)
+          if (existingTexts.some(e => e === normalized || e.includes(normalized) || normalized.includes(e))) {
+            continue;
+          }
+          
+          // If checkUniqueness enabled, do server-side similarity check
+          if (checkUniqueness && svcRole && supaUrl) {
+            const result = await checkBulkFactUniqueness(text, supaUrl, svcRole, {
+              country,
+              factTypeId: factTypeId || null,
+              categoryId: category_id || null
+            });
+            if (!result.isUnique) {
+              continue;
+            }
+          }
+          
+          validFacts.push(f);
+        }
 
         // Write result immediately (newline-delimited JSON)
         const countryResult = {
@@ -449,11 +565,16 @@ Respond with ONLY valid JSON, no markdown or explanation.`;
               .toString()
               .slice(0, 1000),
             source: f.source || "ai",
+            ai_generated: true,
+            content_hash: hashContent(f.text || f.fact || f.description || ""),
+            is_unique: true,
+            checked_at: new Date().toISOString(),
             metadata: f,
           })),
           factCount: validFacts.length,
         };
         controller.enqueue(encoder.encode(JSON.stringify(countryResult) + '\n'));
+        console.log(`[bulk-generate-facts] Sent result for ${country}: ${validFacts.length} facts`);
 
         // Rate limiting: small delay between requests
         await delay(500);

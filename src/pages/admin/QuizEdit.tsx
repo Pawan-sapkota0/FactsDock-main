@@ -212,6 +212,7 @@ const QuizEdit: React.FC = () => {
   const [status, setStatus] = useState<string>("draft");
   const [saving, setSaving] = useState(false);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const [isAIGenerated, setIsAIGenerated] = useState(false);
 
   // AI Generator Modal state
   const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
@@ -275,15 +276,42 @@ const QuizEdit: React.FC = () => {
   useEffect(() => {
     if (!quizQ?.data) return;
     const row = quizQ.data as Record<string, unknown>;
+    const isRandom = row.is_random === true;
+
+    // Normalize questions for random quizzes to match editor format
+    let questionsToLoad = (row.questions as unknown[]) || [];
+    if (isRandom && questionsToLoad.length > 0) {
+      questionsToLoad = questionsToLoad.map((q: Record<string, unknown>) => {
+        const question = String(q.question || q.q || "");
+        const options = Array.isArray(q.options) ? q.options : [];
+        const correctAnswer = String(q.correct_answer || "");
+
+        // Find the index of the correct answer in options
+        let answerIndex = 0;
+        if (correctAnswer) {
+          answerIndex = (options as string[]).indexOf(correctAnswer);
+          if (answerIndex < 0) answerIndex = 0;
+        }
+
+        return {
+          q: question,
+          options,
+          answer: answerIndex,
+          correct_answer: correctAnswer,
+        };
+      });
+    }
+
     setCountry(String(row.country || ""));
     setDifficulty(String(row.difficulty || "medium"));
-    setQuestions((row.questions as unknown[]) || []);
-    setQuestionsJson(
-      JSON.stringify((row.questions as unknown[]) || [], null, 2),
-    );
+    setQuestions(questionsToLoad);
+    setQuestionsJson(JSON.stringify(questionsToLoad, null, 2));
     setFactTypeId((row.fact_type_id as string) || null);
     setCategoryId((row.category_id as string) || null);
     setStatus(String(row.status || "draft"));
+    // Reset isAIGenerated flag when loading a quiz for editing
+    // Users can only accept AI questions through the modal, not manual edits
+    setIsAIGenerated(false);
   }, [quizQ?.data]);
 
   // Load admin user
@@ -356,6 +384,7 @@ const QuizEdit: React.FC = () => {
         questions: payloadQuestions,
         category_id: categoryId || null,
         created_by: adminUserId,
+        ai_generated: isAIGenerated,
       };
 
       if (publish) {
@@ -491,14 +520,26 @@ const QuizEdit: React.FC = () => {
       const questionText = String(q.question ?? q.q ?? "");
       const opts = Array.isArray(q.options) ? (q.options as unknown[]) : [];
       const optsStrings = opts.map((o) => String(o));
-      const correct = q.correct_answer ?? "";
-      const idx = optsStrings.indexOf(String(correct));
+
+      // Try to get the correct answer index: correctAnswer (number) or correct_answer (string)
+      let answerIndex = 0;
+      if (typeof q.correctAnswer === "number") {
+        answerIndex = q.correctAnswer;
+      } else if (typeof q.correct_answer === "number") {
+        answerIndex = q.correct_answer;
+      } else if (typeof q.correct_answer === "string") {
+        // Try to find the answer text in options
+        const correctText = String(q.correct_answer);
+        answerIndex = optsStrings.indexOf(correctText);
+        if (answerIndex < 0) answerIndex = 0;
+      }
+
       return {
         question: questionText,
         options: optsStrings,
-        correct_answer: String(correct ?? ""),
+        correct_answer: optsStrings[answerIndex] ?? "",
         q: questionText,
-        answer: idx >= 0 ? idx : 0,
+        answer: answerIndex,
         fact_type_id: q.fact_type_id,
         category_id: q.category_id,
         country: q.country,
@@ -508,6 +549,7 @@ const QuizEdit: React.FC = () => {
 
     setQuestions(normalizedQuestions);
     setQuestionsJson(JSON.stringify(normalizedQuestions, null, 2));
+    setIsAIGenerated(true);
     if (normalizedQuestions.length > 0) {
       const firstQ = normalizedQuestions[0] as Record<string, unknown>;
       if (firstQ.fact_type_id) setFactTypeId(String(firstQ.fact_type_id));

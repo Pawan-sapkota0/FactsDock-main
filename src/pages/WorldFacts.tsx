@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CategoryCard from "@/components/cards/CategoryCard";
@@ -580,9 +581,12 @@ const WorldFacts = () => {
                     {displayed.map((fact, index) => (
                       <div key={index} className="p-6">
                         <LazyFactCard
-                          fact={
-                            fact?.fact_text || fact?.fact || fact?.title || ""
-                          }
+                          fact={String(
+                            (fact as Record<string, unknown>)?.fact_text ??
+                              (fact as Record<string, unknown>)?.fact ??
+                              (fact as Record<string, unknown>)?.title ??
+                              "",
+                          )}
                         />
                       </div>
                     ))}

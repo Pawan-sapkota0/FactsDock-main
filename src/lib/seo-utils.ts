@@ -222,7 +222,7 @@ export const generatePlaceSchema = (data: {
     };
   }
 
-  return schema;
+  return schema as StructuredData;
 };
 
 /**
@@ -258,40 +258,91 @@ export const KEYWORD_STRATEGY = {
  */
 export const PAGE_TEMPLATES = {
   home: {
-    title: "World Facts | Discover Facts About Every Country",
+    title: "World Facts | Global Knowledge",
     description: "Explore fascinating facts, country data, and fun quizzes from around the world. Learn geography the smart way.",
     keywords: "world facts, country facts, geography quizzes, fun facts",
   },
   facts: {
-    title: "Country Facts & Information | World Facts",
+    title: "World Facts | Country Facts & Information",
     description: "Discover detailed facts about countries worldwide. Learn culture, geography, history, economy, and more.",
     keywords: "country facts, world information, geography, facts about countries",
   },
   quizzes: {
-    title: "Geography Quizzes | Test Your World Knowledge",
+    title: "World Facts | Geography Quizzes",
     description: "Challenge yourself with fun, educational geography quizzes. Test your knowledge about countries, capitals, and global facts.",
     keywords: "geography quizzes, world quizzes, country quizzes, educational quizzes",
   },
   funzone: {
-    title: "Fun Zone | Educational Games & Quizzes",
+    title: "World Facts | Fun Zone",
     description: "Enjoy interactive games and quizzes to learn about the world in a fun way. Perfect for students and curious minds.",
     keywords: "educational games, quizzes, fun learning, interactive education",
   },
   country: (countryName: string) => ({
-    title: `${countryName} Facts & Information | World Facts`,
+    title: `World Facts | ${countryName}`,
     description: `Explore fascinating facts about ${countryName}. Learn about culture, geography, history, economy, and interesting trivia.`,
     keywords: `${countryName} facts, facts about ${countryName}, ${countryName} information, ${countryName} quiz`,
   }),
   about: {
-    title: "About World Facts | Our Mission & Vision",
+    title: "World Facts | About",
     description: "Learn about World Facts - an educational platform dedicated to spreading global knowledge through facts, information, and interactive quizzes.",
     keywords: "about world facts, educational platform, global knowledge",
   },
   contact: {
-    title: "Contact Us | World Facts",
+    title: "World Facts | Contact Us",
     description: "Get in touch with the World Facts team. We'd love to hear your feedback, suggestions, and questions.",
     keywords: "contact world facts, support, feedback",
   },
+};
+
+/**
+ * Get page templates with settings applied dynamically
+ * This allows admin settings to override hardcoded templates
+ */
+export const getPageTemplatesWithSettings = (settings: {
+  website_name: string;
+  meta_description: string;
+  meta_keywords: string;
+  meta_title: string;
+}) => {
+  const { website_name, meta_description, meta_keywords } = settings;
+  
+  return {
+    home: {
+      title: `${website_name} | Global Knowledge`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+    facts: {
+      title: `${website_name} | Country Facts & Information`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+    quizzes: {
+      title: `${website_name} | Geography Quizzes`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+    funzone: {
+      title: `${website_name} | Fun Zone`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+    country: (countryName: string) => ({
+      title: `${website_name} | ${countryName}`,
+      description: `Explore fascinating facts about ${countryName}. Learn about culture, geography, history, economy, and interesting trivia.`,
+      keywords: `${countryName} facts, facts about ${countryName}, ${countryName} information, ${countryName} quiz`,
+    }),
+    about: {
+      title: `${website_name} | About`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+    contact: {
+      title: `${website_name} | Contact Us`,
+      description: meta_description,
+      keywords: meta_keywords,
+    },
+  };
 };
 
 /**

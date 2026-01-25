@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import logger from "@/lib/logger";
+import { generateFactsWithUniqueness } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,18 @@ type PreviewItem = {
   text?: string;
 } & Record<string, unknown>;
 
+type UniquenessReport = {
+  totalGenerated: number;
+  uniqueCount: number;
+  duplicateCount: number;
+  duplicates: Array<{
+    text: string;
+    duplicateCount: number;
+    matches: Array<{ similarity: number; text: string }>;
+  }>;
+  timestamp: string;
+};
+
 const FactsEdit: React.FC = () => {
   const { id: editId } = useParams<{ id?: string }>();
   const [category, setCategory] = useState<string>("");
@@ -55,11 +68,37 @@ const FactsEdit: React.FC = () => {
   const [confirmLines, setConfirmLines] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [subcategories, setSubcategories] = useState<Option[]>([]);
+  const [uniquenessWarnings, setUniquenessWarnings] = useState<
+    Array<{
+      text: string;
+      duplicateCount: number;
+      matches: Array<{ similarity: number; text: string }>;
+    }>
+  >([]);
+  const [uniquenessReport, setUniquenessReport] =
+    useState<UniquenessReport | null>(null);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const [isAIGenerated, setIsAIGenerated] = useState(false);
+
+  // Helper to calculate content hash same way as Edge Functions
+  const hashContent = (text: string): string => {
+    const normalized = text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .substring(0, 200);
+    let hash = 0;
+    for (let i = 0; i < normalized.length; i++) {
+      hash = (hash << 5) - hash + normalized.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(16);
+  };
 
   const factTypesQ = useQuery({
     queryKey: ["admin", "fact-types"],
@@ -333,97 +372,123 @@ const FactsEdit: React.FC = () => {
         setLoading(false);
         return;
       }
-      const url =
-        (import.meta.env.VITE_GENERATE_FACT_URL as string) ||
-        (import.meta.env.VITE_GENERATE_FACTS_URL as string) ||
-        "/.netlify/functions/generate-facts";
-      // find selected names to give the AI a friendly prompt
-      const ft = factTypes.find((f: Option) => f.id === factTypeId) || null;
-      const catObj = categories.find((c: Option) => c.id === category) || null;
-      const subObj =
-        subcategories.find((s: Option) => s.id === subcategory) || null;
-      const body: Record<string, unknown> = {
-        // send both friendly names and ids so server functions can accept either
-        fact_type: ft?.name || null,
-        fact_type_id: factTypeId || null,
-        category: catObj?.name || null,
-        category_id: category || null,
-        subcategory: subObj?.name || null,
-        subcategory_id: subcategory || null,
-        country: country || null,
-        count,
-      };
 
-      logger.debug("generatePreview -> POST", url, body);
+      // Use new uniqueness-aware generation function
       try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+        // Look up fact type, category and subcategory names if provided
+        let factTypeName: string | undefined;
+        let categoryName: string | undefined;
+        let subcategoryName: string | undefined;
+
+        if (factTypeId) {
+          const ftFound = factTypes.find((ft: Option) => ft.id === factTypeId);
+          factTypeName = ftFound?.name;
+        }
+
+        if (category) {
+          const catFound = categories.find((c: Option) => c.id === category);
+          categoryName = catFound?.name;
+        }
+
+        if (subcategory) {
+          const subFound = subcategories.find(
+            (s: Option) => s.id === subcategory,
+          );
+          subcategoryName = subFound?.name;
+        }
+
+        const raw = await generateFactsWithUniqueness({
+          factTypeId,
+          factTypeName: factTypeName || undefined,
+          categoryId: category,
+          categoryName: categoryName || undefined,
+          subcategoryId: subcategory || undefined,
+          subcategoryName: subcategoryName || undefined,
+          country: country || undefined,
+          count,
         });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => null);
-          throw new Error(text || "AI generation failed. Please try again.");
-        }
+        // Narrow the untyped response into expected shapes
+        const result = raw as {
+          facts?: unknown[];
+          uniquenessReport?:
+            | {
+                duplicates?: Array<{
+                  text: string;
+                  duplicateCount: number;
+                  matches: Array<{ similarity: number; text: string }>;
+                }>;
+                duplicateCount?: number;
+              }
+            | undefined;
+        };
 
-        const json = await res.json().catch(() => null);
-        logger.debug("generatePreview response", json);
-        const items = (json && (json.data || json.items || json)) || [];
-        const arr = Array.isArray(items) ? items : [items];
-        setPreview(arr);
+        const facts = Array.isArray(result.facts)
+          ? (result.facts as PreviewItem[])
+          : [];
 
-        // populate the editor with the first generated item if present
-        if (arr.length > 0) {
-          const first = arr[0];
-          const candidate =
-            first.fact ||
-            first.fact_text ||
-            first.description ||
-            first.title ||
-            first.text ||
-            null;
-          if (candidate) setText(candidate);
-        }
-      } catch (outerErr) {
-        // network/CORS failure or other issue calling the external endpoint. Try supabase.functions.invoke
-        logger.warn(
-          "Primary fetch failed, attempting supabase.functions.invoke fallback",
-          outerErr,
-        );
-        try {
-          const inv = await supabase.functions.invoke("generate-facts", {
-            body,
-          });
-          const invRes = inv as unknown as { data?: unknown; error?: unknown };
-          if (invRes.error) throw invRes.error;
-          const payload = invRes.data || invRes;
-          const items = (() => {
-            if (Array.isArray(payload)) return payload;
-            if (payload && typeof payload === "object" && payload !== null) {
-              const p = payload as Record<string, unknown>;
-              if (Array.isArray(p.data)) return p.data;
-              if (Array.isArray(p.items)) return p.items;
+        if (facts.length > 0) {
+          setPreview(facts);
+          setIsAIGenerated(true);
+
+          // Show uniqueness report
+          const ur = result.uniquenessReport;
+          if (ur) {
+            setUniquenessWarnings(
+              Array.isArray(ur.duplicates)
+                ? (ur.duplicates as typeof uniquenessWarnings)
+                : [],
+            );
+            // Store full uniqueness report for UI display
+            setUniquenessReport({
+              totalGenerated:
+                ((ur as Record<string, unknown>).totalGenerated as number) ||
+                facts.length,
+              uniqueCount: facts.length,
+              duplicateCount:
+                ((ur as Record<string, unknown>).duplicateCount as number) || 0,
+              duplicates: Array.isArray(ur.duplicates)
+                ? (ur.duplicates as typeof uniquenessWarnings)
+                : [],
+              timestamp:
+                ((ur as Record<string, unknown>).timestamp as string) ||
+                new Date().toISOString(),
+            });
+            if (
+              typeof ur.duplicateCount === "number" &&
+              ur.duplicateCount > 0
+            ) {
+              toast({
+                title: "Uniqueness Check",
+                description: `Generated ${facts.length} unique facts (${ur.duplicateCount} duplicates filtered)`,
+              });
             }
-            return [] as unknown[];
-          })();
-          const arr = Array.isArray(items) ? items : [items];
-          setPreview(arr);
-          if (arr.length > 0) {
-            const candidate =
-              arr[0].fact ||
-              arr[0].fact_text ||
-              arr[0].description ||
-              arr[0].title ||
-              arr[0].text ||
-              null;
+          }
+
+          // populate the editor with the first generated item if present
+          const first = facts[0] as PreviewItem | undefined;
+          if (first) {
+            const candidate = String(
+              first.fact ||
+                first.fact_text ||
+                first.description ||
+                first.title ||
+                first.text ||
+                "",
+            );
             if (candidate) setText(candidate);
           }
-          return;
-        } catch (invErr) {
-          logger.error("Fallback invoke failed", invErr);
-          throw outerErr;
+        } else {
+          toast({
+            title: "No Unique Content",
+            description:
+              "All generated facts were similar to existing content. Try different parameters.",
+            variant: "destructive",
+          });
         }
+      } catch (apiErr) {
+        logger.error("API uniqueness generation failed:", apiErr);
+        throw apiErr;
       }
     } catch (e: unknown) {
       logger.error("generatePreview error", e);
@@ -521,8 +586,10 @@ const FactsEdit: React.FC = () => {
       country: country || null,
       created_by: adminUserId || null,
       fact_text: l.slice(0, 1000),
-      source: "admin",
+      source: isAIGenerated ? "ai" : "admin",
       status: publish ? "approved" : "draft",
+      ai_generated: isAIGenerated,
+      content_hash: isAIGenerated ? hashContent(l) : null,
     }));
 
     try {
@@ -591,6 +658,8 @@ const FactsEdit: React.FC = () => {
                 fact_text: text,
                 status,
                 created_by: adminUserId,
+                ai_generated: isAIGenerated,
+                content_hash: isAIGenerated ? hashContent(text) : null,
               },
             ])
             .select("id");
@@ -851,6 +920,125 @@ const FactsEdit: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Uniqueness Report Display - Always show when report exists */}
+      {uniquenessReport && (
+        <div
+          className={`mt-4 p-4 rounded-lg border ${
+            uniquenessReport.duplicateCount > 0
+              ? "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900"
+              : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">
+              {uniquenessReport.duplicateCount > 0 ? "⚠️" : "✓"}
+            </span>
+            <h4
+              className={`font-semibold text-sm ${
+                uniquenessReport.duplicateCount > 0
+                  ? "text-yellow-800 dark:text-yellow-200"
+                  : "text-green-800 dark:text-green-200"
+              }`}
+            >
+              Uniqueness Check Complete
+            </h4>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div
+              className={`p-2 rounded text-center ${
+                uniquenessReport.duplicateCount > 0
+                  ? "bg-white dark:bg-yellow-950/40"
+                  : "bg-white dark:bg-green-950/40"
+              }`}
+            >
+              <div className="text-xs opacity-75">Total Generated</div>
+              <div className="font-semibold text-lg">
+                {uniquenessReport.totalGenerated}
+              </div>
+            </div>
+            <div
+              className={`p-2 rounded text-center ${
+                uniquenessReport.duplicateCount > 0
+                  ? "bg-white dark:bg-yellow-950/40"
+                  : "bg-white dark:bg-green-950/40"
+              }`}
+            >
+              <div className="text-xs opacity-75">Unique Facts</div>
+              <div className="font-semibold text-lg">
+                {uniquenessReport.uniqueCount}
+              </div>
+            </div>
+            <div
+              className={`p-2 rounded text-center ${
+                uniquenessReport.duplicateCount > 0
+                  ? "bg-white dark:bg-yellow-950/40"
+                  : "bg-white dark:bg-green-950/40"
+              }`}
+            >
+              <div className="text-xs opacity-75">Duplicates Filtered</div>
+              <div className="font-semibold text-lg">
+                {uniquenessReport.duplicateCount}
+              </div>
+            </div>
+          </div>
+
+          {/* Duplicates List (only show if there are duplicates) */}
+          {uniquenessReport.duplicateCount > 0 && (
+            <div>
+              <div
+                className={`text-xs font-medium mb-2 ${
+                  uniquenessReport.duplicateCount > 0
+                    ? "text-yellow-700 dark:text-yellow-300"
+                    : "text-green-700 dark:text-green-300"
+                }`}
+              >
+                Filtered Duplicates ({uniquenessReport.duplicateCount}):
+              </div>
+              <div className="space-y-2 text-xs">
+                {uniquenessReport.duplicates.map((warning, i) => (
+                  <div
+                    key={i}
+                    className="p-2 bg-white dark:bg-yellow-950/40 rounded border border-yellow-100 dark:border-yellow-900/50"
+                  >
+                    <p className="font-medium truncate text-yellow-900 dark:text-yellow-100">
+                      {warning.text.substring(0, 100)}...
+                    </p>
+                    {warning.matches && warning.matches.length > 0 && (
+                      <p className="text-yellow-600 dark:text-yellow-400 mt-1">
+                        ↻{" "}
+                        {Math.round(
+                          (warning.matches[0]?.similarity || 0) * 100,
+                        )}
+                        % match with existing fact
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {uniquenessReport.duplicateCount === 0 && (
+            <div className="text-xs text-green-700 dark:text-green-300">
+              ✓ All {uniquenessReport.uniqueCount} generated facts are unique
+              and ready to use!
+            </div>
+          )}
+
+          {/* Info Text */}
+          {uniquenessReport.duplicateCount > 0 && (
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-3">
+              These facts were similar to existing content and were filtered
+              out. Generate again with different parameters to get more unique
+              content.
+            </p>
+          )}
         </div>
       )}
 

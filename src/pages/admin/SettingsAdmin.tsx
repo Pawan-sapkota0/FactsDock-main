@@ -18,7 +18,18 @@ import {
   Settings,
   DEFAULT_SETTINGS,
 } from "@/lib/settings-api";
-import { Settings as SettingsIcon, Save, AlertCircle } from "lucide-react";
+import {
+  Settings as SettingsIcon,
+  Save,
+  AlertCircle,
+  Upload,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import logger from "@/lib/logger";
+import { uploadSiteImage, deleteSiteImage } from "@/lib/site-images-api";
 
 interface FormState extends Settings {
   hasChanges: boolean;
@@ -26,12 +37,14 @@ interface FormState extends Settings {
 
 const SettingsAdmin: React.FC = () => {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [formState, setFormState] = useState<FormState>({
     ...DEFAULT_SETTINGS,
     hasChanges: false,
   });
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Fetch settings on mount
   const { data: settings, isLoading } = useQuery({
@@ -139,6 +152,131 @@ const SettingsAdmin: React.FC = () => {
     }
   };
 
+  const handleImageUpload = async (
+    file: File,
+    imageType: "hero" | "logo" | "favicon",
+  ) => {
+    if (!file) return;
+    setUploading(true);
+
+    try {
+      const result = await uploadSiteImage(file, imageType);
+      if (!result.success || !result.url) {
+        throw new Error(result.error || "Upload failed");
+      }
+
+      const { url, path } = result;
+      const updatePayload: Record<string, unknown> = {};
+
+      if (imageType === "hero") {
+        updatePayload["hero_background_url"] = url;
+        updatePayload["hero_background_storage_path"] = path;
+      } else if (imageType === "logo") {
+        updatePayload["logo_url"] = url;
+        updatePayload["logo_storage_path"] = path;
+      } else if (imageType === "favicon") {
+        updatePayload["favicon_url"] = url;
+        updatePayload["favicon_storage_path"] = path;
+      }
+
+      const settingsId = settings?.id;
+      if (!settingsId) throw new Error("Settings not found");
+
+      const { error } = await supabase
+        .from("settings")
+        .update(updatePayload)
+        .eq("id", settingsId);
+
+      if (error) throw error;
+
+      localStorage.removeItem("wf:settings:images");
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+
+      toast({
+        title: "Success",
+        description: `${imageType} image uploaded successfully`,
+      });
+      window.dispatchEvent(new Event("wf:settings-updated"));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Upload failed. Please try again.";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+      logger.error("[handleImageUpload]", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageType: "hero" | "logo" | "favicon") => {
+    if (!settings) return;
+
+    try {
+      const storagePath =
+        imageType === "hero"
+          ? settings.hero_background_storage_path
+          : imageType === "logo"
+            ? settings.logo_storage_path
+            : settings.favicon_storage_path;
+
+      if (storagePath) {
+        await deleteSiteImage(storagePath);
+      }
+
+      const updatePayload: Record<string, unknown> = {};
+
+      if (imageType === "hero") {
+        updatePayload["hero_background_url"] = null;
+        updatePayload["hero_background_storage_path"] = null;
+      } else if (imageType === "logo") {
+        updatePayload["logo_url"] = null;
+        updatePayload["logo_storage_path"] = null;
+      } else if (imageType === "favicon") {
+        updatePayload["favicon_url"] = null;
+        updatePayload["favicon_storage_path"] = null;
+      }
+
+      const { error } = await supabase
+        .from("settings")
+        .update(updatePayload)
+        .eq("id", settings.id);
+
+      if (error) throw error;
+
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+
+      toast({
+        title: "Success",
+        description: `${imageType} image deleted`,
+      });
+      window.dispatchEvent(new Event("wf:settings-updated"));
+    } catch (error) {
+      logger.error("[handleDeleteImage]", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete image",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getImageUrl = (type: "hero" | "logo" | "favicon"): string | null => {
+    if (!settings) return null;
+
+    if (type === "hero") {
+      return settings.hero_background_url;
+    } else if (type === "logo") {
+      return settings.logo_url;
+    } else {
+      return settings.favicon_url;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -178,8 +316,9 @@ const SettingsAdmin: React.FC = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -288,6 +427,229 @@ const SettingsAdmin: React.FC = () => {
                 <p className="text-xs text-muted-foreground">
                   Default pagination size for lists
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Branding Settings */}
+        <TabsContent value="branding" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Branding Settings</CardTitle>
+              <CardDescription>
+                Configure site branding assets (hero, logo, favicon)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Hero Background */}
+              <div className="space-y-2">
+                <Label htmlFor="hero" className="font-medium">
+                  Hero Background Image
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1920x600px, JPG/PNG/WebP
+                </p>
+                {getImageUrl("hero") && (
+                  <div className="border rounded-lg p-4 bg-muted">
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Current image:
+                    </div>
+                    <img
+                      src={getImageUrl("hero") || ""}
+                      alt="Hero background"
+                      className="w-full h-32 object-cover rounded"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <label className="flex-1">
+                    <Input
+                      id="hero"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.currentTarget.files?.[0];
+                        if (file) handleImageUpload(file, "hero");
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploading}
+                      onClick={() =>
+                        (
+                          document.getElementById("hero") as HTMLInputElement
+                        )?.click()
+                      }
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                  {getImageUrl("hero") && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteImage("hero")}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Logo */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="logo" className="font-medium">
+                  Logo
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 200x100px, PNG with transparency
+                </p>
+                {getImageUrl("logo") && (
+                  <div className="border rounded-lg p-4 bg-muted">
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Current image:
+                    </div>
+                    <img
+                      src={getImageUrl("logo") || ""}
+                      alt="Logo"
+                      className="h-16 object-contain"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <label className="flex-1">
+                    <Input
+                      id="logo"
+                      type="file"
+                      accept="image/png,image/svg+xml"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.currentTarget.files?.[0];
+                        if (file) handleImageUpload(file, "logo");
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploading}
+                      onClick={() =>
+                        (
+                          document.getElementById("logo") as HTMLInputElement
+                        )?.click()
+                      }
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                  {getImageUrl("logo") && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteImage("logo")}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Favicon */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="favicon" className="font-medium">
+                  Favicon
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 32x32px, ICO/PNG
+                </p>
+                {getImageUrl("favicon") && (
+                  <div className="border rounded-lg p-4 bg-muted">
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Current image:
+                    </div>
+                    <img
+                      src={getImageUrl("favicon") || ""}
+                      alt="Favicon"
+                      className="h-8 w-8 object-contain"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <label className="flex-1">
+                    <Input
+                      id="favicon"
+                      type="file"
+                      accept="image/x-icon,image/png"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.currentTarget.files?.[0];
+                        if (file) handleImageUpload(file, "favicon");
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploading}
+                      onClick={() =>
+                        (
+                          document.getElementById("favicon") as HTMLInputElement
+                        )?.click()
+                      }
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                  {getImageUrl("favicon") && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteImage("favicon")}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

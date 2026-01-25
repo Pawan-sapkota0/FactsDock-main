@@ -51,7 +51,7 @@ const fetchAdminStats = async () => {
     // Fetch recent quizzes
     const recentQuizzesRes = await supabase
       .from("quizzes")
-      .select("id, title, created_at")
+      .select("id, country, difficulty, created_at")
       .order("created_at", { ascending: false })
       .limit(3);
 
@@ -80,6 +80,19 @@ interface MetricCardProps {
   icon: React.ReactNode;
   trend?: string;
   color: "blue" | "purple" | "orange";
+}
+
+interface Fact {
+  id: string;
+  fact_text: string;
+  country: string;
+  created_at: string;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  created_at: string;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({
@@ -276,26 +289,24 @@ const Dashboard: React.FC = () => {
                   No facts yet
                 </div>
               ) : (
-                stats.recent_facts.map(
-                  (fact: Record<string, unknown>, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 hover:bg-muted/50 transition-colors"
-                    >
-                      <p className="text-sm font-medium text-foreground line-clamp-2">
-                        {fact.fact_text}
-                      </p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {fact.country}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(fact.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
+                stats.recent_facts.map((fact: Fact, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-foreground line-clamp-2">
+                      {fact.fact_text}
+                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">
+                        {fact.country}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(fact.created_at).toLocaleDateString()}
+                      </span>
                     </div>
-                  ),
-                )
+                  </div>
+                ))
               )}
             </div>
             <Link to="/admin/facts">
@@ -333,14 +344,16 @@ const Dashboard: React.FC = () => {
                       className="p-4 hover:bg-muted/50 transition-colors"
                     >
                       <p className="text-sm font-medium text-foreground line-clamp-2">
-                        {quiz.title}
+                        {String(quiz.country || "Quiz")}
                       </p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-muted-foreground">
-                          Quiz ID: {quiz.id.substring(0, 8)}
+                          {String(quiz.difficulty || "General")}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(quiz.created_at).toLocaleDateString()}
+                          {new Date(
+                            String(quiz.created_at),
+                          ).toLocaleDateString()}
                         </span>
                       </div>
                     </div>

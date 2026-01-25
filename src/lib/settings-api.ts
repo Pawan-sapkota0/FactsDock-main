@@ -2,6 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { log, debug, warn, error } from "@/lib/logger";
 
 export interface Settings {
+  // Database ID
+  id?: string;
+
   // General Settings
   website_name: string;
   website_tagline: string;
@@ -31,6 +34,14 @@ export interface Settings {
   admin_email?: string;
   maintenance_mode: boolean;
   content_approval_required: boolean;
+
+  // Branding Settings
+  hero_background_url?: string | null;
+  logo_url?: string | null;
+  favicon_url?: string | null;
+  hero_background_storage_path?: string | null;
+  logo_storage_path?: string | null;
+  favicon_storage_path?: string | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -52,6 +63,12 @@ export const DEFAULT_SETTINGS: Settings = {
   enable_lazy_loading: true,
   maintenance_mode: false,
   content_approval_required: false,
+  hero_background_url: null,
+  logo_url: null,
+  favicon_url: null,
+  hero_background_storage_path: null,
+  logo_storage_path: null,
+  favicon_storage_path: null,
 };
 
 /**

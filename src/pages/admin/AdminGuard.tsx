@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logger from "@/lib/logger";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getCurrentAdminUser,
   AdminUser,
@@ -14,12 +15,48 @@ interface AdminGuardProps {
   requiredPermission?: AdminPermission;
 }
 
+/**
+ * Helper: Create timeout promise that rejects after N milliseconds
+ */
+const createTimeoutPromise = (ms: number): Promise<never> => {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Operation timeout after ${ms}ms`)), ms);
+  });
+};
+
+/**
+ * Helper: Retry logic with exponential backoff
+ * Retries up to 2 times with 1s, then 2s delays
+ */
+const withRetry = async <T,>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+): Promise<T> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(1000, attempt + 1); // 1s, 2s
+        logger.debug(
+          `[AdminGuard] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+};
+
 const AdminGuard: React.FC<AdminGuardProps> = ({
   children,
   requiredPermission,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [notAdmin, setNotAdmin] = useState(false);
@@ -30,12 +67,16 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
     role?: string;
   } | null>(null);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const checkAuth = async () => {
       try {
+        setError(null);
+
         // Dev bypass: set VITE_ADMIN_BYPASS=true in your local env to skip auth checks
         if (
           import.meta.env.DEV &&
@@ -49,94 +90,138 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           return;
         }
 
-        // Check if user is authenticated with Supabase
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Wrap auth check with timeout (60 seconds)
+        await Promise.race([
+          withRetry(async () => {
+            // Check if user is authenticated with Supabase
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
 
-        if (!session?.user) {
-          logger.debug("[AdminGuard] no session found, redirecting to login");
-          if (!cancelled && location.pathname !== "/admin/login") {
-            navigate("/admin/login", {
-              state: { from: location.pathname },
-              replace: true,
-            });
-          }
-          return;
-        }
+            if (!session?.user) {
+              logger.debug(
+                "[AdminGuard] no session found, redirecting to login",
+              );
+              if (!cancelled && location.pathname !== "/admin/login") {
+                navigate("/admin/login", {
+                  state: { from: location.pathname },
+                  replace: true,
+                });
+              }
+              return;
+            }
 
-        // Get admin user from database
-        const { data: admins, error } = await supabase
-          .from("admins")
-          .select("id, email, role, permissions, created_at, is_active")
-          .eq("id", session.user.id)
-          .limit(1);
+            // Attempt to refresh session if needed
+            try {
+              await supabase.auth.refreshSession();
+            } catch (refreshError) {
+              logger.warn(
+                "[AdminGuard] Session refresh attempt failed:",
+                refreshError,
+              );
+              // Continue anyway, getSession above should have valid session
+            }
 
-        if (error || !admins || admins.length === 0) {
-          logger.warn("[AdminGuard] user is not an admin");
-          setUserInfo({
-            id: session.user.id,
-            email: session.user.email || "unknown",
-          });
-          setNotAdmin(true);
-          if (!cancelled) setLoading(false);
-          return;
-        }
+            // Get admin user from database
+            const { data: admins, error } = await supabase
+              .from("admins")
+              .select("id, email, role, permissions, created_at, is_active")
+              .eq("id", session.user.id)
+              .limit(1);
 
-        const adminRecord = admins[0] as Record<string, unknown>;
+            if (error || !admins || admins.length === 0) {
+              logger.warn("[AdminGuard] user is not an admin");
+              setUserInfo({
+                id: session.user.id,
+                email: session.user.email || "unknown",
+              });
+              setNotAdmin(true);
+              if (!cancelled) setLoading(false);
+              return;
+            }
 
-        // Check if user is active
-        if (!(adminRecord.is_active as boolean)) {
-          logger.warn("[AdminGuard] user admin account is inactive");
-          setUserInfo({
-            id: String(adminRecord.id),
-            email: String(adminRecord.email || ""),
-            role: String(adminRecord.role || ""),
-          });
-          setNotAdmin(true);
-          if (!cancelled) setLoading(false);
-          return;
-        }
+            const adminRecord = admins[0] as Record<string, unknown>;
 
-        // Check if user has required permission
-        if (requiredPermission) {
-          const isSuperadmin = String(adminRecord.role) === "superadmin";
-          const perms = (adminRecord.permissions as string[] | undefined) || [];
-          const hasPermission =
-            isSuperadmin || perms.includes(requiredPermission);
+            // Check if user is active
+            if (!(adminRecord.is_active as boolean)) {
+              logger.warn("[AdminGuard] user admin account is inactive");
+              setUserInfo({
+                id: String(adminRecord.id),
+                email: String(adminRecord.email || ""),
+                role: String(adminRecord.role || ""),
+              });
+              setNotAdmin(true);
+              if (!cancelled) setLoading(false);
+              return;
+            }
 
-          if (!hasPermission) {
-            logger.warn(
-              `[AdminGuard] user lacks permission: ${requiredPermission}`,
-            );
-            setCurrentUser({
-              id: String(adminRecord.id),
-              email: String(adminRecord.email || ""),
-              role: String(adminRecord.role || "editor"),
-              permissions: perms,
-              createdAt: String(adminRecord.created_at),
-              isActive: Boolean(adminRecord.is_active),
-            });
-            setInsufficientPermissions(true);
-            if (!cancelled) setLoading(false);
-            return;
-          }
-        }
+            // Check if user has required permission
+            if (requiredPermission) {
+              const isSuperadmin = String(adminRecord.role) === "superadmin";
+              const perms =
+                (adminRecord.permissions as string[] | undefined) || [];
+              const hasPermission =
+                isSuperadmin || perms.includes(requiredPermission);
 
-        // Get current admin user from service
-        const adminUser = await getCurrentAdminUser();
-        if (adminUser) {
-          setCurrentUser(adminUser);
-        }
+              if (!hasPermission) {
+                logger.warn(
+                  `[AdminGuard] user lacks permission: ${requiredPermission}`,
+                );
+                setCurrentUser({
+                  id: String(adminRecord.id),
+                  email: String(adminRecord.email || ""),
+                  role: String(adminRecord.role || "editor") as
+                    | "admin"
+                    | "superadmin"
+                    | "editor",
+                  permissions: perms as AdminPermission[],
+                  createdAt: String(adminRecord.created_at),
+                  isActive: Boolean(adminRecord.is_active),
+                });
+                setInsufficientPermissions(true);
+                if (!cancelled) setLoading(false);
+                return;
+              }
+            }
 
-        if (!cancelled) {
-          setAuthorized(true);
-          setLoading(false);
-        }
+            // Get current admin user from service
+            const adminUser = await getCurrentAdminUser();
+            if (adminUser) {
+              setCurrentUser(adminUser);
+            }
+
+            if (!cancelled) {
+              setAuthorized(true);
+              setLoading(false);
+            }
+          }),
+          createTimeoutPromise(60000), // 60 second timeout
+        ]);
       } catch (e) {
         logger.error("[AdminGuard] auth check error:", e);
-        if (!cancelled && location.pathname !== "/") {
-          navigate("/", { replace: true });
+        if (!cancelled) {
+          setError(
+            e instanceof Error ? e.message : "Authentication check failed",
+          );
+          setLoading(false);
+
+          // If timeout or repeated failures, redirect to login with error state
+          if (
+            location.pathname !== "/admin/login" &&
+            location.pathname !== "/"
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!cancelled) {
+                navigate("/admin/login", {
+                  state: {
+                    from: location.pathname,
+                    error: "Session verification failed. Please log in again.",
+                  },
+                  replace: true,
+                });
+              }
+            }, 2000); // Give user time to see error
+          }
         }
       }
     };
@@ -145,6 +230,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [navigate, location, requiredPermission]);
 
@@ -157,6 +243,11 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
           <p className="text-sm text-muted-foreground">
             Verifying admin access...
           </p>
+          {error && (
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 max-w-xs text-center">
+              {error}
+            </p>
+          )}
         </div>
       </div>
     );

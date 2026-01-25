@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+
 import SearchBar from "@/components/common/SearchBar";
 import { useNavigate, Link } from "react-router-dom";
 import CountryCard from "@/components/cards/CountryCard";

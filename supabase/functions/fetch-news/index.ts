@@ -218,23 +218,27 @@ serve(async (req) => {
     const countries = await getTopCountries();
     console.log(`Fetching news for ${countries.length} countries...`);
 
-    // Fetch news for each country sequentially to avoid rate limits
-    const results: Record<string, boolean> = {};
-    for (const country of countries) {
-      results[country] = await fetchAndStoreNews(country);
-      // Small delay between requests to avoid rate limiting (gnews.io has limits)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
+    // Start background processing without blocking the response
+    (async () => {
+      try {
+        for (const country of countries) {
+          await fetchAndStoreNews(country);
+          // Small delay between requests to avoid rate limiting (gnews.io has limits)
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        // Cleanup old news
+        await cleanupOldNews();
+        console.log("✓ Background news fetch completed");
+      } catch (err) {
+        console.error("Background fetch error:", err);
+      }
+    })();
 
-    // Cleanup old news
-    await cleanupOldNews();
-
-    const successful = Object.values(results).filter(Boolean).length;
+    // Return immediately to satisfy cron job timeout
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Processed ${successful}/${countries.length} countries`,
-        results,
+        message: `News fetch started in background for ${countries.length} countries`,
       }),
       {
         status: 200,

@@ -5,6 +5,7 @@ import CategoryCard from "@/components/cards/CategoryCard";
 import { fetchFactsByCategory as fetchFacts } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { useParams, useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 import { usePagination } from "@/hooks/use-pagination";

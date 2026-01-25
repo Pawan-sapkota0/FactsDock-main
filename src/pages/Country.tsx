@@ -35,14 +35,46 @@ import LazyFactCard from "@/components/cards/LazyFactCard";
 import { SEOMeta } from "@/components/common/SEOMeta";
 import { generatePlaceSchema, generateArticleSchema } from "@/lib/seo-utils";
 
+interface CountryData {
+  name: string;
+  flag: string;
+  flagImage: string;
+  capital: string;
+  population: string;
+  currency: string;
+  currencySymbol: string;
+  languages: string;
+  timezones: string;
+  area: string;
+  region: string;
+  continent: string;
+  callingCode: string;
+  subregion: string;
+  lastUpdated: number | null;
+  capitalTimezone: string | null;
+  weather?: {
+    temp_c?: number;
+    condition?: { text?: string };
+    wind_kph?: number;
+    humidity?: number;
+  };
+}
+
+interface Fact {
+  id?: string;
+  fact_id?: string;
+  fact_text?: string;
+  fact?: string;
+  title?: string;
+  [key: string]: unknown;
+}
+
 const Country = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [countryData, setCountryData] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
+
+  const [countryData, setCountryData] = useState<CountryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // removed isCached flag — header no longer shows cached badge
 
@@ -130,7 +162,7 @@ const Country = () => {
               : null) ||
             country?.adminRegion ||
             null;
-          const continentVal = safeValue(continentValRaw);
+          const continentVal = String(safeValue(continentValRaw));
 
           // timezones: if array, join with commas; else try common fields
           const tzRaw = Array.isArray(country?.timezones)
@@ -176,7 +208,7 @@ const Country = () => {
               ? `${Number(areaVal).toLocaleString()} km\u00b2`
               : "N/A",
             region: regionVal || "N/A",
-            continent: continentVal || "N/A",
+            continent: continentVal,
             callingCode: callingCodeVal || "N/A",
             subregion: country?.subregion || "N/A",
 
@@ -531,6 +563,7 @@ const Country = () => {
         area: areaVal ? `${Number(areaVal).toLocaleString()} km\u00b2` : "N/A",
         region: regionVal || "N/A",
         continent: continentVal || "N/A",
+        callingCode: country?.callingCodes?.[0] || country?.idd?.root || "+1",
         subregion: country?.subregion || "N/A",
         lastUpdated: cacheMeta?.ts || Date.now(),
         capitalTimezone: null,
@@ -560,7 +593,7 @@ const Country = () => {
   ];
 
   const [factsOpen, setFactsOpen] = useState(false);
-  const [factsList, setFactsList] = useState<unknown[]>([]);
+  const [factsList, setFactsList] = useState<Fact[]>([]);
   const [factsLoading, setFactsLoading] = useState(false);
   const location = useLocation();
 
@@ -786,10 +819,10 @@ const Country = () => {
             <div className="p-6">Loading...</div>
           ) : (
             <div className="space-y-4 p-4">
-              {factsList.map((f, i) => (
+              {factsList.map((f: Fact, i) => (
                 <div key={i}>
                   <LazyFactCard
-                    fact={f?.fact_text || f?.fact || f?.title || ""}
+                    fact={String(f?.fact_text || f?.fact || f?.title || "")}
                   />
                 </div>
               ))}

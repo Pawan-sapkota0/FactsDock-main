@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import logger from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { generateQuizWithGemini } from "@/lib/gemini-quiz";
+import { generateQuizzesWithUniqueness } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AIGeneratorModalProps {
@@ -43,10 +44,23 @@ interface GeneratedQuestion {
   q?: string;
   options: string[];
   correct_answer?: string;
+  correctAnswer?: number;
   difficulty?: string;
 }
 
 type ModalStep = "config" | "preview";
+
+type UniquenessReport = {
+  totalGenerated?: number;
+  uniqueCount?: number;
+  duplicateCount?: number;
+  duplicates?: Array<{
+    text: string;
+    duplicateCount: number;
+    matches: Array<{ similarity: number; text: string }>;
+  }>;
+  timestamp?: string;
+};
 
 /**
  * AI Generator Modal for quiz creation with preview
@@ -72,12 +86,16 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   const [questionCount, setQuestionCount] = useState(5);
   const [isRandom, setIsRandom] = useState(false);
   const [categories, setCategories] = useState<FactType[]>([]);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState("");
+  const [subcategories, setSubcategories] = useState<FactType[]>([]);
 
   // Preview step state
   const [generatedQuestions, setGeneratedQuestions] = useState<
     GeneratedQuestion[]
   >([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [uniquenessReport, setUniquenessReport] =
+    useState<UniquenessReport | null>(null);
   const qc = useQueryClient();
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
 
@@ -85,6 +103,9 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   useEffect(() => {
     if (!selectedFactTypeId) {
       setCategories([]);
+      setSubcategories([]);
+      setSelectedCategoryId("");
+      setSelectedSubcategoryId("");
       return;
     }
 
@@ -96,14 +117,43 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
           .eq("fact_type_id", selectedFactTypeId)
           .order("name");
         setCategories(data || []);
+        setSubcategories([]);
+        setSelectedSubcategoryId("");
       } catch (error) {
         logger.error("Failed to load categories:", error);
         setCategories([]);
+        setSubcategories([]);
       }
     };
 
     loadCategories();
   }, [selectedFactTypeId]);
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setSubcategories([]);
+      setSelectedSubcategoryId("");
+      return;
+    }
+
+    const loadSubcategories = async () => {
+      try {
+        const { data } = await supabase
+          .from("subcategories")
+          .select("*")
+          .eq("category_id", selectedCategoryId)
+          .order("name");
+        setSubcategories(data || []);
+        setSelectedSubcategoryId("");
+      } catch (error) {
+        logger.error("Failed to load subcategories:", error);
+        setSubcategories([]);
+      }
+    };
+
+    loadSubcategories();
+  }, [selectedCategoryId]);
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -111,11 +161,13 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       setStep("config");
       setSelectedFactTypeId("");
       setSelectedCategoryId("");
+      setSelectedSubcategoryId("");
       setSelectedCountry("");
       setDifficulty("medium");
       setQuestionCount(5);
       setIsRandom(false);
       setCategories([]);
+      setSubcategories([]);
       setGeneratedQuestions([]);
     }
   }, [open]);
@@ -178,18 +230,26 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       );
       const categoryName = selectedCategory?.name;
 
-      // Call Gemini to generate questions
-      const questions = await generateQuizWithGemini({
+      // Get subcategory name if selected
+      const selectedSubcategory = subcategories.find(
+        (s) => s.id === selectedSubcategoryId,
+      );
+      const subcategoryName = selectedSubcategory?.name;
+
+      // Call API to generate questions with uniqueness checking
+      const result = await generateQuizzesWithUniqueness({
         factTypeId: selectedFactTypeId,
         factTypeName,
         categoryId: selectedCategoryId || undefined,
         categoryName,
+        subcategoryId: selectedSubcategoryId || undefined,
+        subcategoryName,
         country: selectedCountry || undefined,
         difficulty,
         questionCount,
       });
 
-      if (questions.length === 0) {
+      if (result.quizzes.length === 0) {
         toast({
           title: "Error",
           description: "No questions generated",
@@ -198,12 +258,13 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
         return;
       }
 
-      setGeneratedQuestions(questions);
+      setGeneratedQuestions(result.quizzes as GeneratedQuestion[]);
+      setUniquenessReport(result.uniquenessReport);
       setStep("preview");
 
       toast({
         title: "Generated",
-        description: `${questions.length} questions generated. Review before accepting.`,
+        description: `${result.quizzes.length} questions generated. Review before accepting.`,
       });
     } catch (error: unknown) {
       const message =
@@ -241,38 +302,53 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
     }
     try {
       // Create individual quiz entries for each generated question set
-      const payload = generatedQuestions.map((g: GeneratedQuestion) => ({
-        questions: [
-          {
-            question: g.question || g.q || "",
-            options: g.options || [],
-            correct_answer: g.correct_answer || "",
-          },
-        ],
-        fact_type_id: null,
-        category_id: null,
-        country: null,
-        difficulty: g.difficulty || difficulty,
-        // If publishing directly from the generator, mark as approved so it
-        // doesn't require a separate admin approval step.
-        status: publish ? "approved" : "draft",
-        created_by: adminUserId,
-        is_random: true,
-      }));
+      const payload = generatedQuestions.map((g: GeneratedQuestion) => {
+        // Handle correctAnswer - could be number (index) or string (text)
+        let correctAnswerText = g.correct_answer || "";
+        if (!correctAnswerText && g.correctAnswer !== undefined) {
+          const answerIndex = g.correctAnswer;
+          if (
+            typeof answerIndex === "number" &&
+            g.options &&
+            g.options[answerIndex]
+          ) {
+            correctAnswerText = g.options[answerIndex];
+          }
+        }
+
+        const questionObj = {
+          question: g.question || g.q || "",
+          options: g.options || [],
+          correct_answer: correctAnswerText,
+        };
+        return {
+          questions: [questionObj],
+          fact_type_id: null,
+          category_id: null,
+          country: null,
+          difficulty: g.difficulty || difficulty,
+          status: publish ? "approved" : "draft",
+          created_by: adminUserId,
+          is_random: true,
+          ai_generated: true,
+        };
+      });
 
       const { data, error } = await supabase
         .from("quizzes")
         .insert(payload)
-        .select("id");
+        .select("id, questions");
       if (error) throw error;
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        throw new Error("Failed to save quizzes - no data returned");
+      }
       qc.invalidateQueries({ queryKey: ["admin", "quizzes"] });
       toast({
         title: publish ? "Published" : "Saved",
         description: publish
-          ? "Random quizzes published."
-          : "Random quizzes saved as draft.",
+          ? `${data.length} random quiz(zes) published.`
+          : `${data.length} random quiz(zes) saved as draft.`,
       });
-      // Close modal after save, but do NOT populate manual editor
       onOpenChange(false);
     } catch (e: unknown) {
       const message =
@@ -299,6 +375,7 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   const handleReject = () => {
     setStep("config");
     setGeneratedQuestions([]);
+    setUniquenessReport(null);
   };
 
   return (
@@ -378,6 +455,31 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
                 </div>
               )}
 
+              {/* Subcategory */}
+              {!isRandom && selectedCategoryId && (
+                <div className="grid gap-2">
+                  <Label htmlFor="subcategory">Subcategory (optional)</Label>
+                  <Select
+                    value={selectedSubcategoryId || "none"}
+                    onValueChange={(val) =>
+                      setSelectedSubcategoryId(val === "none" ? "" : val)
+                    }
+                  >
+                    <SelectTrigger id="subcategory">
+                      <SelectValue placeholder="Select a subcategory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No subcategory</SelectItem>
+                      {subcategories.map((subcat) => (
+                        <SelectItem key={subcat.id} value={subcat.id}>
+                          {subcat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Country */}
               {!isRandom && (
                 <div className="grid gap-2">
@@ -450,6 +552,66 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
                 accept or go back to adjust settings.
               </DialogDescription>
             </DialogHeader>
+
+            {/* Uniqueness Report */}
+            {uniquenessReport && (
+              <div className="space-y-2">
+                <Card
+                  className={`p-3 ${uniquenessReport.duplicateCount > 0 ? "border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-600" : "border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-600"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p
+                        className={`font-semibold text-sm ${uniquenessReport.duplicateCount > 0 ? "text-yellow-900 dark:text-yellow-300" : "text-green-900 dark:text-green-300"}`}
+                      >
+                        {uniquenessReport.duplicateCount > 0
+                          ? `⚠️ ${uniquenessReport.duplicateCount} Duplicate(s) Found`
+                          : "✓ All Questions are Unique"}
+                      </p>
+                      <p className="text-xs text-muted-foreground dark:text-gray-300">
+                        Generated: {uniquenessReport.totalGenerated}, Unique:{" "}
+                        {uniquenessReport.uniqueCount}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Show duplicate details if any */}
+                {uniquenessReport.duplicates &&
+                  uniquenessReport.duplicates.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold dark:text-gray-300">
+                        Duplicate Questions:
+                      </p>
+                      {uniquenessReport.duplicates.map((dup, idx) => (
+                        <Card
+                          key={idx}
+                          className="p-3 border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-600"
+                        >
+                          <p className="text-xs font-semibold text-orange-900 dark:text-orange-300">
+                            {dup.text?.substring(0, 50)}...
+                          </p>
+                          {dup.matches && dup.matches.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {dup.matches.map((match, mIdx) => (
+                                <div key={mIdx}>
+                                  <p className="text-xs text-orange-800 dark:text-orange-200">
+                                    Matches: {match.text?.substring(0, 50)}...
+                                  </p>
+                                  <p className="text-xs text-orange-700 mt-0.5">
+                                    Similarity:{" "}
+                                    {(match.similarity * 100).toFixed(1)}%
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            )}
 
             <div className="space-y-3 py-4 max-h-[400px] overflow-y-auto">
               {generatedQuestions.map((q, idx) => (
