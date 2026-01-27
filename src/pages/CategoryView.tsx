@@ -87,7 +87,6 @@ const CategoryView: React.FC = () => {
         factTypeIdRef.current = null;
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   // Listen for global facts-updated events (clears) so this view can reload
@@ -294,7 +293,13 @@ const CategoryView: React.FC = () => {
         string,
         unknown
       > | null;
-      const snap = stateObj?.wf_snapshot ?? null;
+      const snap = stateObj?.wf_snapshot as {
+        currentCategoryKey?: string | null;
+        facts?: unknown[];
+        page?: number;
+        hasMore?: boolean;
+        scrollY?: number;
+      } | null;
       if (!snap) return;
       try {
         // restore cached list if present
@@ -323,7 +328,6 @@ const CategoryView: React.FC = () => {
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When a subcategory is chosen from the dropdown, fetch facts for that subtopic

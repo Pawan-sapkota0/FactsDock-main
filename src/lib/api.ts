@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-empty */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase, SUPABASE_AVAILABLE } from '@/integrations/supabase/client';
 import logger from '@/lib/logger';
 
@@ -1039,6 +1039,8 @@ export async function cleanupOldNews(country?: string) {
 export async function triggerNewsFetch() {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const appUrl = import.meta.env.VITE_APP_URL || import.meta.env.FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    
     if (!supabaseUrl) {
       logger.error('[triggerNewsFetch] SUPABASE_URL not configured');
       return { success: false, error: 'Configuration error' };
@@ -1054,7 +1056,16 @@ export async function triggerNewsFetch() {
     if (!response.ok) {
       const error = await response.text();
       logger.error('[triggerNewsFetch] Error:', error);
-      return { success: false, error };
+      // User-friendly message based on status code
+      let userMessage = 'Failed to fetch news. Please try again.';
+      if (response.status === 503) {
+        userMessage = 'Server temporarily unavailable. Please try again in a few minutes.';
+      } else if (response.status === 429) {
+        userMessage = 'Too many requests. Please try again later.';
+      } else if (response.status >= 500) {
+        userMessage = 'Server error occurred. Our team is working on it.';
+      }
+      return { success: false, error: userMessage };
     }
 
     const data = await response.json();
@@ -1118,7 +1129,11 @@ export async function generateFactsWithUniqueness(params: {
       const errorMessage = response.error?.message || 
                           (response.error?.context?.errorMessage) || 
                           JSON.stringify(response.error);
-      throw new Error(`Generation failed: ${errorMessage}`);
+      // User-friendly message: hide technical API errors
+      const userMessage = errorMessage.includes('API') || errorMessage.includes('timeout')
+        ? 'Content generation temporarily unavailable. Please try again in a few moments.'
+        : String(errorMessage);
+      throw new Error(userMessage);
     }
 
     const result = response.data as Record<string, unknown>;
@@ -1126,7 +1141,10 @@ export async function generateFactsWithUniqueness(params: {
     // Check if the response contains an error field (from Edge Function error handler)
     if (result?.error) {
       logger.error('[generateFactsWithUniqueness] Edge Function returned error:', result.error);
-      throw new Error(`Generation failed: ${result.error}`);
+      const userMessage = String(result.error).includes('API') 
+        ? 'Content generation temporarily unavailable. Please try again in a few moments.'
+        : String(result.error);
+      throw new Error(userMessage);
     }
     
     return {
@@ -1203,7 +1221,12 @@ export async function generateQuizzesWithUniqueness(params: {
 
     if (response.error) {
       logger.error('[generateQuizzesWithUniqueness] Error:', response.error);
-      throw new Error(response.error?.message || 'Quiz generation failed');
+      const errorMsg = response.error?.message || 'Quiz generation failed';
+      // User-friendly message: hide technical API errors
+      const userMessage = errorMsg.includes('API') || errorMsg.includes('timeout')
+        ? 'Quiz generation temporarily unavailable. Please try again in a few moments.'
+        : errorMsg;
+      throw new Error(userMessage);
     }
 
     const result = response.data as Record<string, unknown>;
@@ -1214,5 +1237,81 @@ export async function generateQuizzesWithUniqueness(params: {
   } catch (e) {
     logger.error('[generateQuizzesWithUniqueness] Exception:', e);
     throw e;
+  }
+}
+
+/**
+ * Fetch pending facts (status = 'draft') for admin review
+ * Filters by approval_status = 'pending' or status = 'draft'
+ */
+export async function fetchPendingFacts(pageSize = 20, pageNum = 1) {
+  if (!SUPABASE_AVAILABLE) {
+    return { facts: [], total: 0 };
+  }
+
+  try {
+    const from = (pageNum - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('facts')
+      .select(`*, fact_types(name), categories(name), subcategories(name)`, {
+        count: 'exact',
+      })
+      .eq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    // Normalize related data
+    const normalized = (data || []).map((r: any) => ({
+      ...r,
+      fact_type: r.fact_types?.name || r.fact_type || null,
+      category: r.categories?.name || r.category || null,
+      subcategory: r.subcategories?.name || r.subcategory || null,
+    }));
+
+    return { facts: normalized, total: count || 0 };
+  } catch (e) {
+    logger.error('[fetchPendingFacts] Error:', e);
+    return { facts: [], total: 0 };
+  }
+}
+
+/**
+ * Fetch pending quizzes (status = 'draft') for admin review
+ * Filters by approval_status = 'pending' or status = 'draft'
+ */
+export async function fetchPendingQuizzes(pageSize = 20, pageNum = 1) {
+  if (!SUPABASE_AVAILABLE) {
+    return { quizzes: [], total: 0 };
+  }
+
+  try {
+    const from = (pageNum - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('quizzes')
+      .select(`*, categories(name)`, {
+        count: 'exact',
+      })
+      .eq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    // Normalize related data
+    const normalized = (data || []).map((r: any) => ({
+      ...r,
+      category: r.categories?.name || r.category || null,
+    }));
+
+    return { quizzes: normalized, total: count || 0 };
+  } catch (e) {
+    logger.error('[fetchPendingQuizzes] Error:', e);
+    return { quizzes: [], total: 0 };
   }
 }

@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
+  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -16,9 +17,17 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Edit2,
+  Trash2,
+  Sparkles,
+  Globe,
+  MapPin,
+} from "lucide-react";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 const CategoriesAdmin: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +67,25 @@ const CategoriesAdmin: React.FC = () => {
     (catsQ?.data as unknown as Record<string, unknown>[]) || [];
   const isLoading = !!catsQ?.isLoading;
 
+  // Group categories by type
+  const groupedCategories = useMemo(() => {
+    const groups: Record<string, Record<string, unknown>[]> = {
+      fun: [],
+      world: [],
+      country: [],
+    };
+    categories.forEach((cat) => {
+      const type = String((cat as Record<string, unknown>)?.type || "fun");
+      const key = type.toLowerCase().includes("world")
+        ? "world"
+        : type.toLowerCase().includes("country")
+          ? "country"
+          : "fun";
+      groups[key].push(cat);
+    });
+    return groups;
+  }, [categories]);
+
   const deleteMut = useMutation({
     mutationFn: async (id: string) =>
       supabase.from("categories").delete().eq("id", id),
@@ -89,108 +117,214 @@ const CategoriesAdmin: React.FC = () => {
     }
   };
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Categories</h1>
+  const typeConfig = {
+    fun: {
+      label: "Fun Facts",
+      icon: Sparkles,
+      color: "from-amber-500/10 to-amber-500/5",
+      badge:
+        "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+    },
+    world: {
+      label: "World Facts",
+      icon: Globe,
+      color: "from-blue-500/10 to-blue-500/5",
+      badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    },
+    country: {
+      label: "Country Facts",
+      icon: MapPin,
+      color: "from-green-500/10 to-green-500/5",
+      badge:
+        "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    },
+  };
+
+  const renderCategoryCard = (cat: Record<string, unknown>) => {
+    const id = String(cat.id);
+    const name = String(cat.name || "");
+    const description = String(cat.description || "");
+
+    return (
+      <Card
+        key={id}
+        className="p-4 group hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/50 hover:border-l-primary"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate">
+              {name}
+            </h3>
+            {description && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {description}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/admin/categories/${id}/edit`)}
+              disabled={!!actionLoading}
+              className="gap-2"
+            >
+              {actionLoading === id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Edit2 className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Edit</span>
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={!!actionLoading}
+                  className="gap-2"
+                >
+                  {actionLoading === id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{name}"? This action cannot
+                    be undone and will also remove related subcategories.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => remove(id)}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  const renderTypeSection = (
+    typeKey: "fun" | "world" | "country",
+    items: Record<string, unknown>[],
+  ) => {
+    const config = typeConfig[typeKey];
+    const Icon = config.icon;
+
+    return (
+      <div key={typeKey} className="space-y-3">
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search categories..."
-            value={query}
-            onChange={(e) => {
-              const ev = e as React.ChangeEvent<HTMLInputElement>;
-              setQuery(ev.target.value);
-              setPage(1);
-            }}
-          />
-          <Button onClick={() => navigate("/admin/categories/new")}>
-            New Category
-          </Button>
+          <Icon className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">{config.label}</h2>
+          <span className="ml-auto text-sm text-muted-foreground">
+            {items.length} {items.length === 1 ? "category" : "categories"}
+          </span>
+        </div>
+        <div className={`rounded-lg p-4 bg-gradient-to-r ${config.color}`}>
+          <div className="grid gap-3">
+            {items.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-4 text-center">
+                No {config.label.toLowerCase()} yet
+              </div>
+            ) : (
+              items.map((cat) =>
+                renderCategoryCard(cat as Record<string, unknown>),
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Categories</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your fact categories organized by type
+          </p>
+        </div>
+        <Button
+          onClick={() => navigate("/admin/categories/new")}
+          className="gap-2 self-start sm:self-auto"
+        >
+          <Plus className="h-4 w-4" />
+          New Category
+        </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Input
+          placeholder="Search categories by name..."
+          value={query}
+          onChange={(e) => {
+            const ev = e as React.ChangeEvent<HTMLInputElement>;
+            setQuery(ev.target.value);
+            setPage(1);
+          }}
+          className="pl-10"
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          🔍
         </div>
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div>Loading...</div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : categories.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-muted-foreground mb-4">No categories found</p>
+          <Button onClick={() => navigate("/admin/categories/new")}>
+            Create your first category
+          </Button>
+        </Card>
       ) : (
-        <div className="grid gap-4">
-          {categories.map((c) => {
-            const row = c as Record<string, unknown>;
-            const id = String(row.id);
-            const name = String(row.name || "");
-            const type = String(row.type || "");
-            const description = String(row.description || "");
-            return (
-              <Card key={id} className="p-4 flex justify-between items-center">
-                <div>
-                  <div className="font-semibold">{name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {type || "—"} • {description || ""}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate(`/admin/categories/${id}/edit`)}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading === id ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      "Edit"
-                    )}
-                  </Button>
-                  <AlertDialog>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setDeletingId(id)}
-                      disabled={!!actionLoading}
-                    >
-                      {actionLoading === id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        "Delete"
-                      )}
-                    </Button>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete category?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this category? This
-                          will also remove related subcategories.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => remove(id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </Card>
-            );
-          })}
+        <div className="space-y-6">
+          {renderTypeSection("fun", groupedCategories.fun)}
+          {renderTypeSection("world", groupedCategories.world)}
+          {renderTypeSection("country", groupedCategories.country)}
+        </div>
+      )}
 
-          <div className="flex items-center justify-between">
-            <div>
-              Showing {(page - 1) * PAGE_SIZE + 1} -{" "}
-              {Math.min(page * PAGE_SIZE, total)} of {total}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Prev
-              </Button>
-              <Button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page * PAGE_SIZE >= total}
-              >
-                Next
-              </Button>
-            </div>
+      {/* Pagination */}
+      {categories.length > 0 && (
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–
+            {Math.min(page * PAGE_SIZE, total)} of {total} categories
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page * PAGE_SIZE >= total}
+            >
+              Next
+            </Button>
           </div>
         </div>
       )}

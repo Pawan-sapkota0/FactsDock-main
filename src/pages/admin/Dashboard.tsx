@@ -243,7 +243,7 @@ const Dashboard: React.FC = () => {
               <span>Create Quiz</span>
             </Button>
           </Link>
-          <Link to="/admin/facts">
+          <Link to="/admin/review/pending">
             <Button
               variant="outline"
               className="w-full justify-start gap-2 h-auto py-3 px-4"

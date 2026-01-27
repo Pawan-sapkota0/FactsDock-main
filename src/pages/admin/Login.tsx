@@ -49,10 +49,22 @@ export default function Login() {
       const hash = window.location.hash;
       const params = new URLSearchParams(window.location.search);
 
-      // Check for OAuth error
+      // Check for OAuth error - sanitize to prevent XSS
       const errorParam = params.get("error");
       if (errorParam) {
-        setError(`OAuth Error: ${errorParam}`);
+        // Only accept specific, known error codes to prevent XSS
+        const ALLOWED_ERRORS = [
+          "access_denied",
+          "server_error",
+          "timeout",
+          "user_cancelled",
+        ];
+        if (ALLOWED_ERRORS.includes(String(errorParam).toLowerCase())) {
+          setError("OAuth login failed. Please try again.");
+        } else {
+          // Unknown error - show generic message
+          setError("An authentication error occurred. Please try again.");
+        }
         setStep("error");
         return;
       }

@@ -23,14 +23,42 @@ const PrivacyPolicy: React.FC = () => {
           <p>
             We may collect non-personal information such as browser type, device
             information, pages visited, and time spent on the website. This data
-            is used only to improve user experience and performance.
+            is used only to improve user experience and performance. We do not
+            collect personal information unless you voluntarily submit it.
+          </p>
+
+          <h2 className="text-xl font-semibold">Local Storage & Caching</h2>
+          <p>
+            World Facts uses browser storage technologies (IndexedDB,
+            localStorage) to cache country images, facts, and data for improved
+            performance and offline functionality. This data is stored locally
+            on your device and is never transmitted to our servers unless you
+            explicitly share it. Image compression is applied to reduce storage
+            requirements.
+          </p>
+
+          <h2 className="text-xl font-semibold">Image Protection</h2>
+          <p>
+            Images displayed in our galleries are protected with soft image
+            protection measures that disable right-click context menu, prevent
+            image dragging, and block mobile long-press actions. This protection
+            is designed to discourage casual copying only and does not provide
+            complete security.
+          </p>
+
+          <h2 className="text-xl font-semibold">Third-Party Services</h2>
+          <p>
+            We use third-party services including: Unsplash for gallery images,
+            Google Generative AI for content assistance, weather APIs for
+            real-time data, and analytics services. These services may have
+            their own privacy policies that we recommend you review.
           </p>
 
           <h2 className="text-xl font-semibold">Cookies</h2>
           <p>
             World Facts uses cookies to enhance functionality, analyze traffic,
             and display advertisements. You can disable cookies in your browser
-            settings.
+            settings. Some functionality may be limited without cookies.
           </p>
 
           <h2 className="text-xl font-semibold">Advertising</h2>
@@ -41,17 +69,12 @@ const PrivacyPolicy: React.FC = () => {
             advertising via Google Ad Settings.
           </p>
 
-          <h2 className="text-xl font-semibold">Third-Party Services</h2>
-          <p>
-            We may use third-party services for data storage, authentication,
-            analytics, and AI-based content generation. These services may
-            change over time as the platform evolves.
-          </p>
-
           <h2 className="text-xl font-semibold">Data Security</h2>
           <p>
-            We take reasonable measures to protect information. However, no
-            online system is 100% secure.
+            We take reasonable measures to protect information transmitted
+            through our systems. However, no online system is 100% secure. Data
+            stored locally on your device is protected by your device's
+            security.
           </p>
 
           <h2 className="text-xl font-semibold">User Consent</h2>

@@ -4,12 +4,38 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import escapeHtml from 'escape-html';
+import helmet from 'helmet';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Security headers with Helmet.js
+app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://bqijevhxrnekfsmvljrd.supabase.co"],
+    },
+  })
+);
+
+// Enforce HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(301, `https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Resend client (API key required)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -81,23 +107,25 @@ app.post('/api/contact', async (req, res) => {
       const sendResult = await resend.emails.send({
         from: 'World Facts <no-reply@worldfacts.com>',
         to: process.env.ADMIN_EMAIL,
-        subject: `New Contact Message from ${name}`,
-        html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p>${String(message).replace(/\n/g,'<br/>')}</p>`,
+        subject: `New Contact Message from ${escapeHtml(name)}`,
+        html: `<p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p>${escapeHtml(message).replace(/\n/g,'<br>')}</p>`,
       });
-      console.log('Resend send result:', JSON.stringify(sendResult, null, 2));
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Resend send result:', JSON.stringify(sendResult, null, 2));
+      }
       if (sendResult.error) {
-        console.error('Resend API returned error:', sendResult.error);
-        return res.status(500).json({ success: false, error: `Resend error: ${sendResult.error.message || 'Unknown error'}` });
+        console.error('Resend API error (internal only):', sendResult.error);
+        return res.status(500).json({ success: false, error: 'Email service temporarily unavailable. Please try again later.' });
       }
     } catch (sendErr) {
-      console.error('Resend send error (caught exception):', JSON.stringify(sendErr, Object.getOwnPropertyNames(sendErr), 2));
-      return res.status(500).json({ success: false, error: `Failed to send: ${sendErr.message || 'Unknown error'}` });
+      console.error('Resend send error (internal only):', sendErr);
+      return res.status(500).json({ success: false, error: 'Email service temporarily unavailable. Please try again later.' });
     }
 
     return res.status(200).json({ success: true, msg: 'Message stored and admin notified' });
   } catch (err) {
-    console.error('Contact API Error:', err);
-    return res.status(500).json({ success: false, error: err.message || 'Server error' });
+    console.error('Contact API Error (internal only):', err);
+    return res.status(500).json({ success: false, error: 'An error occurred. Please try again later.' });
   }
 });
 
@@ -107,23 +135,30 @@ app.post('/api/contact', async (req, res) => {
 // This endpoint is just a redirect target for Supabase to handle.
 app.get('/api/auth/callback/google', async (req, res) => {
   try {
-    const { error, error_description } = req.query;
+    const { error } = req.query;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
 
-    // Handle OAuth errors from Supabase
+    // Handle OAuth errors from Supabase - never expose details in URL
     if (error) {
-      const errorMsg = error_description || error;
-      console.error('OAuth error from Supabase:', errorMsg);
-      return res.redirect(`http://localhost:8080/admin/login?error=${encodeURIComponent(errorMsg)}`);
+      // Log full details internally only
+      console.error('OAuth error from Supabase (internal only):', error);
+      // Redirect without error details - frontend will show generic message
+      return res.redirect(`${frontendUrl}/admin/login`);
     }
 
     // Supabase has already handled the code exchange and set the session.
     // The JWT token is automatically stored by the Supabase client in localStorage.
-    // Simply redirect back to admin login where the component will detect the session.
-    console.log('OAuth callback processed, redirecting to admin login');
-    res.redirect('http://localhost:8080/admin/login');
+    // Redirect to admin dashboard
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('OAuth callback processed, redirecting to admin');
+    }
+    res.redirect(`${frontendUrl}/admin`);
   } catch (err) {
-    console.error('OAuth callback error:', err);
-    res.redirect(`http://localhost:8080/admin/login?error=${encodeURIComponent(err.message)}`);
+    // Log full error internally only
+    console.error('OAuth callback error (internal only):', err);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+    // Redirect without exposing error
+    res.redirect(`${frontendUrl}/admin/login`);
   }
 });
 
@@ -136,7 +171,6 @@ app.get('/api/health', (req, res) => {
         configured: !!resend,
         apiKeySet: !!process.env.RESEND_API_KEY,
         adminEmailSet: !!process.env.ADMIN_EMAIL,
-        adminEmail: process.env.ADMIN_EMAIL || 'NOT SET',
       },
       supabase: {
         configured: !!supabaseAdmin,

@@ -20,40 +20,74 @@ const TermsAndConditions: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Use of Website</h2>
           <p>
-            World Facts provides facts and quizzes for informational and
-            entertainment purposes only.
+            World Facts provides facts, quizzes, country data, galleries, and
+            weather information for informational and entertainment purposes
+            only. The website is provided as-is for personal, non-commercial
+            use.
           </p>
 
-          <h2 className="text-xl font-semibold">AI Content Disclaimer</h2>
+          <h2 className="text-xl font-semibold">Image Protection & Use</h2>
           <p>
-            Some content may be generated or assisted by artificial
-            intelligence. We do not guarantee absolute accuracy. Users should
-            verify important information independently.
+            Gallery images are sourced from Unsplash and are protected with soft
+            protection measures (disabled right-click, prevented dragging,
+            blocked mobile long-press). Images are provided under Unsplash's
+            license terms. Users agree not to attempt to circumvent these
+            protections for unauthorized copying or distribution.
+          </p>
+
+          <h2 className="text-xl font-semibold">Content & Accuracy</h2>
+          <p>
+            While we strive for accuracy, some content may be generated or
+            assisted by artificial intelligence. We do not guarantee absolute
+            accuracy of facts, statistics, or data. Users should verify
+            important information independently before relying on it.
+          </p>
+
+          <h2 className="text-xl font-semibold">Cache & Local Storage</h2>
+          <p>
+            World Facts uses browser storage (IndexedDB, localStorage) to cache
+            data for performance. This data is compressed and stored locally on
+            your device. Users can clear this data anytime through browser
+            settings. We are not responsible for data loss on your device.
           </p>
 
           <h2 className="text-xl font-semibold">Intellectual Property</h2>
           <p>
-            All content, design, and features are the property of World Facts
-            unless stated otherwise. Unauthorized copying or redistribution is
-            prohibited.
+            All content, design, features, and functionality are the property of
+            World Facts unless stated otherwise. Gallery images are sourced from
+            Unsplash. Unauthorized copying, scraping, or redistribution of any
+            content is prohibited.
+          </p>
+
+          <h2 className="text-xl font-semibold">Third-Party Services</h2>
+          <p>
+            World Facts integrates third-party services including Unsplash,
+            weather APIs, and Google Generative AI. Your use of these services
+            is subject to their respective terms and policies. We are not
+            responsible for their availability, accuracy, or terms.
           </p>
 
           <h2 className="text-xl font-semibold">Prohibited Activities</h2>
           <p>
-            Users must not attempt unauthorized access, misuse services, scrape
-            data, or engage in illegal activities.
+            Users must not: attempt unauthorized access, misuse services, scrape
+            or extract data (including images), bypass image protection
+            measures, engage in illegal activities, or violate any third-party
+            terms.
           </p>
 
           <h2 className="text-xl font-semibold">Limitation of Liability</h2>
           <p>
-            World Facts is not liable for inaccuracies, interruptions, or
-            damages resulting from use of the website.
+            World Facts is not liable for inaccuracies, interruptions, service
+            downtime, data loss, or damages resulting from use of the website or
+            third-party services. We provide the website "as-is" without
+            warranty.
           </p>
 
           <h2 className="text-xl font-semibold">Changes & Termination</h2>
           <p>
-            We reserve the right to modify content, features, or terminate
-            access at any time without notice.
+            We reserve the right to modify content, features, cache strategy,
+            image protection measures, or terminate access at any time without
+            notice. Significant changes will be announced where possible.
           </p>
 
           <h2 className="text-xl font-semibold">Contact</h2>

@@ -42,7 +42,7 @@ export const FactsList = ({
 
   const loadInitial = async () => {
     setIsLoading(true);
-    setError(null);
+    setErrorMessage(null);
     try {
       const result = await fetchFactsInitialBatch(
         factType,

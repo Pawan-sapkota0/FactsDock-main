@@ -28,7 +28,7 @@ User-agent: facebookexternalhit
 Allow: /
 
 # Reference to sitemap
-Sitemap: https://worldfacts.example.com/sitemap.xml
+Sitemap: https://worldfacts.com/sitemap.xml
 
 
 User-agent: *

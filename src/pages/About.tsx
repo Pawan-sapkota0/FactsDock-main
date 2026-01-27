@@ -90,7 +90,19 @@ const About = () => {
                   </h3>
                   <p className="text-muted-foreground">
                     Explore detailed information about countries worldwide,
-                    including geography, culture, and current events.
+                    including capital cities, population, currencies, languages,
+                    timezones, area, and continent data. Includes live weather
+                    information for capital cities.
+                  </p>
+                </div>
+                <div className="pb-4 border-b border-border/50">
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">
+                    Beautiful Image Galleries
+                  </h3>
+                  <p className="text-muted-foreground">
+                    View curated galleries of high-quality images for each
+                    country sourced from Unsplash. Features auto-scrolling,
+                    touch navigation, and responsive design.
                   </p>
                 </div>
                 <div className="pb-4 border-b border-border/50">
@@ -99,7 +111,8 @@ const About = () => {
                   </h3>
                   <p className="text-muted-foreground">
                     Discover fascinating facts across multiple categories from
-                    animals to science and everything in between.
+                    animals to science and everything in between. Browse curated
+                    facts by category and subcategory.
                   </p>
                 </div>
                 <div>
@@ -108,7 +121,8 @@ const About = () => {
                   </h3>
                   <p className="text-muted-foreground">
                     Test your knowledge with our engaging quiz system featuring
-                    both country-specific and random quizzes.
+                    both country-specific and random quizzes. Track your
+                    progress and learn while having fun.
                   </p>
                 </div>
               </CardContent>

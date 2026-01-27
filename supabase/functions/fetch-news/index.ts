@@ -1,7 +1,6 @@
 import "../deno.d.ts";
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-expect-error - Supabase module types not available in Deno
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
@@ -81,16 +80,17 @@ async function fetchAndStoreNews(country: string): Promise<boolean> {
 }
 
 /**
- * Cleanup old news articles (older than 7 days)
+ * Cleanup old news articles (older than 48 hours)
+ * Synced with cleanup_old_news() RPC in database migrations
  */
 async function cleanupOldNews(): Promise<boolean> {
   try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
     const { error } = await supabase
       .from("country_news")
       .delete()
-      .lt("created_at", sevenDaysAgo.toISOString());
+      .lt("created_at", fortyEightHoursAgo.toISOString());
 
     if (error) {
       console.error("Error cleaning up old news:", error);
@@ -184,16 +184,25 @@ async function getTopCountries(): Promise<string[]> {
   }
 }
 
+const getCorsHeaders = (origin?: string) => {
+  const ALLOWED_ORIGINS = ['http://localhost:8080', 'http://localhost:5173', 'https://worldfacts.com', 'https://www.worldfacts.com'];
+  return {
+    'Access-Control-Allow-Origin': (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : 'https://worldfacts.com',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+};
+
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin ?? undefined);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
+      headers: corsHeaders,
     });
   }
 
@@ -208,7 +217,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Missing authorization header" }), {
           status: 401,
           headers: {
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders,
             "Content-Type": "application/json",
           },
         });
@@ -243,7 +252,7 @@ serve(async (req) => {
       {
         status: 200,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders,
           "Content-Type": "application/json",
         },
       }
@@ -255,7 +264,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders,
           "Content-Type": "application/json",
         },
       }

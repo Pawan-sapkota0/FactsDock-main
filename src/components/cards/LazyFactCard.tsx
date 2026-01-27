@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import type { FactItem } from "@/lib/facts";
 
 // Lazy wrapper that centralizes how FactCard is loaded and rendered.
 // This prevents per-file lazy definitions (and accidental undefined wrappers)
@@ -7,7 +6,7 @@ import type { FactItem } from "@/lib/facts";
 const FactCard = React.lazy(() => import("@/components/cards/FactCard"));
 
 type Props = {
-  fact: string | FactItem | unknown;
+  fact: string | Record<string, unknown> | unknown;
   className?: string;
 };
 

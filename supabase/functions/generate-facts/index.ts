@@ -6,11 +6,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Ensures no AI-generated duplicate or paraphrased facts are saved to database.
 // Database columns required: content_hash, is_unique, ai_generated, checked_at
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, Authorization',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+// Get CORS headers with origin validation
+const getCorsHeaders = (origin?: string) => {
+  const ALLOWED_ORIGINS = [
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'https://worldfacts.com',
+    'https://www.worldfacts.com',
+  ];
+  
+  return {
+    'Access-Control-Allow-Origin': (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : 'https://worldfacts.com',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  };
 };
 
 // ========== UNIQUENESS CHECKING (prevents duplicate AI-generated facts) ==========
@@ -86,6 +96,9 @@ async function checkContentUniqueness(factText: string, supaUrl: string, svcKey:
 // ========== END UNIQUENESS CHECKING ==========
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin ?? undefined);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,

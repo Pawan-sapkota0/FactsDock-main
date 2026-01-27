@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
+  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -248,39 +249,51 @@ const CategoryEdit: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">
         {editId ? "Edit Category" : "New Category"}
       </h2>
-      <div className="grid gap-2 mb-4">
-        <label className="text-sm">Name</label>
-        <Input
-          value={name}
-          onChange={(e) =>
-            setName((e as React.ChangeEvent<HTMLInputElement>).target.value)
-          }
-        />
+      <Card className="p-4 mb-4">
+        <div className="grid gap-4">
+          <div>
+            <label className="text-sm font-medium">Name</label>
+            <Input
+              value={name}
+              onChange={(e) =>
+                setName((e as React.ChangeEvent<HTMLInputElement>).target.value)
+              }
+              placeholder="Category name"
+            />
+          </div>
 
-        <label className="text-sm">Type</label>
-        <select
-          value={type}
-          onChange={(e) =>
-            setType((e as React.ChangeEvent<HTMLSelectElement>).target.value)
-          }
-          className="p-2 border rounded"
-        >
-          <option value="fun">fun</option>
-          <option value="world">world</option>
-          <option value="country">country</option>
-        </select>
+          <div>
+            <label className="text-sm font-medium">Type</label>
+            <select
+              value={type}
+              onChange={(e) =>
+                setType(
+                  (e as React.ChangeEvent<HTMLSelectElement>).target.value,
+                )
+              }
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="fun">Fun</option>
+              <option value="world">World</option>
+              <option value="country">Country</option>
+            </select>
+          </div>
 
-        <label className="text-sm">Description</label>
-        <textarea
-          className="p-2 border rounded"
-          value={description}
-          onChange={(e) =>
-            setDescription(
-              (e as React.ChangeEvent<HTMLTextAreaElement>).target.value,
-            )
-          }
-        />
-      </div>
+          <div>
+            <label className="text-sm font-medium">Description</label>
+            <textarea
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[100px]"
+              value={description}
+              onChange={(e) =>
+                setDescription(
+                  (e as React.ChangeEvent<HTMLTextAreaElement>).target.value,
+                )
+              }
+              placeholder="Category description"
+            />
+          </div>
+        </div>
+      </Card>
 
       <div className="flex gap-2 mb-6">
         <Button onClick={handleSave} disabled={saving}>
@@ -411,17 +424,18 @@ const CategoryEdit: React.FC = () => {
                               )}
                             </Button>
                             <AlertDialog>
-                              <Button
-                                variant="destructive"
-                                onClick={() => setActionLoading(sid)}
-                                disabled={!!actionLoading}
-                              >
-                                {actionLoading === sid ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  "Delete"
-                                )}
-                              </Button>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="destructive"
+                                  disabled={!!actionLoading}
+                                >
+                                  {actionLoading === sid ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    "Delete"
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>

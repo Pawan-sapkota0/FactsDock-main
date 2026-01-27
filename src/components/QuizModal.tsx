@@ -198,7 +198,6 @@ const QuizModal: React.FC<Props> = ({
         do {
           setLoading(true);
           // fetch
-          // eslint-disable-next-line no-await-in-loop
           qs = (await fetchAndCache(topic, questionCount, sourceType)) || [];
           // if we don't have a lastPlayedQuestions or sets differ, accept
           if (!lastPlayedQuestions) break;
@@ -322,24 +321,36 @@ const QuizModal: React.FC<Props> = ({
                   const isCorrectAnswer = answersEqual(o, current.answer);
 
                   let bgColor = "bg-card";
+                  let textColor = "text-foreground";
 
                   if (isSelected) {
-                    bgColor = isCorrectAnswer ? "bg-green-100" : "bg-red-100";
+                    if (isCorrectAnswer) {
+                      bgColor = "bg-green-100 dark:bg-green-900";
+                      textColor = "text-green-900 dark:text-green-100";
+                    } else {
+                      bgColor = "bg-red-100 dark:bg-red-900";
+                      textColor = "text-red-900 dark:text-red-100";
+                    }
                   }
+
+                  // Use unique key combining question index and option index to ensure proper React reconciliation
+                  const uniqueKey = `q${index}-opt${i}`;
 
                   return (
                     <button
-                      key={i}
+                      key={uniqueKey}
                       ref={(el) => (optionsRef.current[i] = el)}
                       onClick={() => handleAnswer(o, i)}
                       disabled={selectedIndex !== null}
-                      className={`text-left p-3 rounded border ${bgColor} ${
+                      className={`text-left p-3 rounded border ${bgColor} ${textColor} ${
                         selectedIndex === null ? "hover:bg-muted" : ""
                       }`}
                       tabIndex={0}
                       aria-pressed={isSelected}
                     >
-                      {o}
+                      {typeof o === "string" || typeof o === "number"
+                        ? o
+                        : optionLabel(o)}
                     </button>
                   );
                 })}

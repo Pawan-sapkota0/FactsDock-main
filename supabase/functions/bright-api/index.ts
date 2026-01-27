@@ -1,11 +1,12 @@
 // Deno / Supabase function template. Type checking is disabled here because the editor
 // may not resolve Deno std imports and runtime types. Deploy this file to Supabase functions.
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import "../deno.d.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 console.log("Hello from Functions!")
 
-Deno.serve(async (req: Request) => {
+serve(async (req: Request) => {
   const { name } = await req.json()
   const data = {
     message: `Hello ${name}!`,

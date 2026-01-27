@@ -1,13 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+const getCorsHeaders = (origin?: string) => {
+  const ALLOWED_ORIGINS = [
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'https://worldfacts.com',
+    'https://www.worldfacts.com',
+  ];
+  
+  return {
+    'Access-Control-Allow-Origin': (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : 'https://worldfacts.com',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  };
 };
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin ?? undefined);
+  
   if (req.method === 'OPTIONS') {
     // Respond to preflight with 204 No Content and CORS headers
     return new Response(null, { status: 204, headers: corsHeaders });

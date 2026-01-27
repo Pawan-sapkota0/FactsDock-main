@@ -7,6 +7,7 @@ import {
   Layers,
   Mail,
   Settings,
+  Image,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -57,6 +58,7 @@ const AdminLayout: React.FC = () => {
     { path: "/admin/quizzes", label: "Quizzes", icon: HelpCircle },
     { path: "/admin/categories", label: "Categories", icon: Layers },
     { path: "/admin/messages", label: "Messages", icon: Mail },
+    { path: "/admin/image-cache", label: "Image Cache", icon: Image },
     { path: "/admin/settings", label: "Settings", icon: Settings },
   ];
 

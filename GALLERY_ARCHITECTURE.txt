@@ -1,0 +1,398 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COUNTRY IMAGE GALLERY - IMPLEMENTATION SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 LOCATION IN UI
+──────────────────────────────────────────────────────────────────────────────
+
+Country Page (Country.tsx)
+│
+├─ [Navbar]
+│
+├─ [Main Content]
+│  │
+│  ├─ CountryHeader
+│  │  └─ Country name + back button
+│  │
+│  ├─ CountryStats
+│  │  └─ Flag, capital, population, currency, etc.
+│  │
+│  ⭐ ├─ CountryImageGallery ← NEW
+│  ⭐ │  └─ Horizontal scrolling image gallery
+│  ⭐ │     ├─ 8-12 images from Unsplash
+│  ⭐ │     ├─ Auto-scroll every 4 seconds
+│  ⭐ │     ├─ Arrow button controls
+│  ⭐ │     ├─ Keyboard navigation (← →)
+│  ⭐ │     ├─ Touch swipe support
+│  ⭐ │     └─ Lazy loading + caching
+│  │
+│  ├─ Category Cards
+│  │  └─ Geography, Culture, History, etc.
+│  │
+│  ├─ Quiz Button
+│  │  └─ Take quiz
+│  │
+│  └─ NewsSection
+│     └─ Latest news
+│
+└─ [Footer]
+
+
+🎨 GALLERY FEATURES
+──────────────────────────────────────────────────────────────────────────────
+
+DISPLAY:
+  ✓ Single horizontal row layout
+  ✓ Equal-sized images (desktop: 320px × 256px, mobile: 256px × 192px)
+  ✓ Smooth scrolling animation
+  ✓ 8-12 images per country
+  ✓ Responsive design (mobile → tablet → desktop)
+
+SCROLLING:
+  ✓ Auto-scroll: 4-second intervals (restarts from beginning)
+  ✓ Arrow buttons: Left/right navigation (appear on hover)
+  ✓ Keyboard: ← → arrow keys
+  ✓ Touch: Swipe left/right (min 50px distance)
+  ✓ Mouse: Wheel scroll
+  ✓ No vertical scrolling inside gallery
+
+LOADING & CACHING:
+  ✓ Lazy loading: Images load only when visible
+  ✓ Browser cache: 48-hour localStorage TTL
+  ✓ Memory cache: Session-only fallback
+  ✓ Smart retry: Graceful API fallbacks
+  ✓ Graceful hide: Gallery disappears if no images
+
+THEME:
+  ✓ Dark mode: Automatic dark card styling
+  ✓ Light mode: Automatic light card styling
+  ✓ Button colors: Adapt to theme
+  ✓ Text colors: Use theme colors (foreground/muted-foreground)
+
+DATA SOURCE:
+  ✓ Unsplash API (via VITE_UNSPLASH_API_KEY)
+  ✓ Dynamic search queries: landmark, culture, nature, travel, architecture, city
+  ✓ Photographer attribution: Links included
+  ✓ License compliant: View-only, non-competing usage
+
+
+📊 DATA ARCHITECTURE
+──────────────────────────────────────────────────────────────────────────────
+
+IMAGE FETCH FLOW:
+┌─────────────────────────────────────────────────────────────────────┐
+│                    useCountryImages Hook                             │
+│  (src/hooks/use-country-images.ts)                                  │
+│                                                                      │
+│  1. Component mounts with country name                              │
+│  2. Hook calls fetchCountryImages(country, apiKey)                  │
+│  3. Flow:                                                           │
+│     a) Check localStorage cache (48h TTL)                           │
+│     b) Check memory cache (session-only)                            │
+│     c) Call Unsplash API if no cache                                │
+│     d) Save results to both caches                                  │
+│  4. Return { images, isLoading, error, refetch }                    │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│              fetchCountryImages() Function                           │
+│  (src/lib/unsplash-api.ts)                                          │
+│                                                                      │
+│  Search Queries Generated:                                          │
+│  ├─ "Nepal landmark"        ├─ "Nepal culture"                     │
+│  ├─ "Nepal nature"          ├─ "Nepal travel"                      │
+│  ├─ "Nepal architecture"    └─ "Nepal city"                        │
+│                                                                      │
+│  Per Query:                                                         │
+│  ├─ Call Unsplash /search/photos API                                │
+│  ├─ Fetch 4 images per query                                        │
+│  ├─ De-duplicate by URL                                             │
+│  └─ Target 8-12 total unique images                                 │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│           Unsplash API Response Parsing                              │
+│                                                                      │
+│  Input (Unsplash JSON):                                             │
+│  ├─ urls.regular          (image URL)                               │
+│  ├─ alt_description       (alt text)                                │
+│  ├─ user.name             (photographer name)                       │
+│  ├─ user.links.html       (photographer profile)                    │
+│  └─ width, height         (dimensions)                              │
+│                                                                      │
+│  Output (Normalized):                                               │
+│  {                                                                  │
+│    url: "https://...",                                              │
+│    alt: "Nepal temple",                                             │
+│    photographer: "John Doe",                                        │
+│    photographerUrl: "https://unsplash.com/@johndoe",                │
+│    width: 1600,                                                     │
+│    height: 1200                                                     │
+│  }                                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│          CountryImageGallery Component                               │
+│  (src/components/country/CountryImageGallery.tsx)                   │
+│                                                                      │
+│  Receives: { images, country, isLoading }                           │
+│                                                                      │
+│  States & Effects:                                                  │
+│  ├─ canScrollLeft/Right: Scroll button visibility                   │
+│  ├─ isAutoScrolling: Pause on interaction                           │
+│  └─ autoScrollIntervalRef: Manages scroll loop                      │
+│                                                                      │
+│  Event Handlers:                                                    │
+│  ├─ handleScrollLeft/Right: Manual scroll (100px per click)         │
+│  ├─ handleUserInteraction: Pause auto-scroll for 10s                │
+│  ├─ handleKeyDown: Arrow key navigation                             │
+│  ├─ handleTouchStart/End: Touch swipe detection                     │
+│  └─ Hover effects: Show/hide buttons                                │
+│                                                                      │
+│  Render:                                                            │
+│  ├─ Loading state: Spinner + message                                │
+│  ├─ Empty state: "No images available"                              │
+│  ├─ Gallery: Images + scroll buttons                                │
+│  └─ Attribution: "Images from Unsplash"                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+💾 CACHING STRATEGY
+──────────────────────────────────────────────────────────────────────────────
+
+LAYER 1: LOCAL STORAGE
+  Key Format: "wf:images:{country_lowercase}"
+  Value:
+    {
+      data: [UnsplashImage[], ...],
+      ts: 1704067200000
+    }
+  TTL: 48 hours
+  Persistence: Survives browser restart
+
+LAYER 2: MEMORY CACHE
+  Type: Map<string, { data: UnsplashImage[], ts: number }>
+  TTL: 48 hours
+  Persistence: Current session only
+  Fallback: If localStorage fails
+
+LAYER 3: API CALLS
+  Endpoint: https://api.unsplash.com/search/photos
+  Method: GET with query parameters
+  Rate Limit: 50 requests/hour (free tier)
+  Response: Cached in both storage layers
+
+CACHE INVALIDATION:
+  ✓ Manual: clearImageCache(country) function
+  ✓ Automatic: 48-hour expiration
+  ✓ On Fetch: Check TTL before using cached data
+
+
+🗄️ DATABASE SCHEMA
+──────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE image_cache (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  country text NOT NULL,
+  search_queries jsonb NOT NULL,          ← ["Nepal landmark", "Nepal culture", ...]
+  images jsonb NOT NULL,                  ← [{ url, alt, photographer, ... }]
+  fetched_at timestamptz DEFAULT now(),   ← When data was fetched
+  expires_at timestamptz DEFAULT now() + interval '48 hours',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(country)
+);
+
+INDEXES:
+  ✓ idx_image_cache_country      ← Fast lookup by country
+  ✓ idx_image_cache_expires_at   ← Find expired entries
+
+RLS POLICIES:
+  ✓ Public read: Anyone can view cached images
+  ✓ Auth insert/update: Only authenticated users can refresh cache
+
+
+📦 FILE STRUCTURE
+──────────────────────────────────────────────────────────────────────────────
+
+NEW FILES:
+  src/
+  ├─ components/country/
+  │  └─ CountryImageGallery.tsx           ← Gallery UI component (340 lines)
+  ├─ hooks/
+  │  └─ use-country-images.ts             ← Data fetching hook (50 lines)
+  └─ lib/
+     └─ unsplash-api.ts                   ← API integration (280 lines)
+
+  supabase/
+  └─ migrations/
+     └─ 020_add_image_cache_table.sql     ← Database schema (40 lines)
+
+  Documentation/
+  ├─ GALLERY_IMPLEMENTATION.md            ← Full guide
+  └─ GALLERY_QUICKSTART.md                ← Quick setup (this file)
+
+MODIFIED FILES:
+  src/pages/Country.tsx
+    ✓ Import: CountryImageGallery, useCountryImages
+    ✓ Hook: const { images, isLoading } = useCountryImages(...)
+    ✓ Render: <CountryImageGallery /> below <CountryStats />
+
+
+🚀 ENVIRONMENT SETUP
+──────────────────────────────────────────────────────────────────────────────
+
+REQUIRED:
+  VITE_UNSPLASH_API_KEY=abc123...         ← Get from https://unsplash.com/developers
+
+OPTIONAL (already configured):
+  VITE_SUPABASE_URL                       ← For future database caching
+  VITE_SUPABASE_ANON_KEY
+
+
+⚙️ API INTEGRATION DETAILS
+──────────────────────────────────────────────────────────────────────────────
+
+UNSPLASH API:
+  Base URL: https://api.unsplash.com
+  Endpoint: /search/photos
+  Auth: Query param "client_id"
+  Rate Limit: 50 requests/hour
+  Response: JSON with array of photo objects
+
+REQUEST EXAMPLE:
+  GET https://api.unsplash.com/search/photos?
+    query=Nepal+landmark
+    &per_page=4
+    &client_id=YOUR_API_KEY
+
+RESPONSE STRUCTURE:
+  {
+    results: [
+      {
+        id: "abc123",
+        urls: { regular: "https://..." },
+        alt_description: "Nepal temple",
+        user: {
+          name: "John Doe",
+          links: { html: "https://unsplash.com/@johndoe" }
+        },
+        width: 1600,
+        height: 1200,
+        links: { download_location: "..." }
+      },
+      ...
+    ],
+    total: 1234,
+    total_pages: 50
+  }
+
+UNSPLASH LICENSE:
+  ✓ Free to use under Unsplash License
+  ✓ No permission needed for view-only
+  ✓ Photographer attribution encouraged
+  ✓ No downloading/rehosting required
+  ✓ Can't use in competing service
+
+
+🧪 TESTING CHECKLIST
+──────────────────────────────────────────────────────────────────────────────
+
+UI TESTING:
+  ☐ Gallery renders on country pages
+  ☐ Images display correctly
+  ☐ Arrow buttons appear on hover (desktop)
+  ☐ Arrow buttons are hidden when at scroll boundaries
+  ☐ Scroll buttons navigate correctly
+  ☐ Keyboard navigation works (← →)
+  ☐ Touch swipe works on mobile
+  ☐ Auto-scroll pauses on user interaction
+  ☐ Auto-scroll resumes after 10 seconds
+  ☐ Gallery hides when no images available
+  ☐ Loading spinner shows while fetching
+
+RESPONSIVE TESTING:
+  ☐ Mobile (320px): 2 images visible
+  ☐ Tablet (768px): 3-4 images visible
+  ☐ Desktop (1024px): 4-5 images visible
+  ☐ Button sizes appropriate for device
+
+THEME TESTING:
+  ☐ Dark mode: Cards styled correctly
+  ☐ Light mode: Cards styled correctly
+  ☐ Toggle theme: Gallery adapts instantly
+  ☐ Button colors match theme
+
+CACHING TESTING:
+  ☐ First load: API call made, cache populated
+  ☐ Reload: Uses localStorage cache (instant)
+  ☐ After 48h: Cache expires, new API call
+  ☐ Clear cache: New API call made
+  ☐ Browser restart: Cache still available
+
+PERFORMANCE TESTING:
+  ☐ Lazy loading: Images load progressively
+  ☐ No layout shift: Gallery size constant
+  ☐ Smooth scrolling: No janky animations
+  ☐ Fast interactions: Buttons responsive
+  ☐ Network slow: Graceful degradation
+
+
+🆘 TROUBLESHOOTING
+──────────────────────────────────────────────────────────────────────────────
+
+ISSUE: Gallery not showing
+  CAUSE 1: API key not configured
+    FIX: Add VITE_UNSPLASH_API_KEY to .env
+
+  CAUSE 2: API returns 401 (Unauthorized)
+    FIX: Regenerate API key from Unsplash dashboard
+
+  CAUSE 3: Unsplash API not reachable
+    FIX: Check internet connection, API status
+
+ISSUE: Rate limited error
+  CAUSE: Exceeded 50 requests/hour
+    FIX: Wait 1 hour or use cached data
+
+ISSUE: Images not loading
+  CAUSE 1: CORS error
+    FIX: Unsplash CDN should handle CORS. Check fetch response.
+
+  CAUSE 2: Invalid image URLs
+    FIX: Check Unsplash API response in Network tab
+
+ISSUE: Cache not persisting
+  CAUSE 1: localStorage disabled
+    FIX: Check browser privacy settings
+
+  CAUSE 2: Storage quota exceeded
+    FIX: Run: Object.keys(localStorage).filter(k => k.startsWith('wf:images:')).forEach(k => localStorage.removeItem(k))
+
+ISSUE: Auto-scroll not working
+  CAUSE: Gallery height too small or no scroll room
+    FIX: Adjust gallery height in component
+
+
+📞 QUICK LINKS
+──────────────────────────────────────────────────────────────────────────────
+
+Documentation:
+  GALLERY_QUICKSTART.md        ← Start here
+  GALLERY_IMPLEMENTATION.md    ← Full guide
+  GALLERY_ARCHITECTURE.txt     ← This file
+
+Code:
+  src/components/country/CountryImageGallery.tsx
+  src/hooks/use-country-images.ts
+  src/lib/unsplash-api.ts
+  src/pages/Country.tsx
+  supabase/migrations/020_add_image_cache_table.sql
+
+External:
+  Unsplash Developers:         https://unsplash.com/developers
+  Unsplash API Docs:           https://unsplash.com/documentation
+  Unsplash License:            https://unsplash.com/license
+  Supabase Docs:               https://supabase.com/docs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

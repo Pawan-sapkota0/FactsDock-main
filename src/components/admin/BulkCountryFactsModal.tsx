@@ -38,6 +38,7 @@ interface BulkGeneratedFact {
   text: string;
   source: string;
   metadata?: Record<string, unknown>;
+  _contentHash?: string | null;
 }
 
 interface CountryFactsResult {

@@ -35,6 +35,8 @@ import AdminGuard from "@/pages/admin/AdminGuard";
 import Login from "./pages/admin/Login";
 import ContactMessages from "./pages/admin/ContactMessages";
 import SettingsAdmin from "./pages/admin/SettingsAdmin";
+import ReviewPending from "./pages/admin/ReviewPending";
+import ImageCacheAdmin from "./pages/admin/ImageCacheAdmin";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +109,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="facts" element={<FactsAdmin />} />
               <Route path="quizzes" element={<QuizzesAdmin />} />
+              <Route path="review/pending" element={<ReviewPending />} />
               <Route path="categories" element={<CategoriesAdmin />} />
               <Route path="categories/new" element={<CategoryEdit />} />
               <Route path="categories/:id/edit" element={<CategoryEdit />} />
@@ -116,6 +119,7 @@ const App = () => (
               <Route path="facts/:id/edit" element={<FactsEdit />} />
               <Route path="messages" element={<ContactMessages />} />
               <Route path="settings" element={<SettingsAdmin />} />
+              <Route path="image-cache" element={<ImageCacheAdmin />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

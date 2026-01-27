@@ -109,7 +109,6 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
       try {
         do {
           setLoading(true);
-          // eslint-disable-next-line no-await-in-loop
           let res: unknown;
           if (topic) {
             res = await generateQuizForTopic(topic, 12, { force: true });
@@ -213,15 +212,23 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
                   const bg = selected
                     ? isSelected
                       ? correct
-                        ? "bg-green-100"
-                        : "bg-red-100"
+                        ? "bg-green-100 dark:bg-green-900"
+                        : "bg-red-100 dark:bg-red-900"
                       : "bg-transparent"
                     : "bg-card";
+                  let textColor = "text-foreground";
+                  if (selected && isSelected) {
+                    textColor = correct
+                      ? "text-green-900 dark:text-green-100"
+                      : "text-red-900 dark:text-red-100";
+                  }
+                  // Use unique key combining question index and option index to ensure proper React reconciliation
+                  const uniqueKey = `q${index}-opt${i}`;
                   return (
                     <button
-                      key={i}
+                      key={uniqueKey}
                       onClick={() => handleAnswer(o)}
-                      className={`text-left p-3 rounded border ${bg}`}
+                      className={`text-left p-3 rounded border ${bg} ${textColor}`}
                     >
                       {o}
                     </button>

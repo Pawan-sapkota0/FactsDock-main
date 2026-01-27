@@ -254,23 +254,30 @@ const Quiz = () => {
                             selectedChoice === opt;
                           const isCorrect =
                             autoQuiz[currentIndex].answer === opt;
-                          const variant = selectedChoice
-                            ? isCorrect
-                              ? "default"
-                              : isSelected
-                                ? "destructive"
-                                : "outline"
-                            : answers[currentIndex] === opt
-                              ? "default"
-                              : "outline";
+                          let variant: React.ComponentProps<
+                            typeof Button
+                          >["variant"] = "outline";
+                          let className = "";
+                          if (selectedChoice) {
+                            if (isCorrect) {
+                              variant = "default";
+                              className =
+                                "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800";
+                            } else if (isSelected) {
+                              variant = "destructive";
+                              className =
+                                "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800";
+                            }
+                          } else if (answers[currentIndex] === opt) {
+                            variant = "default";
+                          }
+                          // Use unique key combining question index and option index
+                          const uniqueKey = `q${currentIndex}-opt${i}`;
                           return (
                             <Button
-                              key={i}
-                              variant={
-                                variant as React.ComponentProps<
-                                  typeof Button
-                                >["variant"]
-                              }
+                              key={uniqueKey}
+                              variant={variant}
+                              className={className}
                               onClick={() => handleAnswer(opt)}
                               disabled={!!selectedChoice}
                             >

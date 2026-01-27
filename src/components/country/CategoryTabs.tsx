@@ -4,10 +4,18 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { fetchFactsForCountry, fetchCountryFacts } from "@/lib/api";
 import { fetchFactsByCategory } from "@/lib/facts";
-import type { FactItem } from "@/lib/facts";
 import { supabase } from "@/integrations/supabase/client";
 import logger from "@/lib/logger";
 import LazyFactCard from "@/components/cards/LazyFactCard";
+
+type Fact = {
+  id?: string;
+  fact?: string;
+  fact_text?: string;
+  title?: string;
+  category?: string;
+  subcategory_id?: string | null;
+};
 
 type Props = {
   country?: string;
@@ -23,7 +31,7 @@ const categories = [
 
 export default function CategoryTabs({ country }: Props) {
   const [active, setActive] = useState<string | null>(null);
-  const [facts, setFacts] = useState<FactItem[]>([]);
+  const [facts, setFacts] = useState<Fact[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const factTypeIdRef = useRef<string | null>(null);
@@ -37,7 +45,7 @@ export default function CategoryTabs({ country }: Props) {
       const result = country
         ? await fetchCountryFacts(country, { ...opts, category })
         : await fetchFactsByCategory("world-facts", category, opts);
-      setFacts((result as FactItem[]) || []);
+      setFacts((result as Fact[]) || []);
     } catch (e) {
       logger.error(e);
       toast({

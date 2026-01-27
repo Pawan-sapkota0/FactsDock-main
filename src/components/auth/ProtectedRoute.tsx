@@ -6,7 +6,7 @@ import {
   AdminPermission,
   canPerformAction,
 } from "@/lib/admin-auth";
-import { log, debug, warn, error } from "@/lib/logger";
+import { log, debug, warn, error as logError } from "@/lib/logger";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -28,7 +28,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -44,7 +44,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         if (requiredPermission) {
           const hasPermission = await canPerformAction(requiredPermission);
           if (!hasPermission) {
-            setError("Insufficient permissions to access this resource");
+            setErrorMessage("Insufficient permissions to access this resource");
             setIsAuthorized(false);
             return;
           }
@@ -52,8 +52,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
         setIsAuthorized(true);
       } catch (err) {
-        error("[ProtectedRoute] Authorization error:", err);
-        setError("Authorization error");
+        logError("[ProtectedRoute] Authorization error:", err);
+        setErrorMessage("Authorization error");
         setIsAuthorized(false);
       }
     };
@@ -75,13 +75,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (error) {
+  if (errorMessage) {
     // Permission error
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-muted-foreground">{error}</p>
+          <p className="text-muted-foreground">{errorMessage}</p>
           <a href="/admin" className="text-primary hover:underline">
             Return to Dashboard
           </a>

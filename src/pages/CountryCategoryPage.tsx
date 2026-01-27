@@ -182,7 +182,7 @@ const CountryCategoryPage: React.FC = () => {
       }
 
       // Use the country-specific helper so we request world-facts for this country+category
-      const opts = { force: true };
+      const opts: { force: boolean; fact_type_id?: string } = { force: true };
       if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
       // First try with the plain title (slug->title). If that returns no items
       // and the category slug contains a dash, attempt a "Main — Sub" reconstruction
@@ -287,7 +287,7 @@ const CountryCategoryPage: React.FC = () => {
       }
 
       // Fetch subcategory facts for this country
-      const opts = { force: true };
+      const opts: { force: boolean; fact_type_id?: string } = { force: true };
       if (factTypeIdRef.current) opts.fact_type_id = factTypeIdRef.current;
       const res = await fetchCountryFacts(countryName, {
         ...opts,
@@ -363,7 +363,14 @@ const CountryCategoryPage: React.FC = () => {
         string,
         unknown
       > | null;
-      const snap = stateObj?.wf_snapshot ?? null;
+      const snap = stateObj?.wf_snapshot as {
+        pageKey?: string;
+        currentCategoryKey?: string | null;
+        facts?: unknown[];
+        page?: number;
+        hasMore?: boolean;
+        scrollY?: number;
+      } | null;
       if (!snap) return;
       // Ensure the snapshot belongs to this page (country+category)
       if (snap.pageKey !== pageKey) return;
@@ -392,7 +399,6 @@ const CountryCategoryPage: React.FC = () => {
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
   return (
@@ -544,38 +550,59 @@ const CountryCategoryPage: React.FC = () => {
 
               return (
                 <>
-                  {filtered.length === 0 && !isLoading && (
+                  {filtered.length === 0 && !isLoading ? (
                     <Card className="p-6 text-center">
                       <p className="text-muted-foreground">
                         {getEmptyStateMessage(filterType)}
                       </p>
                     </Card>
-                  )}
-                  {paginatedFacts.map((f, i) => (
-                    <div
-                      key={f?.id || i}
-                      onMouseEnter={() => markFactViewed(f?.id || f?.fact_id)}
-                    >
-                      <LazyFactCard
-                        fact={f?.fact_text || f?.fact || f?.title || ""}
-                      />
-                    </div>
-                  ))}
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {paginatedFacts.map((f, i) => {
+                          const row = f as {
+                            id?: string | number;
+                            fact_id?: string | number;
+                            fact_text?: unknown;
+                            fact?: unknown;
+                            title?: unknown;
+                          };
+                          return (
+                            <div
+                              key={row?.id || i}
+                              onMouseEnter={() =>
+                                markFactViewed(row?.id || row?.fact_id)
+                              }
+                            >
+                              <LazyFactCard
+                                fact={String(
+                                  row?.fact_text ||
+                                    row?.fact ||
+                                    row?.title ||
+                                    "",
+                                )}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                  {pagination.totalPages > 1 && (
-                    <PaginationControls
-                      currentPage={pagination.currentPage}
-                      totalPages={pagination.totalPages}
-                      onPageChange={(page) => {
-                        pagination.setPage(page);
-                        document
-                          .getElementById("facts-section")
-                          ?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      canGoPrevious={pagination.canGoPrevious}
-                      canGoNext={pagination.canGoNext}
-                      className="mt-4"
-                    />
+                      {pagination.totalPages > 1 && (
+                        <PaginationControls
+                          currentPage={pagination.currentPage}
+                          totalPages={pagination.totalPages}
+                          onPageChange={(page) => {
+                            pagination.setPage(page);
+                            document
+                              .getElementById("facts-section")
+                              ?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          canGoPrevious={pagination.canGoPrevious}
+                          canGoNext={pagination.canGoNext}
+                          className="mt-4"
+                        />
+                      )}
+                    </>
                   )}
                 </>
               );

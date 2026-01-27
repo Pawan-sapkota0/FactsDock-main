@@ -54,6 +54,10 @@ export function getViewedFactIds(): string[] {
  */
 export function isFactWithinLatestReleaseWindow(fact: unknown): boolean {
   const factDate = getFactDate(fact);
+  
+  // If no valid date found, return false
+  if (factDate.getTime() === 0) return false;
+  
   const now = new Date();
   const hoursAgo = new Date(now.getTime() - LATEST_RELEASE_WINDOW * 60 * 60 * 1000);
 
@@ -67,19 +71,15 @@ export function isFactFromToday(fact: unknown): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Try multiple date field names
-  const obj = (fact as Record<string, unknown> | null) || null;
-  const dateStr = obj?.created_at ?? obj?.published_at ?? obj?.date ?? obj?.createdAt;
+  const factDate = getFactDate(fact);
+  
+  // If no valid date found, return false
+  if (factDate.getTime() === 0) return false;
 
-  if (!dateStr) return false;
-
-  try {
-    const factDate = new Date(dateStr);
-    factDate.setHours(0, 0, 0, 0);
-    return factDate.getTime() === today.getTime();
-  } catch {
-    return false;
-  }
+  const factDateStart = new Date(factDate);
+  factDateStart.setHours(0, 0, 0, 0);
+  
+  return factDateStart.getTime() === today.getTime();
 }
 
 /**
@@ -98,7 +98,7 @@ export function getFactDate(fact: unknown): Date {
   if (!dateStr) return new Date(0); // Return epoch if no date found
 
   try {
-    return new Date(dateStr);
+    return new Date(String(dateStr));
   } catch {
     return new Date(0);
   }

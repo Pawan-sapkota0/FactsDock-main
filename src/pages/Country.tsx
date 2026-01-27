@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import CountryHeader from "@/components/country/CountryHeader";
 import CountryStats from "@/components/country/CountryStats";
+import CountryImageGallery from "@/components/country/CountryImageGallery";
+import { useCountryImages } from "@/hooks/use-country-images";
 // CategoryTabs removed in favor of main category cards
 import NewsSection from "@/components/country/NewsSection";
 import QuizButton from "@/components/country/QuizButton";
@@ -77,6 +79,11 @@ const Country = () => {
   const [countryData, setCountryData] = useState<CountryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // removed isCached flag — header no longer shows cached badge
+
+  // Gallery hook: fetches images for the country
+  const { images, isLoading: isImagesLoading } = useCountryImages(
+    countryData?.name || null,
+  );
 
   useEffect(() => {
     fetchCountryData();
@@ -760,8 +767,62 @@ const Country = () => {
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto space-y-8">
-            <CountryHeader name={countryData.name} />
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header Section */}
+            <CountryHeader
+              name={countryData.name}
+              continent={countryData.continent}
+            />
+
+            {/* Responsive Layout: Desktop (flex row) and Mobile (flex col) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column: Flag + News Button (Desktop: narrow, Mobile: full width) */}
+              <div className="lg:col-span-1">
+                <div className="flex flex-col items-center gap-4 sticky top-4">
+                  {countryData.flagImage ? (
+                    <img
+                      src={countryData.flagImage}
+                      alt="flag"
+                      className="w-full max-w-sm h-auto object-cover rounded-lg shadow"
+                    />
+                  ) : (
+                    <div className="w-full max-w-sm h-48 bg-muted rounded-lg flex items-center justify-center">
+                      No flag
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => {
+                      const newsElement =
+                        document.getElementById("latest-news");
+                      if (newsElement) {
+                        newsElement.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    View Latest News
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right Column: Image Gallery (Desktop: 2 cols, Mobile: full width) */}
+              <div className="lg:col-span-2">
+                <CountryImageGallery
+                  images={images}
+                  country={countryData.name}
+                  isLoading={isImagesLoading}
+                />
+              </div>
+            </div>
+
+            {/* Stats Section - Full Width Below */}
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+              {countryData.name} Statistics
+            </h2>
             <CountryStats
               flag={countryData.flagImage}
               capital={countryData.capital}

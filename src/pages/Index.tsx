@@ -389,7 +389,7 @@ const Index = () => {
         {/* Feature Cards */}
         <section ref={factsRef} className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
               <FeatureCard
                 title="Fun Facts"
                 description="Learn the funniest and mind-blowing facts"
