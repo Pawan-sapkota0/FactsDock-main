@@ -27,6 +27,14 @@ const Facts = () => {
   const [facts, setFacts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterLoading, setFilterLoading] = useState(false);
+
+  // Handle filter changes with visual feedback
+  const handleFilterChange = (newFilter: string) => {
+    setFilterLoading(true);
+    setFilterType(newFilter);
+    setTimeout(() => setFilterLoading(false), 150);
+  };
 
   // Initialize pagination at top level
   const pagination = usePagination({ itemsPerPage: 8 });
@@ -95,7 +103,7 @@ const Facts = () => {
               </label>
               <select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
+                onChange={(e) => handleFilterChange(e.target.value)}
                 className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
               >
                 <option value="all">All facts</option>
@@ -103,6 +111,16 @@ const Facts = () => {
                 <option value="latest">Latest release</option>
                 <option value="notseen">Not seen yet</option>
               </select>
+              {filterType !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFilterChange("all")}
+                  className="text-xs h-8"
+                >
+                  Clear filters
+                </Button>
+              )}
             </div>
           </div>
           {loading && <p>Loading...</p>}
@@ -110,16 +128,67 @@ const Facts = () => {
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
             id="facts-section"
           >
-            {(() => {
-              const displayed = (facts || []).filter(
-                (f) =>
-                  !(f && (f as { subcategory_id?: unknown })?.subcategory_id),
-              );
-              // Apply filter
-              const filtered = filterFacts(displayed, filterType);
+            {filterLoading ? (
+              <PaginationSkeleton count={8} columns={2} height="120px" />
+            ) : (
+              (() => {
+                const displayed = (facts || []).filter(
+                  (f) =>
+                    !(f && (f as { subcategory_id?: unknown })?.subcategory_id),
+                );
+                // Apply filter
+                const filtered = filterFacts(displayed, filterType);
 
-              if (filtered.length === 0 && !loading) {
-                return (
+                if (filtered.length === 0 && !loading) {
+                  return (
+                    <div className="col-span-full">
+                      <Card className="p-6 text-center">
+                        <p className="text-muted-foreground">
+                          {getEmptyStateMessage(filterType)}
+                        </p>
+                      </Card>
+                    </div>
+                  );
+                }
+
+                const paginatedFacts = pagination.paginate(filtered);
+                try {
+                  debug(
+                    "[Facts page] displayed",
+                    displayed,
+                    "filtered",
+                    filtered,
+                  );
+                } catch (e) {
+                  /* ignored - debug only */
+                }
+                return paginatedFacts.map((fact: unknown, i: number) => {
+                  const row = fact as {
+                    id?: string | number;
+                    fact_id?: string | number;
+                    fact_text?: unknown;
+                    fact?: unknown;
+                    title?: unknown;
+                  };
+                  const key = row?.id ?? `fact-${i}`;
+                  const displayText = String(
+                    row?.fact_text ?? row?.fact ?? row?.title ?? "",
+                  );
+                  return (
+                    <div
+                      key={key}
+                      onMouseEnter={() =>
+                        markFactViewed(row?.id ?? row?.fact_id)
+                      }
+                    >
+                      <React.Suspense fallback={<div />}>
+                        <LazyFactCard fact={displayText} />
+                      </React.Suspense>
+                    </div>
+                  );
+                });
+
+                return paginatedFacts.length === 0 ? (
                   <div className="col-span-full">
                     <Card className="p-6 text-center">
                       <p className="text-muted-foreground">
@@ -127,44 +196,35 @@ const Facts = () => {
                       </p>
                     </Card>
                   </div>
+                ) : (
+                  paginatedFacts.map((fact: unknown, i: number) => {
+                    const row = fact as {
+                      id?: string | number;
+                      fact_id?: string | number;
+                      fact_text?: unknown;
+                      fact?: unknown;
+                      title?: unknown;
+                    };
+                    const key = row?.id ?? `fact-${i}`;
+                    const displayText = String(
+                      row?.fact_text ?? row?.fact ?? row?.title ?? "",
+                    );
+                    return (
+                      <div
+                        key={key}
+                        onMouseEnter={() =>
+                          markFactViewed(row?.id ?? row?.fact_id)
+                        }
+                      >
+                        <React.Suspense fallback={<div />}>
+                          <LazyFactCard fact={displayText} />
+                        </React.Suspense>
+                      </div>
+                    );
+                  })
                 );
-              }
-
-              const paginatedFacts = pagination.paginate(filtered);
-              try {
-                debug(
-                  "[Facts page] displayed",
-                  displayed,
-                  "filtered",
-                  filtered,
-                );
-              } catch (e) {
-                /* ignored - debug only */
-              }
-              return paginatedFacts.map((fact: unknown, i: number) => {
-                const row = fact as {
-                  id?: string | number;
-                  fact_id?: string | number;
-                  fact_text?: unknown;
-                  fact?: unknown;
-                  title?: unknown;
-                };
-                const key = row?.id ?? `fact-${i}`;
-                const displayText = String(
-                  row?.fact_text ?? row?.fact ?? row?.title ?? "",
-                );
-                return (
-                  <div
-                    key={key}
-                    onMouseEnter={() => markFactViewed(row?.id ?? row?.fact_id)}
-                  >
-                    <React.Suspense fallback={<div />}>
-                      <LazyFactCard fact={displayText} />
-                    </React.Suspense>
-                  </div>
-                );
-              });
-            })()}
+              })()
+            )}
           </div>
           <PaginationControls
             currentPage={pagination.currentPage}

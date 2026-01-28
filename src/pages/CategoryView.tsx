@@ -24,7 +24,7 @@ function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1000;
 
 const CategoryView: React.FC = () => {
   const { slug, type } = useParams();
@@ -41,7 +41,15 @@ const CategoryView: React.FC = () => {
     null,
   );
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterLoading, setFilterLoading] = useState(false);
   const cacheRef = useRef<Map<string, unknown[]>>(new Map());
+
+  // Handle filter changes with visual feedback
+  const handleFilterChange = (newFilter: string) => {
+    setFilterLoading(true);
+    setFilterType(newFilter);
+    setTimeout(() => setFilterLoading(false), 150);
+  };
 
   // Initialize pagination at top level
   const pagination = usePagination({ itemsPerPage: 8 });
@@ -508,7 +516,7 @@ const CategoryView: React.FC = () => {
                     </label>
                     <select
                       value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
+                      onChange={(e) => handleFilterChange(e.target.value)}
                       className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
                     >
                       <option value="all">All facts</option>
@@ -516,6 +524,16 @@ const CategoryView: React.FC = () => {
                       <option value="latest">Latest release</option>
                       <option value="notseen">Not seen yet</option>
                     </select>
+                    {filterType !== "all" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleFilterChange("all")}
+                        className="text-xs h-8"
+                      >
+                        Clear filters
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -523,7 +541,7 @@ const CategoryView: React.FC = () => {
           })()}
 
           <div className="space-y-4" id="facts-section">
-            {isLoading ? (
+            {isLoading || filterLoading ? (
               <PaginationSkeleton count={8} columns={1} height="120px" />
             ) : (
               (() => {

@@ -187,6 +187,15 @@ const FunFacts = () => {
   const [openMain, setOpenMain] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterLoading, setFilterLoading] = useState(false);
+
+  // Handle filter changes with visual feedback
+  const handleFilterChange = (newFilter: string) => {
+    setFilterLoading(true);
+    setFilterType(newFilter);
+    setTimeout(() => setFilterLoading(false), 150);
+  };
+
   // Component-level cache to avoid duplicate generation calls for the same subcategory
   const subCacheRef = new Map<string, unknown[]>();
   // Track in-flight promises to dedupe concurrent requests
@@ -509,7 +518,7 @@ const FunFacts = () => {
                     </label>
                     <select
                       value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
+                      onChange={(e) => handleFilterChange(e.target.value)}
                       className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
                     >
                       <option value="all">All facts</option>
@@ -517,6 +526,16 @@ const FunFacts = () => {
                       <option value="latest">Latest release</option>
                       <option value="notseen">Not seen yet</option>
                     </select>
+                    {filterType !== "all" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleFilterChange("all")}
+                        className="text-xs h-8"
+                      >
+                        Clear filters
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -524,6 +543,8 @@ const FunFacts = () => {
                   <div className="flex items-center gap-3">
                     <Loader2 className="animate-spin" /> Generating facts...
                   </div>
+                ) : filterLoading ? (
+                  <PaginationSkeleton count={8} columns={2} height="120px" />
                 ) : (
                   (() => {
                     // filter facts according to selectedSub: show only subcategory facts when a sub is selected,

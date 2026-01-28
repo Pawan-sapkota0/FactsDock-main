@@ -25,7 +25,7 @@ function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1000;
 
 const CountryCategoryPage: React.FC = () => {
   const { country, category } = useParams<{
@@ -46,8 +46,16 @@ const CountryCategoryPage: React.FC = () => {
     null,
   );
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterLoading, setFilterLoading] = useState(false);
 
   const cacheRef = useRef<Map<string, unknown[]>>(new Map());
+
+  // Handle filter changes with visual feedback
+  const handleFilterChange = (newFilter: string) => {
+    setFilterLoading(true);
+    setFilterType(newFilter);
+    setTimeout(() => setFilterLoading(false), 150);
+  };
   const factTypeIdRef = useRef<string | null>(null);
 
   // Listen for admin cache invalidation events and reload facts for this country/category
@@ -493,7 +501,7 @@ const CountryCategoryPage: React.FC = () => {
                   </label>
                   <select
                     value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
+                    onChange={(e) => handleFilterChange(e.target.value)}
                     className="px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
                   >
                     <option value="all">All facts</option>
@@ -501,112 +509,126 @@ const CountryCategoryPage: React.FC = () => {
                     <option value="latest">Latest release</option>
                     <option value="notseen">Not seen yet</option>
                   </select>
+                  {filterType !== "all" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleFilterChange("all")}
+                      className="text-xs h-8"
+                    >
+                      Clear filters
+                    </Button>
+                  )}
                 </div>
               </div>
             );
           })()}
 
           <div className="space-y-4">
-            {facts.length === 0 && !isLoading && (
+            {filterLoading ? (
+              <PaginationSkeleton count={8} columns={1} height="120px" />
+            ) : facts.length === 0 && !isLoading ? (
               <Card className="p-6 text-center">
                 No facts available for this topic yet.
               </Card>
-            )}
+            ) : null}
 
             {/* ResolveDebugPanel removed */}
-            {(() => {
-              const showingSub = !!(
-                currentCategoryKey && currentCategoryKey.split(":").length >= 3
-              );
-              // When viewing a main category, show both category-level facts and
-              // any facts belonging to its subcategories. When viewing a subcategory
-              // (currentCategoryKey includes a sub token), show only subcategory facts.
-              const displayed = showingSub
-                ? (facts || []).filter(
-                    (f) =>
-                      !!(f && (f as Record<string, unknown>)?.subcategory_id),
-                  )
-                : facts || [];
-
-              // Apply selected filter
-              const filtered = filterFacts(displayed, filterType);
-
-              try {
-                debug(
-                  "[CountryCategoryPage] facts array",
-                  facts,
-                  "displayed",
-                  displayed,
-                  "filtered",
-                  filtered,
-                  "filterType",
-                  filterType,
+            {!filterLoading &&
+              (() => {
+                const showingSub = !!(
+                  currentCategoryKey &&
+                  currentCategoryKey.split(":").length >= 3
                 );
-              } catch (e) {
-                /* ignored - history push best-effort */
-              }
+                // When viewing a main category, show both category-level facts and
+                // any facts belonging to its subcategories. When viewing a subcategory
+                // (currentCategoryKey includes a sub token), show only subcategory facts.
+                const displayed = showingSub
+                  ? (facts || []).filter(
+                      (f) =>
+                        !!(f && (f as Record<string, unknown>)?.subcategory_id),
+                    )
+                  : facts || [];
 
-              const paginatedFacts = pagination.paginate(filtered);
+                // Apply selected filter
+                const filtered = filterFacts(displayed, filterType);
 
-              return (
-                <>
-                  {filtered.length === 0 && !isLoading ? (
-                    <Card className="p-6 text-center">
-                      <p className="text-muted-foreground">
-                        {getEmptyStateMessage(filterType)}
-                      </p>
-                    </Card>
-                  ) : (
-                    <>
-                      <div className="space-y-4">
-                        {paginatedFacts.map((f, i) => {
-                          const row = f as {
-                            id?: string | number;
-                            fact_id?: string | number;
-                            fact_text?: unknown;
-                            fact?: unknown;
-                            title?: unknown;
-                          };
-                          return (
-                            <div
-                              key={row?.id || i}
-                              onMouseEnter={() =>
-                                markFactViewed(row?.id || row?.fact_id)
-                              }
-                            >
-                              <LazyFactCard
-                                fact={String(
-                                  row?.fact_text ||
-                                    row?.fact ||
-                                    row?.title ||
-                                    "",
-                                )}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
+                try {
+                  debug(
+                    "[CountryCategoryPage] facts array",
+                    facts,
+                    "displayed",
+                    displayed,
+                    "filtered",
+                    filtered,
+                    "filterType",
+                    filterType,
+                  );
+                } catch (e) {
+                  /* ignored - history push best-effort */
+                }
 
-                      {pagination.totalPages > 1 && (
-                        <PaginationControls
-                          currentPage={pagination.currentPage}
-                          totalPages={pagination.totalPages}
-                          onPageChange={(page) => {
-                            pagination.setPage(page);
-                            document
-                              .getElementById("facts-section")
-                              ?.scrollIntoView({ behavior: "smooth" });
-                          }}
-                          canGoPrevious={pagination.canGoPrevious}
-                          canGoNext={pagination.canGoNext}
-                          className="mt-4"
-                        />
-                      )}
-                    </>
-                  )}
-                </>
-              );
-            })()}
+                const paginatedFacts = pagination.paginate(filtered);
+
+                return (
+                  <>
+                    {filtered.length === 0 && !isLoading ? (
+                      <Card className="p-6 text-center">
+                        <p className="text-muted-foreground">
+                          {getEmptyStateMessage(filterType)}
+                        </p>
+                      </Card>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          {paginatedFacts.map((f, i) => {
+                            const row = f as {
+                              id?: string | number;
+                              fact_id?: string | number;
+                              fact_text?: unknown;
+                              fact?: unknown;
+                              title?: unknown;
+                            };
+                            return (
+                              <div
+                                key={row?.id || i}
+                                onMouseEnter={() =>
+                                  markFactViewed(row?.id || row?.fact_id)
+                                }
+                              >
+                                <LazyFactCard
+                                  fact={String(
+                                    row?.fact_text ||
+                                      row?.fact ||
+                                      row?.title ||
+                                      "",
+                                  )}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {pagination.totalPages > 1 && (
+                          <PaginationControls
+                            currentPage={pagination.currentPage}
+                            totalPages={pagination.totalPages}
+                            onPageChange={(page) => {
+                              pagination.setPage(page);
+                              document
+                                .getElementById("facts-section")
+                                ?.scrollIntoView({ behavior: "smooth" });
+                            }}
+                            canGoPrevious={pagination.canGoPrevious}
+                            canGoNext={pagination.canGoNext}
+                            className="mt-4"
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
 
             {/* debug panel removed */}
 

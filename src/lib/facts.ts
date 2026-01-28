@@ -413,6 +413,7 @@ export async function fetchFactsByCategory(
         category_id: (row.category_id as string) ?? null,
         subcategory_id: (row.subcategory_id as string) ?? null,
         fact_type_id: (row.fact_type_id as string) ?? null,
+        created_at: (row.created_at as string) ?? null,
       };
     });
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {

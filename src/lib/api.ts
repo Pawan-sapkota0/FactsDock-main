@@ -250,7 +250,7 @@ export async function fetchFactsByCategory(
           }
         }
         if (factTypeId) qBase = qBase.eq('fact_type_id', factTypeId);
-        const factsResp: any = await qBase.order('created_at', { ascending: false });
+        const factsResp: any = await qBase.order('created_at', { ascending: false }).limit(10000);
         if (process.env.NODE_ENV !== 'production') {
           try { logger.debug('[fetchFactsByCategory] factsResp', { factsResp }); } catch (e) { /* ignored - debug only */ }
         }
@@ -267,6 +267,7 @@ export async function fetchFactsByCategory(
             fact_type_id: r.fact_type_id || null,
             category: categoryOrCategory,
             subcategory: null,
+            created_at: r.created_at || null,
           }));
           if (process.env.NODE_ENV !== 'production') {
             try { logger.debug('[fetchFactsByCategory] returning', { count: normalized.length }); } catch (e) { /* ignored - debug only */ }
@@ -718,6 +719,7 @@ export async function fetchCountryFacts(
       subcategory_id: r.subcategory_id || null,
       fact_type_id: r.fact_type_id || null,
       country: r.country || null,
+      created_at: r.created_at || null,
     }));
 
     // Dev-only: emit resolved identifiers for dev tools to consume

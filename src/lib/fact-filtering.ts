@@ -1,14 +1,11 @@
 /**
  * Fact filtering utilities for session-based filtering logic
- * Supports: All facts, New today, Latest release, Not seen yet
+ * Supports: All facts, New today (in-memory), Latest release (in-memory), Not seen yet
  */
 
 const VIEWED_FACTS_KEY = "wf:viewed_facts";
-
-/**
- * Latest release window in hours - tunable constant for future adjustments
- */
-const LATEST_RELEASE_WINDOW = 48;
+const LATEST_RELEASE_LIMIT = 20;
+const NEW_TODAY_LIMIT = 15;
 
 /**
  * Check if a fact was viewed in current session
@@ -50,52 +47,13 @@ export function getViewedFactIds(): string[] {
 }
 
 /**
- * Check if a fact was published within the last 48 hours
+ * Get creation date from fact with fallbacks
  */
-export function isFactWithinLatestReleaseWindow(fact: unknown): boolean {
-  const factDate = getFactDate(fact);
-  
-  // If no valid date found, return false
-  if (factDate.getTime() === 0) return false;
-  
-  const now = new Date();
-  const hoursAgo = new Date(now.getTime() - LATEST_RELEASE_WINDOW * 60 * 60 * 1000);
-
-  return factDate >= hoursAgo && factDate <= now;
-}
-
-/**
- * Check if a fact was created/published today
- */
-export function isFactFromToday(fact: unknown): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const factDate = getFactDate(fact);
-  
-  // If no valid date found, return false
-  if (factDate.getTime() === 0) return false;
-
-  const factDateStart = new Date(factDate);
-  factDateStart.setHours(0, 0, 0, 0);
-  
-  return factDateStart.getTime() === today.getTime();
-}
-
-/**
- * Get release/publish date from fact with fallbacks
- */
-export function getFactDate(fact: unknown): Date {
+function getFactCreatedAt(fact: unknown): Date {
   const obj = (fact as Record<string, unknown> | null) || null;
-  const dateStr =
-    obj?.published_at ??
-    obj?.release_date ??
-    obj?.releaseDate ??
-    obj?.created_at ??
-    obj?.createdAt ??
-    obj?.date;
+  const dateStr = obj?.created_at ?? obj?.createdAt;
 
-  if (!dateStr) return new Date(0); // Return epoch if no date found
+  if (!dateStr) return new Date(0);
 
   try {
     return new Date(String(dateStr));
@@ -105,7 +63,29 @@ export function getFactDate(fact: unknown): Date {
 }
 
 /**
+ * Check if a fact was created today (UTC-safe)
+ */
+function isFactFromToday(fact: unknown): boolean {
+  const factDate = getFactCreatedAt(fact);
+  
+  // If no valid date found, return false
+  if (factDate.getTime() === 0) return false;
+
+  // Get today's date in UTC
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  // Get the fact's date in UTC
+  const factDateUTC = new Date(factDate);
+  factDateUTC.setUTCHours(0, 0, 0, 0);
+
+  return factDateUTC.getTime() === today.getTime();
+}
+
+/**
  * Apply filtering based on selected filter type
+ * NOTE: "newtoday" and "latest" filters work on already-fetched facts only (no DB query).
+ * They operate in-memory on the current fact set.
  */
 export function filterFacts(
   facts: unknown[] | null | undefined,
@@ -116,13 +96,25 @@ export function filterFacts(
 
   switch (filterType) {
     case "newtoday":
-      return facts.filter((f) => isFactFromToday(f));
+      // In-memory filter: Filter facts created today and take top 15
+      return [...facts]
+        .filter((f) => isFactFromToday(f))
+        .sort((a, b) => {
+          const dateA = getFactCreatedAt(a).getTime();
+          const dateB = getFactCreatedAt(b).getTime();
+          return dateB - dateA; // DESC order (newest first)
+        })
+        .slice(0, NEW_TODAY_LIMIT);
 
     case "latest":
-      // Filter facts published within last 48 hours, sorted newest first
+      // In-memory filter: Sort by created_at DESC and take top 20
       return [...facts]
-        .filter((f) => isFactWithinLatestReleaseWindow(f))
-        .sort((a, b) => getFactDate(b).getTime() - getFactDate(a).getTime());
+        .sort((a, b) => {
+          const dateA = getFactCreatedAt(a).getTime();
+          const dateB = getFactCreatedAt(b).getTime();
+          return dateB - dateA; // DESC order (newest first)
+        })
+        .slice(0, LATEST_RELEASE_LIMIT);
 
     case "notseen": {
       const viewed = viewedFactIds || getViewedFactIds();
@@ -144,13 +136,13 @@ export function filterFacts(
 export function getEmptyStateMessage(filterType: string): string {
   switch (filterType) {
     case "newtoday":
-      return "No facts published today yet. Check back later!";
+      return "No facts added today. Check back later!";
     case "latest":
-      return "No facts published in the last 48 hours. Check back soon for fresh content!";
+      return "No facts available to display.";
     case "notseen":
       return "You've seen all available facts in this category during this session!";
     case "all":
     default:
-        return "No facts available for this topic yet.";
+      return "No facts available for this topic yet.";
   }
 }
