@@ -1,3 +1,4 @@
+import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const getCorsHeaders = (origin?: string) => {
@@ -16,7 +17,7 @@ const getCorsHeaders = (origin?: string) => {
   };
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin ?? undefined);
   

@@ -45,6 +45,7 @@ interface CountryData {
   population: string;
   currency: string;
   currencySymbol: string;
+  currencyCode: string;
   languages: string;
   timezones: string;
   area: string;
@@ -160,11 +161,13 @@ const Country = () => {
       );
 
       const currencies = country?.currencies || {};
+      const currencyKeys = Object.keys(currencies);
       const currencyValues = Object.values(currencies) as Array<{
         name?: string;
         symbol?: string;
       }>;
       const firstCurrency = currencyValues[0] || {};
+      const firstCurrencyCode = currencyKeys[0] || "";
 
       const cacheMeta = getLocalCacheMeta(
         "country",
@@ -248,6 +251,7 @@ const Country = () => {
           : "N/A",
         currency: firstCurrency.name || country?.currency || "N/A",
         currencySymbol: firstCurrency.symbol || "",
+        currencyCode: firstCurrencyCode || "N/A",
         languages: languagesVal || "N/A",
         timezones: timezonesVal || "N/A",
         area: areaVal ? `${Number(areaVal).toLocaleString()} km\u00b2` : "N/A",
@@ -296,11 +300,13 @@ const Country = () => {
         if (freshName && freshName !== countryData?.name) {
           // reuse the same mapping logic used in fetchCountryData/handleRefresh
           const currencies = country?.currencies || {};
+          const currencyKeys = Object.keys(currencies);
           const currencyValues = Object.values(currencies) as Array<{
             name?: string;
             symbol?: string;
           }>;
           const firstCurrency = currencyValues[0] || {};
+          const firstCurrencyCode = currencyKeys[0] || "";
           const cacheMeta = getLocalCacheMeta(
             "country",
             (country?.name?.common || candidate).toLowerCase().trim(),
@@ -394,6 +400,7 @@ const Country = () => {
               : "N/A",
             currency: firstCurrency.name || country?.currency || "N/A",
             currencySymbol: firstCurrency.symbol || "",
+            currencyCode: firstCurrencyCode || "N/A",
             languages: languagesVal || "N/A",
             timezones: timezonesVal || "N/A",
             area: areaVal
@@ -498,6 +505,8 @@ const Country = () => {
         symbol?: string;
       }>;
       const firstCurrency = currencyValues[0] || {};
+      const currencyKeys = Object.keys(currencies);
+      const firstCurrencyCode = currencyKeys[0] || "";
       const cacheMeta = getLocalCacheMeta(
         "country",
         (country?.name?.common || candidate).toLowerCase().trim(),
@@ -566,6 +575,7 @@ const Country = () => {
           : "N/A",
         currency: firstCurrency.name || country?.currency || "N/A",
         currencySymbol: firstCurrency.symbol || "",
+        currencyCode: firstCurrencyCode || "N/A",
         languages: languagesVal || "N/A",
         timezones: timezonesVal || "N/A",
         area: areaVal ? `${Number(areaVal).toLocaleString()} km\u00b2` : "N/A",
@@ -832,6 +842,7 @@ const Country = () => {
               capital={countryData.capital}
               population={countryData.population}
               currency={countryData.currency}
+              currencyCode={countryData.currencyCode}
               callingCode={countryData.callingCode}
               languages={countryData.languages}
               timezones={countryData.timezones}

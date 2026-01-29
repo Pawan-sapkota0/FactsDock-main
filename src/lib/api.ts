@@ -62,6 +62,13 @@ function generateLocalMockQuiz(topic: string, count = 10) {
 // Simple in-memory cache for the current session
 const memoryCache = new Map<string, { ts: number; value: any }>();
 
+// Request deduplication: maps to prevent concurrent duplicate API calls
+const inFlightRequests = new Map<string, Promise<any>>();
+
+// Request throttling: tracks last fetch time per country (in ms)
+const lastCountryFetchTime = new Map<string, number>();
+const COUNTRY_THROTTLE_MS = 5000; // 5 seconds between force-refresh calls
+
 // Helper: localStorage-backed cache with TTL (seconds)
 function cacheKey(prefix: string, key: string) {
   return `wf:${prefix}:${key}`;
@@ -160,41 +167,76 @@ export async function fetchCountryByName(countryName: string, opts?: { ttl?: num
     return [];
   }
   const key = safeName.toLowerCase().trim();
-  // check in-memory
+  const cacheKey = 'country:' + key;
+
+  // === Request Deduplication ===
+  // If an identical request is already in-flight, return its promise instead of making another
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey)!;
+  }
+
+  // === Check caches (unless forcing refresh) ===
   if (!opts?.force) {
-    const mem = memoryCache.get('country:' + key);
+    const mem = memoryCache.get(cacheKey);
     if (mem) return mem.value;
 
-    // check localStorage
     const local = getLocalCache('country', key);
     if (local) {
-      memoryCache.set('country:' + key, { ts: Date.now(), value: local });
+      memoryCache.set(cacheKey, { ts: Date.now(), value: local });
       return local;
     }
   }
 
-  // Prefer Supabase function but fallback to RestCountries
-  try {
-    const res = await supabase.functions.invoke('fetch-country-data', { body: { countryName: safeName } });
-    if (res.error) throw res.error;
-    const value = res.data?.data || [];
-    memoryCache.set('country:' + key, { ts: Date.now(), value });
-    setLocalCache('country', key, value, opts?.ttl || 86400);
-    return value;
-  } catch (e) {
-    try {
-      const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(safeName)}`;
-      const r = await fetch(url);
-      if (!r.ok) return [];
-      const data = await r.json();
-      memoryCache.set('country:' + key, { ts: Date.now(), value: data });
-      setLocalCache('country', key, data, opts?.ttl || 86400);
-      return data || [];
-    } catch (err) {
-      logger.error('[fetchCountryByName] Exception fetching fallback country data', err);
-      return [];
+  // === Request Throttling ===
+  // For force-refresh, check if we've fetched this country recently to avoid hammering the API
+  if (opts?.force) {
+    const lastFetch = lastCountryFetchTime.get(key) || 0;
+    const timeSinceLastFetch = Date.now() - lastFetch;
+    if (timeSinceLastFetch < COUNTRY_THROTTLE_MS) {
+      logger.debug(`[fetchCountryByName] Throttled force-refresh for ${key} (${COUNTRY_THROTTLE_MS - timeSinceLastFetch}ms remaining)`);
+      // Return cached data instead of making request
+      const cached = getLocalCache('country', key);
+      if (cached) return cached;
     }
   }
+
+  // === Execute fetch (wrapped to deduplicate) ===
+  const fetchPromise = (async () => {
+    try {
+      // Prefer Supabase function but fallback to RestCountries
+      try {
+        const res = await supabase.functions.invoke('fetch-country-data', { body: { countryName: safeName } });
+        if (res.error) throw res.error;
+        const value = res.data?.data || [];
+        memoryCache.set(cacheKey, { ts: Date.now(), value });
+        setLocalCache('country', key, value, opts?.ttl || 86400);
+        return value;
+      } catch (e) {
+        // Fallback to RestCountries
+        const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(safeName)}`;
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const data = await r.json();
+        memoryCache.set(cacheKey, { ts: Date.now(), value: data });
+        setLocalCache('country', key, data, opts?.ttl || 86400);
+        return data || [];
+      }
+    } catch (err) {
+      logger.error('[fetchCountryByName] Exception fetching country data', err);
+      return [];
+    } finally {
+      // Clean up in-flight request tracking
+      inFlightRequests.delete(cacheKey);
+      // Record throttle timestamp if this was a force-refresh
+      if (opts?.force) {
+        lastCountryFetchTime.set(key, Date.now());
+      }
+    }
+  })();
+
+  // Track this request to deduplicate concurrent calls
+  inFlightRequests.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 export async function fetchFactsByCategory(

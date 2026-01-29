@@ -8,6 +8,7 @@ type Props = {
   capital?: string;
   population?: string;
   currency?: string;
+  currencyCode?: string;
   callingCode?: string;
   languages?: string;
   timezones?: string;
@@ -80,6 +81,7 @@ const CountryStats = memo(function CountryStats({
   capital,
   population,
   currency,
+  currencyCode,
   callingCode,
   languages,
   timezones,
@@ -129,6 +131,18 @@ const CountryStats = memo(function CountryStats({
         </CardHeader>
         <CardContent className="p-0 pt-2 text-foreground">
           {currency || "N/A"}
+        </CardContent>
+      </Card>
+
+      <Card className="p-4">
+        <CardHeader className="p-0">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <DollarSign className="h-5 w-5 text-primary" />
+            Currency Code
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 pt-2 text-foreground text-sm font-mono">
+          {currencyCode || "N/A"}
         </CardContent>
       </Card>
 
