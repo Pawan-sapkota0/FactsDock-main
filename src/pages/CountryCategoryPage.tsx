@@ -99,7 +99,7 @@ const CountryCategoryPage: React.FC = () => {
   // Update pagination when facts change
   useEffect(() => {
     pagination.setTotalItems(facts.length);
-  }, [facts]);
+  }, [facts, pagination]);
 
   const title = category ? slugToTitle(category) : "Category";
   const countryName = country ? slugToTitle(country) : "Country";
@@ -224,15 +224,7 @@ const CountryCategoryPage: React.FC = () => {
         }
       }
 
-      try {
-        debug(
-          "[CountryCategoryPage] loadMore fetched items count",
-          items.length,
-          { countryName, title, cacheKey, sample: items[0] },
-        );
-      } catch (e) {
-        /* ignored - debug only */
-      }
+      // Debug logging disabled in production
       cacheRef.current.set(cacheKey, items);
       setCurrentCategoryKey(cacheKey);
       const slice = items.slice(0, BATCH_SIZE);
@@ -302,15 +294,7 @@ const CountryCategoryPage: React.FC = () => {
         category: `${title} — ${sub}`,
       });
       const items = res || [];
-      try {
-        debug(
-          "[CountryCategoryPage] handleSubSelect fetched items count",
-          items.length,
-          { countryName, title, sub, cacheKey },
-        );
-      } catch (e) {
-        /* ignored - debug only */
-      }
+      // Debug logging disabled in production
       // After loading the subcategory facts, push a new history entry so that
       // pressing Back will trigger a popstate with the snapshot we attached
       // to the previous entry above.
@@ -553,21 +537,7 @@ const CountryCategoryPage: React.FC = () => {
                 // Apply selected filter
                 const filtered = filterFacts(displayed, filterType);
 
-                try {
-                  debug(
-                    "[CountryCategoryPage] facts array",
-                    facts,
-                    "displayed",
-                    displayed,
-                    "filtered",
-                    filtered,
-                    "filterType",
-                    filterType,
-                  );
-                } catch (e) {
-                  /* ignored - history push best-effort */
-                }
-
+                // Debug logging disabled in production
                 const paginatedFacts = pagination.paginate(filtered);
 
                 return (

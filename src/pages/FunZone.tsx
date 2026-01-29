@@ -219,10 +219,8 @@ const FunZone = () => {
         setCurrentQuestion(randomFallback);
       }
     } catch (error) {
-      logger.warn(
-        "Failed to fetch random quiz, using fallback question",
-        error,
-      );
+      // Log error internally, use fallback question
+      error("Failed to fetch random quiz", error);
       // Use random fallback on error
       const randomFallback =
         fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];

@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export interface UsePaginationOptions {
   itemsPerPage?: number;
@@ -41,15 +41,8 @@ export function usePagination(
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-
-  // Ensure current page doesn't exceed total pages
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setPage(totalPages);
-    }
-  }, [totalPages, currentPage]);
-
-  const setPage = (page: number) => {
+  // setPage wrapped in useCallback for stable reference
+  const setPage = useCallback((page: number) => {
     const validPage = Math.max(1, Math.min(page, totalPages || 1));
     // Update URL with page parameter
     const params = new URLSearchParams(searchParams);
@@ -60,7 +53,14 @@ export function usePagination(
       params.set("page", String(validPage));
     }
     setSearchParams(params, { replace: true });
-  };
+  }, [totalPages, searchParams, setSearchParams]);
+
+  // Ensure current page doesn't exceed total pages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setPage(totalPages);
+    }
+  }, [totalPages, currentPage, setPage]);
 
   const paginate = <T,>(items: T[]): T[] => {
     return items.slice(startIndex, endIndex);

@@ -43,16 +43,17 @@ export const usePageVisibility = () => {
       }
     };
 
-    // Clear any pending timeout
-    if (visibilityTimeoutRef.current) {
-      clearTimeout(visibilityTimeoutRef.current);
+    // Clear any pending timeout (capture current ref locally for cleanup stability)
+    const currentTimeout = visibilityTimeoutRef.current;
+    if (currentTimeout) {
+      clearTimeout(currentTimeout);
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (visibilityTimeoutRef.current) {
-        clearTimeout(visibilityTimeoutRef.current);
+      if (currentTimeout) {
+        clearTimeout(currentTimeout);
       }
     };
   }, [queryClient]);

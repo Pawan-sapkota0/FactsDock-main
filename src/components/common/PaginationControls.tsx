@@ -26,45 +26,38 @@ export const PaginationControls = ({
   // Generate array of page numbers to display
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
-    const maxVisible = 5;
+    const pages_to_show = new Set<number>();
 
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is small
+    // Always include first 2 and last 2 pages
+    pages_to_show.add(1);
+    if (totalPages > 1) pages_to_show.add(2);
+    pages_to_show.add(totalPages);
+    if (totalPages > 1) pages_to_show.add(totalPages - 1);
+
+    // Include current page and ±1
+    pages_to_show.add(currentPage);
+    if (currentPage > 1) pages_to_show.add(currentPage - 1);
+    if (currentPage < totalPages) pages_to_show.add(currentPage + 1);
+
+    // Convert to sorted array
+    const sortedPages = Array.from(pages_to_show).sort((a, b) => a - b);
+
+    if (totalPages <= 7) {
+      // Show all pages if total is 7 or less
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
-      pages.push(1);
-
-      // Calculate start and end of middle range
-      let start = Math.max(2, currentPage - 1);
-      let end = Math.min(totalPages - 1, currentPage + 1);
-
-      // Adjust range to show more pages if near start or end
-      if (currentPage <= 3) {
-        end = Math.min(totalPages - 1, 4);
-      } else if (currentPage >= totalPages - 2) {
-        start = Math.max(2, totalPages - 3);
+      // Build pages array with gaps replaced by "…"
+      let lastAdded = 0;
+      for (const pageNum of sortedPages) {
+        // Add ellipsis if there's a gap
+        if (pageNum > lastAdded + 1) {
+          pages.push("...");
+        }
+        pages.push(pageNum);
+        lastAdded = pageNum;
       }
-
-      // Add ellipsis if needed
-      if (start > 2) {
-        pages.push("...");
-      }
-
-      // Add middle pages
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      // Add ellipsis if needed
-      if (end < totalPages - 1) {
-        pages.push("...");
-      }
-
-      // Always show last page
-      pages.push(totalPages);
     }
 
     return pages;
@@ -78,7 +71,7 @@ export const PaginationControls = ({
 
   return (
     <div
-      className={`flex items-center justify-center gap-2 mt-8 flex-wrap ${className}`}
+      className={`flex items-center justify-center gap-1 sm:gap-2 mt-8 overflow-x-auto ${className}`}
     >
       {/* Previous Button */}
       <Button
@@ -86,18 +79,21 @@ export const PaginationControls = ({
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={!canGoPrevious}
-        className="gap-1"
+        className="gap-1 flex-shrink-0 text-xs sm:text-sm"
       >
         <ChevronLeft className="h-4 w-4" />
-        Previous
+        <span className="hidden sm:inline">Previous</span>
       </Button>
 
       {/* Page Numbers */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0">
         {pageNumbers.map((page, index) => {
           if (page === "...") {
             return (
-              <span key={`ellipsis-${index}`} className="px-2 py-1">
+              <span
+                key={`ellipsis-${index}`}
+                className="px-1 sm:px-2 py-1 text-xs"
+              >
                 {page}
               </span>
             );
@@ -110,7 +106,7 @@ export const PaginationControls = ({
               variant={isActive ? "default" : "outline"}
               size="sm"
               onClick={() => onPageChange(page as number)}
-              className="min-w-10"
+              className="min-w-8 sm:min-w-10 h-9 sm:h-10 px-2 text-xs sm:text-sm"
             >
               {page}
             </Button>
@@ -124,14 +120,14 @@ export const PaginationControls = ({
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={!canGoNext}
-        className="gap-1"
+        className="gap-1 flex-shrink-0 text-xs sm:text-sm"
       >
-        Next
+        <span className="hidden sm:inline">Next</span>
         <ChevronRight className="h-4 w-4" />
       </Button>
 
       {/* Page Info */}
-      <div className="text-xs text-muted-foreground ml-2">
+      <div className="text-xs text-muted-foreground ml-1 sm:ml-2 flex-shrink-0 whitespace-nowrap">
         Page {currentPage} of {totalPages}
       </div>
     </div>

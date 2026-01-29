@@ -3,7 +3,7 @@
  * Fetches and manages country gallery images with caching and error handling
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchCountryImages, UnsplashImage } from '@/lib/unsplash-api';
 import logger from '@/lib/logger';
 
@@ -19,7 +19,7 @@ export function useCountryImages(countryName: string | null): UseCountryImagesRe
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchImages = async () => {
+  const fetchImages = useCallback(async () => {
     if (!countryName) {
       setImages([]);
       return;
@@ -49,12 +49,12 @@ export function useCountryImages(countryName: string | null): UseCountryImagesRe
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [countryName]);
 
   // Fetch images when country changes
   useEffect(() => {
     fetchImages();
-  }, [countryName]);
+  }, [countryName, fetchImages]);
 
   return {
     images,

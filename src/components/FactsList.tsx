@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LazyFactCard from "@/components/cards/LazyFactCard";
@@ -36,11 +36,7 @@ export const FactsList = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Load initial batch on mount or when category changes
-  useEffect(() => {
-    loadInitial();
-  }, [factType, category, subcategory]);
-
-  const loadInitial = async () => {
+  const loadInitial = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -66,7 +62,11 @@ export const FactsList = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [factType, category, subcategory, initialCount, onLoadComplete]);
+
+  useEffect(() => {
+    loadInitial();
+  }, [loadInitial]);
 
   const loadMore = async () => {
     setIsLoadingMore(true);

@@ -26,6 +26,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import logger from '@/lib/logger';
 
 interface UseImageProtectionOptions {
   enabled?: boolean;
@@ -62,8 +63,7 @@ export const useImageProtection = (
       e.preventDefault();
       e.stopPropagation();
       if (showMessage) {
-        // eslint-disable-next-line no-console
-        console.log('Image protection: Right-click disabled');
+        logger.info('Image protection: Right-click disabled');
       }
       return false;
     };
@@ -73,8 +73,7 @@ export const useImageProtection = (
       e.preventDefault();
       e.stopPropagation();
       if (showMessage) {
-        // eslint-disable-next-line no-console
-        console.log('Image protection: Drag disabled');
+        logger.info('Image protection: Drag disabled');
       }
       return false;
     };
@@ -147,8 +146,7 @@ export const useGalleryImageProtection = (
         e.preventDefault();
         e.stopPropagation();
         if (showMessage) {
-          // eslint-disable-next-line no-console
-          console.log('Image protection: Right-click disabled');
+          logger.info('Image protection: Right-click disabled');
         }
       }
     };
@@ -160,8 +158,7 @@ export const useGalleryImageProtection = (
         e.preventDefault();
         e.stopPropagation();
         if (showMessage) {
-          // eslint-disable-next-line no-console
-          console.log('Image protection: Drag disabled');
+          logger.info('Image protection: Drag disabled');
         }
       }
     };

@@ -303,7 +303,8 @@ const Index = () => {
 
         if (items.length === 4) setTrendingCountries(items);
       } catch (e) {
-        warn("Failed to load trending countries", e);
+        // Log error internally but continue
+        error("Failed to load trending countries", e);
       }
     })();
     return () => {
@@ -312,7 +313,7 @@ const Index = () => {
   }, []);
 
   const handleSearch = (value: string) => {
-    log("Searching for:", value);
+    // Search initiated - no logging needed
   };
 
   const handleSelect = (country: string) => {

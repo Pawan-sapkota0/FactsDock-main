@@ -63,8 +63,10 @@ const CategoriesAdmin: React.FC = () => {
     queryKey: ["admin", "categories", { page, query }],
     queryFn: () => fetchCategories({ pageParam: page }),
   });
-  const categories =
-    (catsQ?.data as unknown as Record<string, unknown>[]) || [];
+  const categories = useMemo(
+    () => (catsQ?.data as unknown as Record<string, unknown>[]) || [],
+    [catsQ?.data],
+  );
   const isLoading = !!catsQ?.isLoading;
 
   // Group categories by type

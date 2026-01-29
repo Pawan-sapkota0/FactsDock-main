@@ -27,6 +27,8 @@ export interface CompressedImage {
   w: number; // width
   h: number; // height
   l?: string; // location (optional)
+  p?: string; // photographer (optional, short key)
+  pu?: string; // photographerUrl (optional, short key)
 }
 
 const UNSPLASH_API_BASE = 'https://api.unsplash.com';
@@ -86,6 +88,8 @@ function compressImage(img: UnsplashImage): CompressedImage {
     w: img.width,
     h: img.height,
     ...(img.location && { l: img.location }),
+    ...(img.photographer && { p: img.photographer }),
+    ...(img.photographerUrl && { pu: img.photographerUrl }),
   };
 }
 
@@ -98,8 +102,8 @@ function decompressImage(compressed: CompressedImage): UnsplashImage {
     alt: compressed.a,
     width: compressed.w,
     height: compressed.h,
-    photographer: 'Unknown',
-    photographerUrl: '#',
+    photographer: compressed.p || 'Unknown',
+    photographerUrl: compressed.pu || '#',
     location: compressed.l,
   };
 }
@@ -382,7 +386,19 @@ export async function fetchCountryImages(
     const indexedDBImages = await getCachedImagesFromIndexedDB(country);
     if (indexedDBImages && indexedDBImages.length > 0) {
       logger.debug(`[Gallery] Loaded ${indexedDBImages.length} images from IndexedDB for ${country}`);
-      return indexedDBImages;
+
+      // If cached images are missing photographer metadata (from older compressed format),
+      // clear caches and refetch so attribution is available immediately.
+      const missingMeta = indexedDBImages.some(
+        (img) => !img.photographer || img.photographer === 'Unknown' || !img.photographerUrl || img.photographerUrl === '#'
+      );
+
+      if (!missingMeta) {
+        return indexedDBImages;
+      }
+
+      logger.debug(`[Gallery] Detected missing metadata in cached images for ${country}, clearing caches to refresh.`);
+      await clearImageCache(country).catch(() => {});
     }
   } catch (e) {
     logger.debug('[Gallery] IndexedDB lookup failed, continuing...', e);
@@ -392,19 +408,39 @@ export async function fetchCountryImages(
   const cachedImages = getCachedImages(country);
   if (cachedImages && cachedImages.length > 0) {
     logger.debug(`[Gallery] Loaded ${cachedImages.length} cached images from localStorage for ${country}`);
-    // Populate IndexedDB in background for future access
-    cacheImagesToIndexedDB(country, cachedImages).catch(() => {});
-    return cachedImages;
+
+    const missingMeta = cachedImages.some(
+      (img) => !img.photographer || img.photographer === 'Unknown' || !img.photographerUrl || img.photographerUrl === '#'
+    );
+
+    if (!missingMeta) {
+      // Populate IndexedDB in background for future access
+      cacheImagesToIndexedDB(country, cachedImages).catch(() => {});
+      return cachedImages;
+    }
+
+    logger.debug(`[Gallery] Detected missing metadata in localStorage cache for ${country}, clearing caches to refresh.`);
+    await clearImageCache(country).catch(() => {});
   }
 
   // Try memory cache next
   const memoryCached = getMemoryCachedImages(country);
   if (memoryCached && memoryCached.length > 0) {
     logger.debug(`[Gallery] Loaded ${memoryCached.length} images from memory cache for ${country}`);
-    // Populate IndexedDB and localStorage in background
-    cacheImagesToIndexedDB(country, memoryCached).catch(() => {});
-    cacheImages(country, memoryCached);
-    return memoryCached;
+
+    const missingMeta = memoryCached.some(
+      (img) => !img.photographer || img.photographer === 'Unknown' || !img.photographerUrl || img.photographerUrl === '#'
+    );
+
+    if (!missingMeta) {
+      // Populate IndexedDB and localStorage in background
+      cacheImagesToIndexedDB(country, memoryCached).catch(() => {});
+      cacheImages(country, memoryCached);
+      return memoryCached;
+    }
+
+    logger.debug(`[Gallery] Detected missing metadata in memory cache for ${country}, clearing caches to refresh.`);
+    await clearImageCache(country).catch(() => {});
   }
 
   // Fetch fresh images from API

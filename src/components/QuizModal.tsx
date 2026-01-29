@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   Dialog,
   DialogContent,
@@ -116,10 +122,13 @@ const QuizModal: React.FC<Props> = ({
   const current = useMemo(() => questions[index], [questions, index]);
   const isCountryQuiz = sourceType === "country";
 
-  const normalizeStr = (v: unknown) =>
-    String(v ?? "")
-      .trim()
-      .toLowerCase();
+  const normalizeStr = useCallback(
+    (v: unknown) =>
+      String(v ?? "")
+        .trim()
+        .toLowerCase(),
+    [],
+  );
 
   const optionId = (o: unknown) => {
     if (o == null) return undefined;
@@ -129,12 +138,16 @@ const QuizModal: React.FC<Props> = ({
     return rec.id ?? rec._id ?? rec.value ?? rec.key ?? undefined;
   };
 
-  const optionLabel = (o: unknown) => {
-    if (o == null) return "";
-    if (typeof o === "string" || typeof o === "number") return normalizeStr(o);
-    const rec = o as Record<string, unknown>;
-    return normalizeStr(rec.label ?? rec.text ?? rec.name ?? rec.value ?? "");
-  };
+  const optionLabel = useCallback(
+    (o: unknown) => {
+      if (o == null) return "";
+      if (typeof o === "string" || typeof o === "number")
+        return normalizeStr(o);
+      const rec = o as Record<string, unknown>;
+      return normalizeStr(rec.label ?? rec.text ?? rec.name ?? rec.value ?? "");
+    },
+    [normalizeStr],
+  );
 
   const resolveAnswerValue = (q: Q) => {
     // If the stored answer is an index, resolve to the option value
@@ -144,46 +157,52 @@ const QuizModal: React.FC<Props> = ({
     return q?.answer;
   };
 
-  const answersEqual = (opt: unknown, ansRaw: unknown) => {
-    const ans = resolveAnswerValue(current as Q) ?? ansRaw;
-    // If both have id-like properties, compare ids
-    const optId = optionId(opt);
-    const ansId = optionId(ans);
-    if (optId !== undefined && ansId !== undefined)
-      return String(optId) === String(ansId);
-    if (
-      optId !== undefined &&
-      (typeof ans === "string" || typeof ans === "number")
-    )
-      return String(optId) === String(ans);
-    if (
-      ansId !== undefined &&
-      (typeof opt === "string" || typeof opt === "number")
-    )
-      return String(ansId) === String(opt);
+  const answersEqual = useCallback(
+    (opt: unknown, ansRaw: unknown) => {
+      const ans = resolveAnswerValue(current as Q) ?? ansRaw;
+      // If both have id-like properties, compare ids
+      const optId = optionId(opt);
+      const ansId = optionId(ans);
+      if (optId !== undefined && ansId !== undefined)
+        return String(optId) === String(ansId);
+      if (
+        optId !== undefined &&
+        (typeof ans === "string" || typeof ans === "number")
+      )
+        return String(optId) === String(ans);
+      if (
+        ansId !== undefined &&
+        (typeof opt === "string" || typeof opt === "number")
+      )
+        return String(ansId) === String(opt);
 
-    // Fall back to normalized label comparison
-    return optionLabel(opt) === optionLabel(ans);
-  };
+      // Fall back to normalized label comparison
+      return optionLabel(opt) === optionLabel(ans);
+    },
+    [current, optionLabel],
+  );
 
-  const handleAnswer = (opt: unknown, idx: number) => {
-    if (selectedIndex !== null) return;
-    setSelectedIndex(idx);
-    // Apply robust comparison for all quiz types (country, fun, world, global)
-    const correct = answersEqual(opt, current?.answer);
-    if (correct) setScore((s) => s + 1);
-    setTimeout(() => {
-      if (index + 1 >= questions.length) {
-        // mark the just-played set as last played so Replay returns the most recent quiz
-        setLastPlayedQuestions(questions);
-        setFinished(true);
-      } else {
-        setIndex((i) => i + 1);
-        setSelectedIndex(null);
-        setFocusedIndex(null);
-      }
-    }, 600);
-  };
+  const handleAnswer = useCallback(
+    (opt: unknown, idx: number) => {
+      if (selectedIndex !== null) return;
+      setSelectedIndex(idx);
+      // Apply robust comparison for all quiz types (country, fun, world, global)
+      const correct = answersEqual(opt, current?.answer);
+      if (correct) setScore((s) => s + 1);
+      setTimeout(() => {
+        if (index + 1 >= questions.length) {
+          // mark the just-played set as last played so Replay returns the most recent quiz
+          setLastPlayedQuestions(questions);
+          setFinished(true);
+        } else {
+          setIndex((i) => i + 1);
+          setSelectedIndex(null);
+          setFocusedIndex(null);
+        }
+      }, 600);
+    },
+    [selectedIndex, current, questions, index, answersEqual],
+  );
 
   const handlePlayAgain = () => {
     // Attempt to fetch a fresh distinct quiz set (up to N tries)
@@ -287,7 +306,7 @@ const QuizModal: React.FC<Props> = ({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, current, focusedIndex]);
+  }, [open, current, focusedIndex, handleAnswer]);
 
   useEffect(() => {
     if (focusedIndex === null) return;

@@ -45,7 +45,7 @@ const Facts = () => {
       (f) => !(f && (f as { subcategory_id?: unknown })?.subcategory_id),
     );
     pagination.setTotalItems(displayed.length);
-  }, [facts]);
+  }, [facts, pagination]);
 
   useEffect(() => {
     if (!category) return;
@@ -67,11 +67,7 @@ const Facts = () => {
   }, [category]);
 
   useEffect(() => {
-    try {
-      debug("[Facts page] facts changed", { category, facts });
-    } catch (e) {
-      /* ignored - debug only */
-    }
+    // Debug logging disabled in production
   }, [facts, category]);
 
   // Note: fact_type resolution is handled internally by fetchFacts from api.ts
@@ -152,16 +148,7 @@ const Facts = () => {
                 }
 
                 const paginatedFacts = pagination.paginate(filtered);
-                try {
-                  debug(
-                    "[Facts page] displayed",
-                    displayed,
-                    "filtered",
-                    filtered,
-                  );
-                } catch (e) {
-                  /* ignored - debug only */
-                }
+                // Debug logging disabled in production
                 return paginatedFacts.map((fact: unknown, i: number) => {
                   const row = fact as {
                     id?: string | number;

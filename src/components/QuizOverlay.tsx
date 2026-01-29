@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,50 +34,57 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
     null,
   );
 
-  const fetchQuestions = async (count = 10) => {
-    setLoading(true);
-    try {
-      let res: unknown;
-      if (topic) {
-        res = await generateQuizForTopic(topic, count, { force: true });
-      } else {
-        // random quizzes should be freshly generated
-        // import generateRandomQuiz dynamically to avoid cycle
-        const mod = (await import("@/lib/api")) as {
-          generateRandomQuiz: (n: number) => Promise<unknown>;
-        };
-        res = await mod.generateRandomQuiz(count);
+  const fetchQuestions = useCallback(
+    async (count = 10) => {
+      setLoading(true);
+      try {
+        let res: unknown;
+        if (topic) {
+          res = await generateQuizForTopic(topic, count, { force: true });
+        } else {
+          // random quizzes should be freshly generated
+          // import generateRandomQuiz dynamically to avoid cycle
+          const mod = (await import("@/lib/api")) as {
+            generateRandomQuiz: (n: number) => Promise<unknown>;
+          };
+          res = await mod.generateRandomQuiz(count);
+        }
+        // normalize
+        const raw = Array.isArray(res) ? (res as unknown[]) : res ? [res] : [];
+        const qs = raw.map((q: unknown) => {
+          const o = (q || {}) as Record<string, unknown>;
+          const question = String(o.question ?? o.title ?? "Question");
+          const optsRaw = o.options ?? o.choices ?? o.answers ?? [];
+          const options = Array.isArray(optsRaw)
+            ? optsRaw.map((x) => String(x))
+            : [];
+          const answer = String(
+            o.answer ??
+              o.correctAnswer ??
+              o.answerText ??
+              o.correct_answer ??
+              "",
+          );
+          return { question, options, answer } as Q;
+        });
+        setQuestions(qs);
+        setSelected(null);
+        setScore(0);
+        setFinished(false);
+        setLastPlayedQuestions((prev) => prev ?? qs);
+      } catch (e) {
+        error("Quiz fetch failed", e);
+      } finally {
+        setLoading(false);
       }
-      // normalize
-      const raw = Array.isArray(res) ? (res as unknown[]) : res ? [res] : [];
-      const qs = raw.map((q: unknown) => {
-        const o = (q || {}) as Record<string, unknown>;
-        const question = String(o.question ?? o.title ?? "Question");
-        const optsRaw = o.options ?? o.choices ?? o.answers ?? [];
-        const options = Array.isArray(optsRaw)
-          ? optsRaw.map((x) => String(x))
-          : [];
-        const answer = String(
-          o.answer ?? o.correctAnswer ?? o.answerText ?? o.correct_answer ?? "",
-        );
-        return { question, options, answer } as Q;
-      });
-      setQuestions(qs);
-      setSelected(null);
-      setScore(0);
-      setFinished(false);
-      setLastPlayedQuestions((prev) => prev ?? qs);
-    } catch (e) {
-      error("Quiz fetch failed", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [topic],
+  );
 
   useEffect(() => {
     if (!open) return;
     fetchQuestions(12); // fetch 12 random questions
-  }, [open, topic]);
+  }, [open, topic, fetchQuestions]);
 
   const current = useMemo(() => questions[index], [questions, index]);
 

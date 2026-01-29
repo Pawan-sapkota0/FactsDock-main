@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   MapPin,
@@ -85,171 +85,8 @@ const Country = () => {
     countryData?.name || null,
   );
 
-  useEffect(() => {
-    fetchCountryData();
-  }, [slug]);
-
-  // background refresh: fetch fresh data after initial render without blocking UI
-  useEffect(() => {
-    if (!slug) return;
-    let mounted = true;
-    const candidate = slug
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-
-    (async () => {
-      try {
-        const results = await fetchCountryByName(candidate, { force: true });
-        if (!mounted) return;
-        const country =
-          Array.isArray(results) && results.length > 0 ? results[0] : null;
-        if (!country) return;
-
-        // Simple shallow compare: if the cached displayed name differs from fresh name, update UI
-        const freshName = country?.name?.common || country?.name || candidate;
-        if (freshName && freshName !== countryData?.name) {
-          // reuse the same mapping logic used in fetchCountryData/handleRefresh
-          const currencies = country?.currencies || {};
-          const currencyValues = Object.values(currencies) as Array<{
-            name?: string;
-            symbol?: string;
-          }>;
-          const firstCurrency = currencyValues[0] || {};
-          const cacheMeta = getLocalCacheMeta(
-            "country",
-            (country?.name?.common || candidate).toLowerCase().trim(),
-          );
-          const capitalVal = Array.isArray(country?.capital)
-            ? country.capital[0]
-            : country?.capital || country?.capitalCity || null;
-          const populationVal =
-            country?.population ||
-            country?.populationTotal ||
-            country?.pop_est ||
-            null;
-          // prefer metadata fields if present (some data sources store values under metadata)
-          const meta = country?.metadata || country?.properties || {};
-          // Accept many possible shapes: top-level, metadata/properties, nested metrics, or alternate names
-          const areaVal =
-            meta?.area ||
-            country?.area ||
-            country?.area_km2 ||
-            country?.areaInSqKm ||
-            country?.metrics?.area ||
-            country?.geo?.area ||
-            null;
-          const regionVal =
-            meta?.region ||
-            country?.region ||
-            country?.continent ||
-            country?.subregion ||
-            country?.regionName ||
-            country?.adminRegion ||
-            country?.properties?.region ||
-            null;
-          const languagesVal = country?.languages
-            ? Object.values(country.languages).join(", ")
-            : country?.lang || country?.language || null;
-
-          // helper to display a safe value or 'N/A'
-          const safeValue = (v: unknown) =>
-            v === null ||
-            v === undefined ||
-            (typeof v === "string" && v.trim() === "")
-              ? "N/A"
-              : v;
-
-          // continent: may be under continents (array) or continent or metadata
-          const continentValRaw =
-            meta?.continent ||
-            country?.continent ||
-            (Array.isArray(country?.continents)
-              ? country.continents[0]
-              : null) ||
-            country?.adminRegion ||
-            null;
-          const continentVal = String(safeValue(continentValRaw));
-
-          // timezones: if array, join with commas; else try common fields
-          const tzRaw = Array.isArray(country?.timezones)
-            ? country.timezones
-            : country?.time_zone || country?.timezones || null;
-          const timezonesVal = tzRaw
-            ? Array.isArray(tzRaw)
-              ? tzRaw.join(", ")
-              : String(tzRaw)
-            : null;
-
-          // calling code: prefer idd.root + idd.suffixes[0], fallback to other common fields
-          const callingRoot = country?.idd?.root || meta?.idd?.root || null;
-          const callingSuffix =
-            Array.isArray(country?.idd?.suffixes) &&
-            country.idd.suffixes.length > 0
-              ? country.idd.suffixes[0]
-              : Array.isArray(meta?.idd?.suffixes) &&
-                  meta.idd.suffixes.length > 0
-                ? meta.idd.suffixes[0]
-                : null;
-          const callingCodeRaw =
-            callingRoot && callingSuffix
-              ? `${callingRoot}${callingSuffix}`
-              : country?.callingCode || meta?.callingCode || null;
-          const callingCodeVal = callingCodeRaw ? String(callingCodeRaw) : null;
-
-          const newData = {
-            name: country?.name?.common || country?.name || candidate,
-            flag: country?.flag || "",
-            flagImage: country?.flags?.svg || country?.flagImage || "",
-            capital: capitalVal || "N/A",
-            population: populationVal
-              ? typeof populationVal === "number"
-                ? populationVal.toLocaleString()
-                : populationVal
-              : "N/A",
-            currency: firstCurrency.name || country?.currency || "N/A",
-            currencySymbol: firstCurrency.symbol || "",
-            languages: languagesVal || "N/A",
-            timezones: timezonesVal || "N/A",
-            area: areaVal
-              ? `${Number(areaVal).toLocaleString()} km\u00b2`
-              : "N/A",
-            region: regionVal || "N/A",
-            continent: continentVal,
-            callingCode: callingCodeVal || "N/A",
-            subregion: country?.subregion || "N/A",
-
-            lastUpdated: cacheMeta?.ts || Date.now(),
-            capitalTimezone: null,
-          };
-
-          setCountryData(newData);
-        }
-      } catch (e) {
-        // background refresh failures are silent
-        // logger.debug('background refresh failed', e);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
-
-  // refresh when window gains focus (useful if user switches back to tab)
-  useEffect(() => {
-    const onFocus = () => {
-      if (!slug) return;
-      // fire-and-forget refresh, reuse existing handleRefresh logic
-      handleRefresh();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
-
-  const fetchCountryData = async () => {
+  // Define fetchCountryData early so effects can reference it in dependencies
+  const fetchCountryData = useCallback(async () => {
     if (!slug) return;
 
     setIsLoading(true);
@@ -431,7 +268,171 @@ const Country = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [slug, toast]);
+
+  useEffect(() => {
+    fetchCountryData();
+  }, [fetchCountryData, slug]);
+
+  // background refresh: fetch fresh data after initial render without blocking UI
+  useEffect(() => {
+    if (!slug) return;
+    let mounted = true;
+    const candidate = slug
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
+    (async () => {
+      try {
+        const results = await fetchCountryByName(candidate, { force: true });
+        if (!mounted) return;
+        const country =
+          Array.isArray(results) && results.length > 0 ? results[0] : null;
+        if (!country) return;
+
+        // Simple shallow compare: if the cached displayed name differs from fresh name, update UI
+        const freshName = country?.name?.common || country?.name || candidate;
+        if (freshName && freshName !== countryData?.name) {
+          // reuse the same mapping logic used in fetchCountryData/handleRefresh
+          const currencies = country?.currencies || {};
+          const currencyValues = Object.values(currencies) as Array<{
+            name?: string;
+            symbol?: string;
+          }>;
+          const firstCurrency = currencyValues[0] || {};
+          const cacheMeta = getLocalCacheMeta(
+            "country",
+            (country?.name?.common || candidate).toLowerCase().trim(),
+          );
+          const capitalVal = Array.isArray(country?.capital)
+            ? country.capital[0]
+            : country?.capital || country?.capitalCity || null;
+          const populationVal =
+            country?.population ||
+            country?.populationTotal ||
+            country?.pop_est ||
+            null;
+          // prefer metadata fields if present (some data sources store values under metadata)
+          const meta = country?.metadata || country?.properties || {};
+          // Accept many possible shapes: top-level, metadata/properties, nested metrics, or alternate names
+          const areaVal =
+            meta?.area ||
+            country?.area ||
+            country?.area_km2 ||
+            country?.areaInSqKm ||
+            country?.metrics?.area ||
+            country?.geo?.area ||
+            null;
+          const regionVal =
+            meta?.region ||
+            country?.region ||
+            country?.continent ||
+            country?.subregion ||
+            country?.regionName ||
+            country?.adminRegion ||
+            country?.properties?.region ||
+            null;
+          const languagesVal = country?.languages
+            ? Object.values(country.languages).join(", ")
+            : country?.lang || country?.language || null;
+
+          // helper to display a safe value or 'N/A'
+          const safeValue = (v: unknown) =>
+            v === null ||
+            v === undefined ||
+            (typeof v === "string" && v.trim() === "")
+              ? "N/A"
+              : v;
+
+          // continent: may be under continents (array) or continent or metadata
+          const continentValRaw =
+            meta?.continent ||
+            country?.continent ||
+            (Array.isArray(country?.continents)
+              ? country.continents[0]
+              : null) ||
+            country?.adminRegion ||
+            null;
+          const continentVal = String(safeValue(continentValRaw));
+
+          // timezones: if array, join with commas; else try common fields
+          const tzRaw = Array.isArray(country?.timezones)
+            ? country.timezones
+            : country?.time_zone || country?.timezones || null;
+          const timezonesVal = tzRaw
+            ? Array.isArray(tzRaw)
+              ? tzRaw.join(", ")
+              : String(tzRaw)
+            : null;
+
+          // calling code: prefer idd.root + idd.suffixes[0], fallback to other common fields
+          const callingRoot = country?.idd?.root || meta?.idd?.root || null;
+          const callingSuffix =
+            Array.isArray(country?.idd?.suffixes) &&
+            country.idd.suffixes.length > 0
+              ? country.idd.suffixes[0]
+              : Array.isArray(meta?.idd?.suffixes) &&
+                  meta.idd.suffixes.length > 0
+                ? meta.idd.suffixes[0]
+                : null;
+          const callingCodeRaw =
+            callingRoot && callingSuffix
+              ? `${callingRoot}${callingSuffix}`
+              : country?.callingCode || meta?.callingCode || null;
+          const callingCodeVal = callingCodeRaw ? String(callingCodeRaw) : null;
+
+          const newData = {
+            name: country?.name?.common || country?.name || candidate,
+            flag: country?.flag || "",
+            flagImage: country?.flags?.svg || country?.flagImage || "",
+            capital: capitalVal || "N/A",
+            population: populationVal
+              ? typeof populationVal === "number"
+                ? populationVal.toLocaleString()
+                : populationVal
+              : "N/A",
+            currency: firstCurrency.name || country?.currency || "N/A",
+            currencySymbol: firstCurrency.symbol || "",
+            languages: languagesVal || "N/A",
+            timezones: timezonesVal || "N/A",
+            area: areaVal
+              ? `${Number(areaVal).toLocaleString()} km\u00b2`
+              : "N/A",
+            region: regionVal || "N/A",
+            continent: continentVal,
+            callingCode: callingCodeVal || "N/A",
+            subregion: country?.subregion || "N/A",
+
+            lastUpdated: cacheMeta?.ts || Date.now(),
+            capitalTimezone: null,
+          };
+
+          setCountryData(newData);
+        }
+      } catch (e) {
+        // background refresh failures are silent
+        // logger.debug('background refresh failed', e);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  // refresh when window gains focus (useful if user switches back to tab)
+  useEffect(() => {
+    const onFocus = () => {
+      if (!slug) return;
+      // fire-and-forget refresh, reuse existing handleRefresh logic
+      handleRefresh();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const handleRefresh = async () => {
     // force bypass cache
@@ -619,13 +620,14 @@ const Country = () => {
   useEffect(() => {
     if (!countryData || !countryData.capital || countryData.capital === "N/A")
       return;
+    const capital = countryData.capital;
     let cancelled = false;
     const fetchWeather = async () => {
       try {
         const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
         // Log presence (do not print the key itself)
         logger.debug("[Weather] fetch start", {
-          capital: countryData.capital,
+          capital: capital,
           hasApiKey: !!apiKey,
         });
         if (!apiKey) {
@@ -636,7 +638,7 @@ const Country = () => {
         }
         const res = await fetch(
           `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(
-            countryData.capital,
+            capital,
           )}`,
         );
         if (!res.ok) {
@@ -676,8 +678,11 @@ const Country = () => {
   }, [countryData?.capital]);
 
   // Record a page view once per browser session (uses sessionStorage)
+  // eslint-disable react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!countryData?.name || !slug) return;
+    if (!countryData) return;
+    if (!countryData.name || !slug) return;
+    const countryName = countryData.name;
     try {
       const key = `wf:viewed:${slug}`;
       if (
@@ -695,7 +700,7 @@ const Country = () => {
           await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ country: countryData.name }),
+            body: JSON.stringify({ country: countryName }),
           });
         } catch (e) {
           logger.debug("[record-country-view] failed", e);
@@ -712,8 +717,7 @@ const Country = () => {
     } catch (e) {
       /* ignored - record-country-view failed */
     }
-    // only run when the country changes
-  }, [countryData?.name, slug]);
+  }, [countryData, slug]);
 
   if (isLoading) {
     return (

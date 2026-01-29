@@ -3,6 +3,7 @@ import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Disable JWT verification for cron jobs
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -341,6 +342,17 @@ serve(async (req) => {
       },
     });
   }
+
+  // Validate Authorization header (optional, commented out for cron jobs)
+  // For production, uncomment and enforce authorization:
+  // const authHeader = req.headers.get("Authorization") || "";
+  // const bearerToken = authHeader.replace("Bearer ", "");
+  // if (!bearerToken || bearerToken === SUPABASE_SERVICE_ROLE_KEY) {
+  //   return new Response(JSON.stringify({ error: "Unauthorized" }), {
+  //     status: 401,
+  //     headers: { "Content-Type": "application/json", ...corsHeaders },
+  //   });
+  // }
 
   // Allow POST requests (from cron or manual triggers)
   if (req.method !== "POST") {

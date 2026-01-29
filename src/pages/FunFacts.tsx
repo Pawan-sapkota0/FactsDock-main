@@ -251,7 +251,7 @@ const FunFacts = () => {
       return !(f && (f as { subcategory_id?: unknown })?.subcategory_id);
     });
     pagination.setTotalItems(displayed.length);
-  }, [facts, selectedSub]);
+  }, [facts, selectedSub, pagination]);
 
   const handleMainClick = (title: string) => {
     // navigate to category page
@@ -308,24 +308,17 @@ const FunFacts = () => {
       pendingRef.set(key, promise);
       const result = await promise;
       setFacts((result || []) as Fact[]);
-      try {
-        debug("[FunFacts] handleMainFetch setFacts", {
-          key,
-          count: (result || []).length,
-          sample: (result || [])[0],
-        });
-      } catch (e) {
-        /* ignored - debug only */
-      }
       toast({
         title: "Facts Loaded",
         description: `Loaded ${result?.length || 0} facts for ${main}.`,
       });
     } catch (e) {
-      error(e);
+      // Log full error internally, but show friendly message to user
+      error(`[FunFacts] Failed to load facts for "${main}":`, e);
       toast({
-        title: "Error",
-        description: "Failed to reload facts.",
+        title: "Unable to Load Facts",
+        description:
+          "We're having trouble loading facts right now. Please try again in a moment.",
         variant: "destructive",
       });
     } finally {
@@ -384,25 +377,17 @@ const FunFacts = () => {
       pendingRef.set(key, promise);
       const result = await promise;
       setFacts((result || []) as Fact[]);
-      try {
-        debug("[FunFacts] handleSubClick setFacts", {
-          main,
-          sub,
-          count: (result || []).length,
-          sample: (result || [])[0],
-        });
-      } catch (e) {
-        /* ignored - debug only */
-      }
       toast({
         title: "Facts Loaded",
         description: `Loaded ${result?.length || 0} facts for ${sub}.`,
       });
     } catch (e) {
-      error(e);
+      // Log full error internally for debugging
+      error(`[FunFacts] Failed to load facts for "${sub}":`, e);
       toast({
-        title: "Error",
-        description: "Failed to load facts for this subcategory.",
+        title: "Unable to Load Facts",
+        description:
+          "We're having trouble loading this category. Please try again.",
         variant: "destructive",
       });
     } finally {

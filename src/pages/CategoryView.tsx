@@ -57,7 +57,7 @@ const CategoryView: React.FC = () => {
   // Update pagination when facts change
   useEffect(() => {
     pagination.setTotalItems(facts.length);
-  }, [facts]);
+  }, [facts, pagination]);
 
   const categoryKey = `${type || "fun-facts"}:${slug}`;
   const factTypeIdRef = useRef<string | null>(null);
@@ -260,18 +260,7 @@ const CategoryView: React.FC = () => {
           }
         }
       }
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          logger.debug("[CategoryView] loadMore fetched", {
-            cacheKey,
-            fetchCategory,
-            count: items.length,
-            sample: items[0],
-          });
-        } catch (e) {
-          /* ignored - debug only */
-        }
-      }
+      // Debug logging disabled in production
       cacheRef.current.set(cacheKey, items);
       setCurrentCategoryKey(cacheKey);
       const slice = items.slice(0, BATCH_SIZE);

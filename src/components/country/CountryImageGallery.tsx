@@ -3,7 +3,7 @@
  * Features: Single image display, arrow navigation, responsive, lazy loading, theme support
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import logger from "@/lib/logger";
@@ -52,7 +52,7 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
   }, [isAutoScrolling, images.length]);
 
   // Handle previous image
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     setIsAutoScrolling(false);
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
 
@@ -63,10 +63,10 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
     resetAutoScrollTimeout.current = setTimeout(() => {
       setIsAutoScrolling(true);
     }, 8000);
-  };
+  }, [images.length]);
 
   // Handle next image
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setIsAutoScrolling(false);
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
 
@@ -77,7 +77,7 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
     resetAutoScrollTimeout.current = setTimeout(() => {
       setIsAutoScrolling(true);
     }, 8000);
-  };
+  }, [images.length]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -91,7 +91,7 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handlePrevious, handleNext]);
 
   // Touch gesture support
   const touchStartXRef = useRef<number>(0);
@@ -163,13 +163,31 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
 
               {/* Location/Label at top left */}
               {(currentImage.location || currentImage.alt) && (
-                <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-2 rounded-lg text-sm font-medium">
+                <div className="absolute top-4 left-4 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    <span>{currentImage.location || currentImage.alt}</span>
+                    <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="line-clamp-2 text-xs md:text-sm">
+                      {currentImage.location || currentImage.alt}
+                    </span>
                   </div>
                 </div>
               )}
+
+              {/* Photographer credit at bottom right (always visible) */}
+              {currentImage.photographer &&
+                currentImage.photographer !== "Unknown" && (
+                  <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-lg text-xs transition-colors">
+                    Photo by{" "}
+                    <a
+                      href={`${currentImage.photographerUrl}?utm_source=world-facts&utm_medium=referral`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold"
+                    >
+                      {currentImage.photographer}
+                    </a>
+                  </div>
+                )}
             </div>
 
             {/* Left arrow button */}
@@ -191,16 +209,6 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
             >
               <ChevronRight className="w-6 h-6" />
             </button>
-
-            {/* Photographer attribution */}
-            {/* <a
-              href={currentImage.photographerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-lg text-xs transition-colors"
-            >
-              Photo by {currentImage.photographer}
-            </a> */}
           </div>
         )}
 

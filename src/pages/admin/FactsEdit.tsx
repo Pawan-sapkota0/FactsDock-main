@@ -538,14 +538,27 @@ const FactsEdit: React.FC = () => {
         persist: true,
         created_by: adminUserId || null,
       };
-      logger.debug("generateAndPersist -> POST", url, body);
+      logger.debug("generateAndPersist -> POST", url, {
+        count: body.count,
+        country: body.country,
+        fact_type_name: body.fact_type_name,
+        category: body.category,
+      });
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const json = await res.json();
-      logger.debug("generateAndPersist response", json);
+      logger.debug("generateAndPersist response", {
+        ok: !!json,
+        error: json?.error || null,
+        dataCount: Array.isArray(json?.data)
+          ? json.data.length
+          : json?.data
+            ? 1
+            : 0,
+      });
       if (json.error) {
         toast({
           title: "Error",

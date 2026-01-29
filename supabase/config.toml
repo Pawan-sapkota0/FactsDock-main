@@ -69,3 +69,5 @@ entrypoint = "./functions/bright-api/index.ts"
 
 [functions.fetch-news]
 verify_jwt = false
+[functions.refresh-image-cache]
+verify_jwt = false

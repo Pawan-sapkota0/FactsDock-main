@@ -44,7 +44,7 @@ export const signInWithEmailPassword = async (
   password: string,
 ): Promise<{ user: AdminUser | null; error: unknown }> => {
   try {
-    logger.debug("[AdminAuth] Starting email/password login for:", email);
+    logger.debug("[AdminAuth] Starting email/password login");
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -247,7 +247,8 @@ export const verifyAdminCredentials = async (): Promise<AdminUser | null> => {
       .eq("is_active", true)
       .maybeSingle();
 
-    logger.debug("[AdminAuth] Admin query result:", { data, error });
+    const errMsg = (error as { message?: string } | null)?.message ?? null;
+    logger.debug("[AdminAuth] Admin query result:", { hasData: !!data, error: errMsg });
 
     if (error || !data) {
       logger.warn("[AdminAuth] User is not an authorized admin - Error:", error);

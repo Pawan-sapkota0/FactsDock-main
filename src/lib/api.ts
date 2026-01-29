@@ -2,6 +2,40 @@
 import { supabase, SUPABASE_AVAILABLE } from '@/integrations/supabase/client';
 import logger from '@/lib/logger';
 
+// Basic input sanitizers and validators to avoid accidental leaks or runtime errors
+function sanitizeString(input: unknown, name = 'input', maxLen = 200) {
+  if (input === null || input === undefined) return '';
+  if (typeof input !== 'string') {
+    // Coerce common types to string safely
+    try {
+      input = String(input);
+    } catch (e) {
+      logger.error(`[sanitizeString] Invalid ${name} value`, e);
+      return '';
+    }
+  }
+  // remove control characters by filtering by char code (avoid control-regex lint)
+  const cleaned = (input as string)
+    .split("")
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join("")
+    .trim();
+  if (!cleaned) return '';
+  if (cleaned.length > maxLen) {
+    return cleaned.slice(0, maxLen);
+  }
+  return cleaned;
+}
+
+function sanitizeCategoryKey(a: string, b: string) {
+  const sa = sanitizeString(a || '', 'typeOrFactType', 100).toLowerCase();
+  const sb = sanitizeString(b || '', 'categoryOrCategory', 200).toLowerCase();
+  return `${sa}:${sb}`.replace(/[^a-z0-9:\-\s_]/g, '').trim();
+}
+
 // Local lightweight mock generators to replace the missing `mockData` module.
 // These provide deterministic data for local development when Supabase isn't available.
 function generateLocalMockFacts(category: string, count = 60) {
@@ -76,29 +110,56 @@ export function getLocalCacheMeta(prefix: string, key: string) {
 async function callGenerateContent(body: Record<string, any>) {
     if (!SUPABASE_AVAILABLE) {
     // Return deterministic mock data for local development. Use the request body type to decide.
-    const t = (body.type || 'fun-facts').toLowerCase();
+    // sanitize incoming request fields to avoid overly large requests
+    const t = sanitizeString(body.type || 'fun-facts', 'type', 50).toLowerCase();
     if (t === 'quiz') {
-      const cnt = body.questionCount || 10;
-        return generateLocalMockQuiz(body.country || body.topic || 'General', cnt as number);
+      const cnt = Number(body.questionCount) || 10;
+      const bounded = Math.max(1, Math.min(cnt, 50));
+      const topic = sanitizeString(body.country || body.topic || 'General', 'topic', 60);
+      return generateLocalMockQuiz(topic, bounded as number);
     }
     // for 'fun-facts' or 'world-facts'
-    const category = body.category || 'General';
+    const category = sanitizeString(body.category || 'General', 'category', 80);
     // return a modest number of items so paging works
-      return generateLocalMockFacts(category, 60);
+    return generateLocalMockFacts(category, 60);
   }
 
   try {
-    const res = await supabase.functions.invoke('generate-content', { body });
-    if (res.error) throw res.error;
+    // sanitize minimal fields to avoid passing unexpected large payloads
+    const safeBody = {
+      type: sanitizeString(body.type || 'fun-facts', 'type', 50),
+      category: sanitizeString(body.category || '', 'category', 80),
+      topic: sanitizeString(body.topic || '', 'topic', 80),
+      questionCount: Number(body.questionCount) || undefined,
+      country: sanitizeString(body.country || '', 'country', 80),
+      // include other fields intentionally only if simple primitives
+      ...Object.keys(body || {}).reduce((acc: Record<string, any>, k) => {
+        const v = body[k];
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') acc[k] = v;
+        return acc;
+      }, {}),
+    };
+
+    const res = await supabase.functions.invoke('generate-content', { body: safeBody });
+    if (res.error) {
+      logger.error('[callGenerateContent] Supabase function returned error', res.error);
+      return [];
+    }
     return res.data?.data || [];
   } catch (e) {
-    logger.warn('Supabase function failed or unreachable - returning empty result', e);
+    // Log error internally but return empty result
+    logger.error('[callGenerateContent] Supabase function failed or unreachable', e);
     return [];
   }
 }
 
 export async function fetchCountryByName(countryName: string, opts?: { ttl?: number; force?: boolean }) {
-  const key = countryName.toLowerCase().trim();
+  const safeName = sanitizeString(countryName || '', 'countryName', 200);
+  if (!safeName) {
+    logger.error('[fetchCountryByName] Invalid country name');
+    return [];
+  }
+  const key = safeName.toLowerCase().trim();
   // check in-memory
   if (!opts?.force) {
     const mem = memoryCache.get('country:' + key);
@@ -114,20 +175,25 @@ export async function fetchCountryByName(countryName: string, opts?: { ttl?: num
 
   // Prefer Supabase function but fallback to RestCountries
   try {
-  const res = await supabase.functions.invoke('fetch-country-data', { body: { countryName } });
+    const res = await supabase.functions.invoke('fetch-country-data', { body: { countryName: safeName } });
     if (res.error) throw res.error;
     const value = res.data?.data || [];
     memoryCache.set('country:' + key, { ts: Date.now(), value });
     setLocalCache('country', key, value, opts?.ttl || 86400);
     return value;
   } catch (e) {
-    const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`;
-    const r = await fetch(url);
-    if (!r.ok) return [];
-    const data = await r.json();
-    memoryCache.set('country:' + key, { ts: Date.now(), value: data });
-    setLocalCache('country', key, data, opts?.ttl || 86400);
-    return data || [];
+    try {
+      const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(safeName)}`;
+      const r = await fetch(url);
+      if (!r.ok) return [];
+      const data = await r.json();
+      memoryCache.set('country:' + key, { ts: Date.now(), value: data });
+      setLocalCache('country', key, data, opts?.ttl || 86400);
+      return data || [];
+    } catch (err) {
+      logger.error('[fetchCountryByName] Exception fetching fallback country data', err);
+      return [];
+    }
   }
 }
 
@@ -136,7 +202,13 @@ export async function fetchFactsByCategory(
   categoryOrCategory: string,
   opts?: { ttl?: number; force?: boolean; fact_type_id?: string; category_id?: string; subcategory_id?: string }
 ) {
-  const key = `${typeOrFactType}:${categoryOrCategory}`.toLowerCase();
+  const safeType = sanitizeString(typeOrFactType || '', 'typeOrFactType', 100);
+  const safeCategory = sanitizeString(categoryOrCategory || '', 'categoryOrCategory', 200);
+  if (!safeType || !safeCategory) {
+    logger.error('[fetchFactsByCategory] Invalid type or category');
+    return [];
+  }
+  const key = sanitizeCategoryKey(safeType, safeCategory);
   if (!opts?.force) {
     const mem = memoryCache.get(key);
     if (mem) return mem.value;
@@ -221,9 +293,7 @@ export async function fetchFactsByCategory(
           } catch (e) { /* ignored - db lookup */ }
         }
       }
-      if (process.env.NODE_ENV !== 'production') {
-        try { logger.debug('[fetchFactsByCategory] resolved ids', { factTypeId, categoryId, subcategoryId, typeOrFactType, categoryOrCategory }); } catch (e) { /* ignored - debug only */ }
-      }
+      // Debug logging handled by logger module
       // If we have a categoryId (and optional subcategoryId), query facts directly by ids
       if (categoryId) {
         // Build query that returns category-level facts (subcategory_id IS NULL)
@@ -251,9 +321,7 @@ export async function fetchFactsByCategory(
         }
         if (factTypeId) qBase = qBase.eq('fact_type_id', factTypeId);
         const factsResp: any = await qBase.order('created_at', { ascending: false }).limit(10000);
-        if (process.env.NODE_ENV !== 'production') {
-          try { logger.debug('[fetchFactsByCategory] factsResp', { factsResp }); } catch (e) { /* ignored - debug only */ }
-        }
+        // Debug logging disabled in production
         const rows = factsResp?.data || [];
         if (rows && rows.length > 0) {
           const normalized = rows.map((r: any) => ({
@@ -269,9 +337,7 @@ export async function fetchFactsByCategory(
             subcategory: null,
             created_at: r.created_at || null,
           }));
-          if (process.env.NODE_ENV !== 'production') {
-            try { logger.debug('[fetchFactsByCategory] returning', { count: normalized.length }); } catch (e) { /* ignored - debug only */ }
-          }
+          // Debug logging disabled in production
           memoryCache.set(key, { ts: Date.now(), value: normalized });
           setLocalCache('facts', key, normalized, opts?.ttl || 86400);
           return normalized;
@@ -279,16 +345,14 @@ export async function fetchFactsByCategory(
       }
     }
   } catch (e) {
-    logger.warn('DB lookup for facts failed, falling back to generator', e);
+    // Database lookup failed, will fallback to generator if available
   }
  
 
   // If Supabase is available, DO NOT generate AI content on the public site.
   // Return an empty list so the frontend only shows approved facts from the DB.
   if (SUPABASE_AVAILABLE) {
-    if (process.env.NODE_ENV !== 'production') {
-      try { logger.debug('[fetchFactsByCategory] no approved facts found in DB for', { typeOrFactType, categoryOrCategory }); } catch (e) { /* ignored - debug only */ }
-    }
+    // No facts found in database
     const empty: any[] = [];
     memoryCache.set(key, { ts: Date.now(), value: empty });
     setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -483,9 +547,7 @@ export async function fetchCountryFacts(
     if (!countryFactTypeId) {
       // If we can't resolve a country fact_type row, return empty (do not
       // attempt name-only matches across unrelated fact types).
-      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        try { logger.debug('[fetchCountryFacts] cannot find fact_type for slug country-facts'); } catch (e) { /* ignored - debug only */ }
-      }
+      // Debug logging handled by logger module
       const empty: any[] = [];
       memoryCache.set(key, { ts: Date.now(), value: empty });
       setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -562,9 +624,7 @@ export async function fetchCountryFacts(
 
         // If we couldn't resolve the requested category (within country fact_type), return no results
         if (!categoryId) {
-          if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-            try { logger.debug('[fetchCountryFacts] category resolution failed, returning empty', { requestedCategory: opts.category }); } catch (e) { /* ignored - debug only */ }
-          }
+          // Category resolution failed
           const empty: any[] = [];
           memoryCache.set(key, { ts: Date.now(), value: empty });
           setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -589,18 +649,14 @@ export async function fetchCountryFacts(
               q = q.eq('subcategory_id', subId);
             } else {
               // requested subcategory not found -> return empty to avoid broad results
-              if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-                try { logger.debug('[fetchCountryFacts] requested subcategory not found, returning empty', { requestedSubName, categoryId }); } catch (e) { /* ignored - debug only */ }
-              }
+              // Subcategory resolution failed
               const empty: any[] = [];
               memoryCache.set(key, { ts: Date.now(), value: empty });
               setLocalCache('facts', key, empty, opts?.ttl || 300);
               return empty;
             }
             } catch (e) {
-            if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-              try { logger.debug('[fetchCountryFacts] subcategory resolution error, returning empty', { err: e }); } catch (er) { /* ignored - debug only */ }
-            }
+            // Subcategory resolution error
             const empty: any[] = [];
             memoryCache.set(key, { ts: Date.now(), value: empty });
             setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -626,9 +682,7 @@ export async function fetchCountryFacts(
         }
       } catch (e) {
         // on any resolution error, return empty to avoid broad country-wide results
-        if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          try { logger.debug('[fetchCountryFacts] category resolution exception, returning empty', { err: e }); } catch (err) { /* ignored - debug only */ }
-        }
+        // Category resolution exception
         const empty: any[] = [];
         memoryCache.set(key, { ts: Date.now(), value: empty });
         setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -664,9 +718,7 @@ export async function fetchCountryFacts(
     const { data: rows, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
     if (typeof window !== 'undefined') {
-      try {
-        logger.debug('[fetchCountryFacts] raw rows:', { country, category: opts?.category, subcategory: opts?.subcategory, rowsCount: (rows || []).length, sample: (rows || []).slice(0, 3) });
-      } catch (e) { /* ignored - debug only */ }
+      // Debug logging disabled in production
     }
 
     const filtered = (rows || []).filter((r: any) => {
@@ -703,9 +755,7 @@ export async function fetchCountryFacts(
 
     // If filtering by fact_type removed all rows but the DB returned rows, fall back to returning the raw rows
     if ((finalRows || []).length === 0 && (rows || []).length > 0) {
-      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        try { logger.debug('[fetchCountryFacts] fact_type filtering removed all rows, falling back to raw rows', { rowsCount: (rows || []).length }); } catch (e) { /* ignored - debug only */ }
-      }
+      // Falling back to raw rows as fact_type filtering removed all results
       finalRows = rows || [];
     }
 
@@ -723,7 +773,7 @@ export async function fetchCountryFacts(
     }));
 
     // Dev-only: emit resolved identifiers for dev tools to consume
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    if (typeof window !== 'undefined') {
       try {
         const resolvedCategoryId = (normalized && normalized[0] && normalized[0].category_id) || null;
         const resolvedSubcategoryId = (normalized && normalized[0] && normalized[0].subcategory_id) || null;
@@ -739,27 +789,17 @@ export async function fetchCountryFacts(
           ts: Date.now(),
         };
         (window as any).__wf_last_resolve = payload;
+        // Emit event for debugging if needed
         window.dispatchEvent(new CustomEvent('wf:resolve', { detail: payload }));
       } catch (e) { /* ignored - event dispatch best-effort */ }
     }
     memoryCache.set(key, { ts: Date.now(), value: normalized });
     setLocalCache('facts', key, normalized, opts?.ttl || 86400);
-    // Additional check: compare each row's category/subcategory ids to requested values
-      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      try {
-        const requestedCategory = opts?.category || null;
-        const requestedSub = opts?.subcategory || null;
-        logger.debug('[fetchCountryFacts] comparing row ids to requested', {
-          requestedCategory,
-          requestedSub,
-          rowsCompared: (normalized || []).slice(0, 10).map((r: any) => ({ id: r.id, category_id: r.category_id, subcategory_id: r.subcategory_id })),
-        });
-      } catch (e) { /* ignored - debug only */ }
-    }
-
+    // Debug logging disabled in production
     return normalized;
   } catch (e) {
-    logger.warn('fetchCountryFacts failed', e);
+    // Log full error internally, but show friendly error message to user
+    logger.error('[fetchCountryFacts] Error:', e);
     const empty: any[] = [];
     memoryCache.set(key, { ts: Date.now(), value: empty });
     setLocalCache('facts', key, empty, opts?.ttl || 300);
@@ -852,7 +892,8 @@ export async function generateQuizForTopic(
       }
       return selected;
     } catch (e) {
-      logger.warn('Failed to load quizzes from DB, returning empty', e);
+      // Log error internally but return empty array
+      logger.error('[generateQuizForTopic] Failed to load quizzes from DB', e);
       memoryCache.set(key, { ts: Date.now(), value: [] });
       setLocalCache('quiz', key, [], opts?.ttl || 60);
       return [];
@@ -892,16 +933,19 @@ export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: numb
   // When Supabase is available, use the server-side fetch-random-quiz function
   if (SUPABASE_AVAILABLE) {
     try {
+      const safeCount = Math.max(1, Math.min(Number(questionCount) || 10, 100));
       const res = await supabase.functions.invoke('fetch-random-quiz', {
-        body: { count: questionCount },
+        body: { count: safeCount },
       });
       if (res.error) {
-        logger.warn('fetch-random-quiz error:', res.error);
+        // Log error internally, return empty array
+        logger.error('[generateRandomQuiz] Error:', res.error);
         return [];
       }
       return res.data?.data || [];
     } catch (e) {
-      logger.warn('Failed to invoke fetch-random-quiz', e);
+      // Log error internally, fallback to mock data
+      logger.error('[generateRandomQuiz] Exception:', e);
       return [];
     }
   }
@@ -957,6 +1001,7 @@ export async function fetchCountryNews(country: string, options: any = {}) {
       .limit(10);
 
     if (error) {
+      // Log error internally but return empty
       logger.error('[fetchCountryNews] Error fetching news:', error);
       return [];
     }
@@ -965,6 +1010,7 @@ export async function fetchCountryNews(country: string, options: any = {}) {
     setLocalCache('news', country.toLowerCase(), data || [], 21600);
     return data || [];
   } catch (err) {
+    // Log error internally but return empty
     logger.error('[fetchCountryNews] Exception:', err);
     return [];
   }
@@ -991,6 +1037,7 @@ export async function saveCountryNews(articles: any[]) {
     );
 
     if (error) {
+      // Log error internally but return false
       logger.error('[saveCountryNews] Error saving news:', error);
       return false;
     }
@@ -999,6 +1046,7 @@ export async function saveCountryNews(articles: any[]) {
     localStorage.removeItem(cacheKey('news', articles[0]?.country?.toLowerCase()));
     return true;
   } catch (err) {
+    // Log error internally but return false
     logger.error('[saveCountryNews] Exception:', err);
     return false;
   }
@@ -1024,12 +1072,14 @@ export async function cleanupOldNews(country?: string) {
     const { error } = await query;
 
     if (error) {
+      // Log error internally but return false
       logger.error('[cleanupOldNews] Error:', error);
       return false;
     }
 
     return true;
   } catch (err) {
+    // Log error internally but return false
     logger.error('[cleanupOldNews] Exception:', err);
     return false;
   }
@@ -1044,7 +1094,8 @@ export async function triggerNewsFetch() {
     const appUrl = import.meta.env.VITE_APP_URL || import.meta.env.FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     
     if (!supabaseUrl) {
-      logger.error('[triggerNewsFetch] SUPABASE_URL not configured');
+      // Log error internally
+      logger.error('[triggerNewsFetch] Configuration error');
       return { success: false, error: 'Configuration error' };
     }
 
@@ -1056,8 +1107,9 @@ export async function triggerNewsFetch() {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      logger.error('[triggerNewsFetch] Error:', error);
+      const errorText = await response.text();
+      // Log full error internally
+      logger.error('[triggerNewsFetch] Error:', errorText);
       // User-friendly message based on status code
       let userMessage = 'Failed to fetch news. Please try again.';
       if (response.status === 503) {
@@ -1071,7 +1123,7 @@ export async function triggerNewsFetch() {
     }
 
     const data = await response.json();
-    logger.debug('[triggerNewsFetch] Success:', data);
+    // Debug logging disabled in production
     
     // Clear all cached news from localStorage
     Object.keys(localStorage).forEach(key => {
@@ -1085,8 +1137,9 @@ export async function triggerNewsFetch() {
     
     return { success: true, data };
   } catch (err) {
+    // Log error internally but return user-friendly message
     logger.error('[triggerNewsFetch] Exception:', err);
-    return { success: false, error: err instanceof Error ? err.message : String(err) };
+    return { success: false, error: 'Failed to fetch news. Please try again.' };
   }
 }
 
@@ -1110,31 +1163,26 @@ export async function generateFactsWithUniqueness(params: {
   }
   
   try {
-    const response = await supabase.functions.invoke('generate-facts', {
-      body: {
-        fact_type_id: params.factTypeId,
-        fact_type_name: params.factTypeName,
-        category_id: params.categoryId,
-        category: params.categoryName,
-        subcategory_id: params.subcategoryId,
-        subcategory: params.subcategoryName,
-        country: params.country,
-        count: params.count || 5,
-        checkUniqueness: true, // Enable server-side dedup
-        persist: false, // Don't auto-persist, let UI decide
-      },
-    });
+    const safeBody = {
+      fact_type_id: sanitizeString(params.factTypeId || '', 'factTypeId', 80),
+      fact_type_name: sanitizeString(params.factTypeName || '', 'factTypeName', 120),
+      category_id: sanitizeString(params.categoryId || '', 'categoryId', 80),
+      category: sanitizeString(params.categoryName || '', 'categoryName', 200),
+      subcategory_id: sanitizeString(params.subcategoryId || '', 'subcategoryId', 80),
+      subcategory: sanitizeString(params.subcategoryName || '', 'subcategoryName', 200),
+      country: sanitizeString(params.country || '', 'country', 120),
+      count: Math.max(1, Math.min(Number(params.count) || 5, 100)),
+      checkUniqueness: true, // Enable server-side dedup
+      persist: false, // Don't auto-persist, let UI decide
+    };
+
+    const response = await supabase.functions.invoke('generate-facts', { body: safeBody });
 
     if (response.error) {
+      // Log full error internally
       logger.error('[generateFactsWithUniqueness] Supabase error:', response.error);
-      // Try to parse error message from the error object
-      const errorMessage = response.error?.message || 
-                          (response.error?.context?.errorMessage) || 
-                          JSON.stringify(response.error);
-      // User-friendly message: hide technical API errors
-      const userMessage = errorMessage.includes('API') || errorMessage.includes('timeout')
-        ? 'Content generation temporarily unavailable. Please try again in a few moments.'
-        : String(errorMessage);
+      // Return user-friendly message without exposing API details
+      const userMessage = 'Unable to generate facts. Please try again in a moment.';
       throw new Error(userMessage);
     }
 
@@ -1142,10 +1190,10 @@ export async function generateFactsWithUniqueness(params: {
     
     // Check if the response contains an error field (from Edge Function error handler)
     if (result?.error) {
+      // Log full error internally
       logger.error('[generateFactsWithUniqueness] Edge Function returned error:', result.error);
-      const userMessage = String(result.error).includes('API') 
-        ? 'Content generation temporarily unavailable. Please try again in a few moments.'
-        : String(result.error);
+      // Return user-friendly message
+      const userMessage = 'Unable to generate facts. Please try again in a moment.';
       throw new Error(userMessage);
     }
     
@@ -1154,6 +1202,7 @@ export async function generateFactsWithUniqueness(params: {
       uniquenessReport: result.uniquenessReport,
     };
   } catch (e) {
+    // Log full error internally
     logger.error('[generateFactsWithUniqueness] Exception:', e);
     throw e;
   }
@@ -1175,10 +1224,11 @@ export async function checkFactUniqueness(params: {
   try {
     // For single-fact uniqueness checks, we'd need a dedicated endpoint
     // For now, this is a placeholder that could be implemented with a custom function
-    logger.info('[checkFactUniqueness] Single fact uniqueness check available via dedicated endpoint');
+    // Debug logging disabled in production
     return { isUnique: true, duplicateCount: 0, potentialMatches: [] };
   } catch (e) {
-    logger.warn('[checkFactUniqueness] Exception:', e);
+    // Log error internally but return safe default
+    logger.error('[checkFactUniqueness] Exception:', e);
     return { isUnique: true, duplicateCount: 0, potentialMatches: [] };
   }
 }
@@ -1205,29 +1255,27 @@ export async function generateQuizzesWithUniqueness(params: {
   
   try {
     // Use generate-content function which handles AI generation + uniqueness checking
-    const response = await supabase.functions.invoke('generate-content', {
-      body: {
-        type: 'quiz',
-        fact_type_id: params.factTypeId,
-        fact_type_name: params.factTypeName,
-        category_id: params.categoryId,
-        category: params.categoryName,
-        subcategory_id: params.subcategoryId,
-        subcategory: params.subcategoryName,
-        country: params.country,
-        difficulty: params.difficulty,
-        questionCount: params.questionCount || 10,
-        checkUniqueness: true,
-      },
-    });
+    const safeQuizBody = {
+      type: 'quiz',
+      fact_type_id: sanitizeString(params.factTypeId || '', 'factTypeId', 80),
+      fact_type_name: sanitizeString(params.factTypeName || '', 'factTypeName', 120),
+      category_id: sanitizeString(params.categoryId || '', 'categoryId', 80),
+      category: sanitizeString(params.categoryName || '', 'categoryName', 200),
+      subcategory_id: sanitizeString(params.subcategoryId || '', 'subcategoryId', 80),
+      subcategory: sanitizeString(params.subcategoryName || '', 'subcategoryName', 200),
+      country: sanitizeString(params.country || '', 'country', 120),
+      difficulty: sanitizeString(params.difficulty || '', 'difficulty', 40),
+      questionCount: Math.max(1, Math.min(Number(params.questionCount) || 10, 100)),
+      checkUniqueness: true,
+    };
+
+    const response = await supabase.functions.invoke('generate-content', { body: safeQuizBody });
 
     if (response.error) {
+      // Log full error internally
       logger.error('[generateQuizzesWithUniqueness] Error:', response.error);
-      const errorMsg = response.error?.message || 'Quiz generation failed';
-      // User-friendly message: hide technical API errors
-      const userMessage = errorMsg.includes('API') || errorMsg.includes('timeout')
-        ? 'Quiz generation temporarily unavailable. Please try again in a few moments.'
-        : errorMsg;
+      // Return user-friendly message without technical details
+      const userMessage = 'Unable to generate quizzes. Please try again in a moment.';
       throw new Error(userMessage);
     }
 
@@ -1237,6 +1285,7 @@ export async function generateQuizzesWithUniqueness(params: {
       uniquenessReport: result.uniquenessReport,
     };
   } catch (e) {
+    // Log full error internally
     logger.error('[generateQuizzesWithUniqueness] Exception:', e);
     throw e;
   }
@@ -1276,6 +1325,7 @@ export async function fetchPendingFacts(pageSize = 20, pageNum = 1) {
 
     return { facts: normalized, total: count || 0 };
   } catch (e) {
+    // Log error internally but return empty result
     logger.error('[fetchPendingFacts] Error:', e);
     return { facts: [], total: 0 };
   }
@@ -1313,6 +1363,7 @@ export async function fetchPendingQuizzes(pageSize = 20, pageNum = 1) {
 
     return { quizzes: normalized, total: count || 0 };
   } catch (e) {
+    // Log error internally but return empty result
     logger.error('[fetchPendingQuizzes] Error:', e);
     return { quizzes: [], total: 0 };
   }
