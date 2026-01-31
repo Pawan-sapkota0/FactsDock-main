@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import logger from "@/lib/logger";
+import ThemeSelector from "@/components/ui/ThemeSelector";
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
@@ -63,7 +64,7 @@ const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div id="admin-root" className="min-h-screen flex flex-col bg-background">
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -111,17 +112,23 @@ const AdminLayout: React.FC = () => {
                 </div>
               </div>
             )}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors ml-auto"
-              title={sidebarOpen ? "Collapse" : "Expand"}
-            >
-              {sidebarOpen ? (
-                <ChevronLeft className="h-5 w-5" />
-              ) : (
-                <ChevronRight className="h-5 w-5" />
-              )}
-            </button>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="hidden md:block">
+                <ThemeSelector scope="admin" compact />
+              </div>
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                title={sidebarOpen ? "Collapse" : "Expand"}
+              >
+                {sidebarOpen ? (
+                  <ChevronLeft className="h-5 w-5" />
+                ) : (
+                  <ChevronRight className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Navigation Items */}
@@ -176,7 +183,10 @@ const AdminLayout: React.FC = () => {
             </button>
 
             <div className={`text-xs ${sidebarOpen ? "block" : "hidden"}`}>
-              <p className="text-muted-foreground">Admin Panel v1.0</p>
+              <div className="mb-2">
+                <p className="text-muted-foreground">Admin Panel v1.0</p>
+              </div>
+
               <p className="text-xs text-muted-foreground/60">
                 © 2025 WorldFacts
               </p>

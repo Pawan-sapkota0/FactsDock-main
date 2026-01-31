@@ -1,6 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +31,10 @@ const PAGE_SIZE = 10;
 const QuizzesAdmin: React.FC = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [factTypes, setFactTypes] = useState<{ id: number; name: string }[]>(
+    [],
+  );
+  const [factTypeFilter, setFactTypeFilter] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -45,6 +56,7 @@ const QuizzesAdmin: React.FC = () => {
       builder = builder
         .ilike("id", `%${query.trim()}%`)
         .or(`country.ilike.%${query.trim()}%`);
+    if (factTypeFilter) builder = builder.eq("fact_type_id", factTypeFilter);
     const { data, error, count } = await builder;
     if (error) throw error;
     setTotal(count || 0);
@@ -52,12 +64,32 @@ const QuizzesAdmin: React.FC = () => {
   };
 
   const quizzesQ = useQuery({
-    queryKey: ["admin", "quizzes", { page, query }],
+    queryKey: ["admin", "quizzes", { page, query, factTypeFilter }],
     queryFn: () => fetchQuizzes({ pageParam: page }),
   });
   const quizzes =
     (quizzesQ?.data as unknown as Record<string, unknown>[]) || [];
   const isLoading = !!quizzesQ?.isLoading;
+
+  // Load fact types for the Select dropdown
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ftResp = await supabase
+          .from("fact_types")
+          .select("id,name")
+          .order("name", { ascending: true });
+        if (mounted)
+          setFactTypes((ftResp?.data as { id: number; name: string }[]) || []);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) =>
@@ -174,11 +206,12 @@ const QuizzesAdmin: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Quizzes</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Input
             placeholder="Search by country or id..."
+            className="flex-1 min-w-[160px]"
             value={query}
             onChange={(e) => {
               const ev = e as React.ChangeEvent<HTMLInputElement>;
@@ -186,7 +219,38 @@ const QuizzesAdmin: React.FC = () => {
               setPage(1);
             }}
           />
-          <Button onClick={() => navigate("/admin/quizzes/new")}>
+
+          <div className="w-full sm:w-48">
+            <Select
+              value={factTypeFilter}
+              onValueChange={(v) => {
+                setFactTypeFilter(v === "__all" ? "" : v || "");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {factTypeFilter
+                    ? (factTypes.find((ft) => String(ft.id) === factTypeFilter)
+                        ?.name as string)
+                    : "All"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All</SelectItem>
+                {factTypes.map((ft) => (
+                  <SelectItem key={ft.id} value={String(ft.id)}>
+                    {ft.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            onClick={() => navigate("/admin/quizzes/new")}
+            className="sm:mt-0 mt-2"
+          >
             New Quiz
           </Button>
         </div>
@@ -195,7 +259,7 @@ const QuizzesAdmin: React.FC = () => {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {quizzes.map((q) => {
             const row = q as Record<string, unknown>;
             const id = String(row.id);

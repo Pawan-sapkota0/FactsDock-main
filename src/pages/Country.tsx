@@ -685,7 +685,7 @@ const Country = () => {
     return () => {
       cancelled = true;
     };
-  }, [countryData?.capital]);
+  }, [countryData]);
 
   // Record a page view once per browser session (uses sessionStorage)
   // eslint-disable react-hooks/exhaustive-deps

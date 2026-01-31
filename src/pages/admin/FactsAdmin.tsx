@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
@@ -33,6 +40,8 @@ const FactsAdmin: React.FC = () => {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [factTypes, setFactTypes] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [factTypeFilter, setFactTypeFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -49,33 +58,15 @@ const FactsAdmin: React.FC = () => {
         // Load all fact types
         const { data: ftypes } = await supabase.from("fact_types").select("*");
 
-        // Prefer categories of type 'country'. If none found, try a case-insensitive
-        // match, then fall back to all categories (helps environments with different data).
+        // Load all categories. We'll filter them client-side based on selected
+        // fact type so the UI can show dependent category lists.
         let cats: any[] = [];
         try {
-          const resp1: any = await supabase
+          const respCats: any = await supabase
             .from("categories")
             .select("*")
-            .eq("type", "country");
-          cats = resp1?.data || [];
-
-          // Fallback: case-insensitive match if exact eq returned nothing
-          if (!cats.length) {
-            const resp2: any = await supabase
-              .from("categories")
-              .select("*")
-              .ilike("type", "%country%");
-            cats = resp2?.data || [];
-          }
-
-          // Final fallback: load all categories (keeps UI functioning)
-          if (!cats.length) {
-            const resp3: any = await supabase.from("categories").select("*");
-            cats = resp3?.data || [];
-            logger.warn(
-              "[FactsAdmin] No 'country' categories found; falling back to all categories.",
-            );
-          }
+            .order("name", { ascending: true });
+          cats = respCats?.data || [];
         } catch (e) {
           logger.error("[FactsAdmin] Error loading categories:", e);
         }
@@ -114,6 +105,8 @@ const FactsAdmin: React.FC = () => {
       const q = query.trim();
       builder = builder.ilike("fact_text", `%${q}%`);
     }
+    if (factTypeFilter) builder = builder.eq("fact_type_id", factTypeFilter);
+    if (categoryFilter) builder = builder.eq("category_id", categoryFilter);
 
     const { data, error, count } = await builder;
     if (error) throw error;
@@ -133,7 +126,11 @@ const FactsAdmin: React.FC = () => {
   };
 
   const factsQ = useQuery({
-    queryKey: ["admin", "facts", { page, query }],
+    queryKey: [
+      "admin",
+      "facts",
+      { page, query, factTypeFilter, categoryFilter },
+    ],
     queryFn: () => fetchFacts({ pageParam: page }),
   });
   const facts = (factsQ?.data as any) || [];
@@ -323,19 +320,101 @@ const FactsAdmin: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Facts</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Input
             placeholder="Search facts..."
+            className="flex-1 min-w-[160px]"
             value={query}
             onChange={(e: any) => {
               setQuery(e.target.value);
               setPage(1);
             }}
           />
-          <Button onClick={startNew}>New Fact</Button>
-          <Button variant="secondary" onClick={() => setBulkModalOpen(true)}>
+
+          <div className="w-full sm:w-48">
+            <Select
+              value={factTypeFilter}
+              onValueChange={(v) => {
+                const newFt = v === "__all" ? "" : v || "";
+                setFactTypeFilter(newFt);
+                setPage(1);
+                // if current category no longer belongs to the selected fact type, clear it
+                try {
+                  const newFiltered = newFt
+                    ? categories.filter((c) => String(c.fact_type_id) === newFt)
+                    : categories;
+                  if (
+                    categoryFilter &&
+                    !newFiltered.some((c) => String(c.id) === categoryFilter)
+                  ) {
+                    setCategoryFilter("");
+                  }
+                } catch (e) {
+                  /* ignore */
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {factTypeFilter
+                    ? (factTypes.find((ft) => String(ft.id) === factTypeFilter)
+                        ?.name as string)
+                    : "All types"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All</SelectItem>
+                {factTypes.map((ft) => (
+                  <SelectItem key={ft.id} value={String(ft.id)}>
+                    {ft.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-full sm:w-48">
+            <Select
+              value={categoryFilter}
+              onValueChange={(v) => {
+                setCategoryFilter(v === "__all" ? "" : v || "");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {categoryFilter
+                    ? (categories.find((c) => String(c.id) === categoryFilter)
+                        ?.name as string)
+                    : "All categories"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All</SelectItem>
+                {(factTypeFilter
+                  ? categories.filter(
+                      (c) => String(c.fact_type_id) === factTypeFilter,
+                    )
+                  : categories
+                ).map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={startNew} className="sm:mt-0 mt-2">
+            New Fact
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setBulkModalOpen(true)}
+            className="sm:mt-0 mt-2"
+          >
             🌍 Bulk Generate Country Facts
           </Button>
         </div>
@@ -368,7 +447,7 @@ const FactsAdmin: React.FC = () => {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {(facts || []).map((f: any) => (
             <Card key={f.id} className="p-4 flex justify-between items-start">
               <div>
