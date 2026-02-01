@@ -75,7 +75,7 @@ const gameCategoriesData: Record<string, GameCategoryData> = {
         id: "quick-quiz",
         name: "Quick Quiz",
         description:
-          "Rapid-fire world facts with multiple-choice questions. Race against the clock to score maximum points.",
+          "Rapid-fire FactsDock facts with multiple-choice questions. Race against the clock to score maximum points.",
         duration: "3-5 min",
         difficulty: "Easy",
         players: "Solo",

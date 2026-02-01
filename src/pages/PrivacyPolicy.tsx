@@ -14,8 +14,8 @@ const PrivacyPolicy: React.FC = () => {
 
         <section className="space-y-6">
           <p>
-            Welcome to <strong>World Facts</strong>. Your privacy is important
-            to us. This Privacy Policy explains how we collect, use, and protect
+            Welcome to <strong>FactsDock</strong>. Your privacy is important to
+            us. This Privacy Policy explains how we collect, use, and protect
             information when you use our website.
           </p>
 
@@ -29,7 +29,7 @@ const PrivacyPolicy: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Local Storage & Caching</h2>
           <p>
-            World Facts uses browser storage technologies (IndexedDB,
+            FactsDock uses browser storage technologies (IndexedDB,
             localStorage) to cache country images, facts, and data for improved
             performance and offline functionality. This data is stored locally
             on your device and is never transmitted to our servers unless you
@@ -56,7 +56,7 @@ const PrivacyPolicy: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Cookies</h2>
           <p>
-            World Facts uses cookies to enhance functionality, analyze traffic,
+            FactsDock uses cookies to enhance functionality, analyze traffic,
             and display advertisements. You can disable cookies in your browser
             settings. Some functionality may be limited without cookies.
           </p>
@@ -85,10 +85,10 @@ const PrivacyPolicy: React.FC = () => {
             If you have questions, contact us at:
             <br />
             <a
-              href="mailto:support@worldfacts.com"
+              href="mailto:support@factsdock.com"
               className="text-blue-600 hover:underline"
             >
-              support@worldfacts.com
+              support@factsdock.com
             </a>
           </p>
         </section>

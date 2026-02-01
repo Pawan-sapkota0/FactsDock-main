@@ -1,5 +1,5 @@
 /**
- * SEO Utilities for World Facts
+ * SEO Utilities for FactsDock
  * Handles meta tags, structured data, and SEO best practices
  */
 
@@ -116,10 +116,10 @@ export const generateOrganizationSchema = (logoUrl: string): StructuredData => {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "World Facts",
-    url: window.location.origin,
+    name: "FactsDock",
+    url: "https://factsdock.com",
     logo: logoUrl,
-    description: "Educational platform providing country facts, global information, and interactive quizzes",
+    description: "FactsDock — Educational platform providing country facts, global information, and interactive quizzes",
     sameAs: [
       // Add social media URLs if available
     ],
@@ -133,13 +133,13 @@ export const generateWebsiteSchema = (): StructuredData => {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "World Facts",
-    url: window.location.origin,
+    name: "FactsDock",
+    url: "https://factsdock.com",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${window.location.origin}/search?q={search_term_string}`,
+        urlTemplate: `https://factsdock.com/search?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -167,7 +167,7 @@ export const generateArticleSchema = (data: {
     dateModified: data.dateModified || new Date().toISOString(),
     author: {
       "@type": "Organization",
-      name: data.author || "World Facts",
+      name: data.author || "FactsDock",
     },
   };
 };
@@ -226,7 +226,7 @@ export const generatePlaceSchema = (data: {
 };
 
 /**
- * Keyword strategy for World Facts
+ * Keyword strategy for FactsDock
  */
 export const KEYWORD_STRATEGY = {
   primary: [
@@ -258,39 +258,39 @@ export const KEYWORD_STRATEGY = {
  */
 export const PAGE_TEMPLATES = {
   home: {
-    title: "World Facts | Global Knowledge",
+    title: "FactsDock | Global Knowledge",
     description: "Explore fascinating facts, country data, and fun quizzes from around the world. Learn geography the smart way.",
-    keywords: "world facts, country facts, geography quizzes, fun facts",
+    keywords: "factsdock, country facts, geography quizzes, fun facts",
   },
   facts: {
-    title: "World Facts | Country Facts & Information",
+    title: "FactsDock | Country Facts & Information",
     description: "Discover detailed facts about countries worldwide. Learn culture, geography, history, economy, and more.",
     keywords: "country facts, world information, geography, facts about countries",
   },
   quizzes: {
-    title: "World Facts | Geography Quizzes",
+    title: "FactsDock | Geography Quizzes",
     description: "Challenge yourself with fun, educational geography quizzes. Test your knowledge about countries, capitals, and global facts.",
     keywords: "geography quizzes, world quizzes, country quizzes, educational quizzes",
   },
   funzone: {
-    title: "World Facts | Fun Zone",
+    title: "FactsDock | Fun Zone",
     description: "Enjoy interactive games and quizzes to learn about the world in a fun way. Perfect for students and curious minds.",
     keywords: "educational games, quizzes, fun learning, interactive education",
   },
   country: (countryName: string) => ({
-    title: `World Facts | ${countryName}`,
+    title: `FactsDock | ${countryName}`,
     description: `Explore fascinating facts about ${countryName}. Learn about culture, geography, history, economy, and interesting trivia.`,
     keywords: `${countryName} facts, facts about ${countryName}, ${countryName} information, ${countryName} quiz`,
   }),
   about: {
-    title: "World Facts | About",
-    description: "Learn about World Facts - an educational platform dedicated to spreading global knowledge through facts, information, and interactive quizzes.",
-    keywords: "about world facts, educational platform, global knowledge",
+    title: "FactsDock | About",
+    description: "Learn about FactsDock - an educational platform dedicated to spreading global knowledge through facts, information, and interactive quizzes.",
+    keywords: "about factsdock, educational platform, global knowledge",
   },
   contact: {
-    title: "World Facts | Contact Us",
-    description: "Get in touch with the World Facts team. We'd love to hear your feedback, suggestions, and questions.",
-    keywords: "contact world facts, support, feedback",
+    title: "FactsDock | Contact Us",
+    description: "Get in touch with the FactsDock team. We'd love to hear your feedback, suggestions, and questions.",
+    keywords: "contact factsdock, support, feedback",
   },
 };
 

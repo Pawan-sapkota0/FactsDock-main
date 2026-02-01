@@ -105,7 +105,7 @@ app.post('/api/contact', async (req, res) => {
 
     try {
       const sendResult = await resend.emails.send({
-        from: 'World Facts <no-reply@worldfacts.com>',
+        from: 'FactsDock <no-reply@factsdock.com>',
         to: process.env.ADMIN_EMAIL,
         subject: `New Contact Message from ${escapeHtml(name)}`,
         html: `<p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p>${escapeHtml(message).replace(/\n/g,'<br>')}</p>`,

@@ -68,12 +68,8 @@ const AdminLayout: React.FC = () => {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img
-            src="/worldfacts-logo.png"
-            alt="WorldFacts"
-            className="h-6 w-6"
-          />
-          <span className="font-bold text-foreground">WorldFacts Admin</span>
+          <img src="/worldfacts-logo.png" alt="FactsDock" className="h-6 w-6" />
+          <span className="font-bold text-foreground">FactsDock Admin</span>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -101,12 +97,12 @@ const AdminLayout: React.FC = () => {
               <div className="flex items-center gap-2">
                 <img
                   src="/worldfacts-logo.png"
-                  alt="WorldFacts"
+                  alt="FactsDock"
                   className="h-8 w-8"
                 />
                 <div>
                   <div className="font-bold text-foreground text-sm">
-                    WorldFacts
+                    FactsDock
                   </div>
                   <div className="text-xs text-muted-foreground">Admin</div>
                 </div>
@@ -188,7 +184,7 @@ const AdminLayout: React.FC = () => {
               </div>
 
               <p className="text-xs text-muted-foreground/60">
-                © 2025 WorldFacts
+                © 2025 FactsDock
               </p>
             </div>
           </div>

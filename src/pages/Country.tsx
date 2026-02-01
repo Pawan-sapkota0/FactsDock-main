@@ -627,10 +627,16 @@ const Country = () => {
   }, [factsList]);
 
   // Fetch weather for the capital city and merge into countryData
+  // NOTE: depend only on the capital string. Previously depending on
+  // the whole `countryData` caused setCountryData to update the object
+  // which retriggered this effect and led to repeated fetches.
   useEffect(() => {
-    if (!countryData || !countryData.capital || countryData.capital === "N/A")
-      return;
-    const capital = countryData.capital;
+    const capital = countryData?.capital;
+    if (!capital || capital === "N/A") return;
+
+    // If we already have weather for this country/capital, do not refetch
+    if (countryData?.weather) return;
+
     let cancelled = false;
     const fetchWeather = async () => {
       try {
@@ -685,7 +691,7 @@ const Country = () => {
     return () => {
       cancelled = true;
     };
-  }, [countryData]);
+  }, [countryData?.capital]);
 
   // Record a page view once per browser session (uses sessionStorage)
   // eslint-disable react-hooks/exhaustive-deps
@@ -765,7 +771,7 @@ const Country = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEOMeta
-        title={`${countryData.name} Facts & Information | World Facts`}
+        title={`${countryData.name} Facts & Information | FactsDock`}
         description={`Explore fascinating facts about ${countryData.name}. Learn about culture, geography, history, economy, and interesting trivia.`}
         keywords={`${countryData.name} facts, facts about ${countryData.name}, ${countryData.name} information, ${countryData.name} quiz`}
         ogImage={

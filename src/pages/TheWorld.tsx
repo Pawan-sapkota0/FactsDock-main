@@ -193,25 +193,8 @@ const TheWorld = () => {
             <p className="text-muted-foreground mb-6">
               Discover more about our world's countries, facts, and quizzes.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card
-                className="relative cursor-pointer hover:shadow-lg hover:scale-105 border-2 hover:border-primary transition-all duration-300 h-full"
-                onClick={() => navigate("/categories")}
-              >
-                <CardHeader>
-                  <div className="flex justify-center mb-4">
-                    <div className="bg-primary/10 p-3 rounded-xl">
-                      <Globe className="h-8 w-8 text-primary" />
-                    </div>
-                  </div>
-                  <CardTitle className="text-lg text-center">All Countries</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Explore profiles and facts for all 195 countries
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+             
 
               <Card
                 className="relative cursor-pointer hover:shadow-lg hover:scale-105 border-2 hover:border-primary transition-all duration-300 h-full"

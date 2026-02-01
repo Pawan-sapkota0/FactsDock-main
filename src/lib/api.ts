@@ -213,13 +213,31 @@ export async function fetchCountryByName(countryName: string, opts?: { ttl?: num
         return value;
       } catch (e) {
         // Fallback to RestCountries
-        const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(safeName)}`;
+        const url = `https://restcountries.com/v3.1/name/${encodeURIComponent(safeName)}?fullText=true`;
         const r = await fetch(url);
         if (!r.ok) return [];
         const data = await r.json();
-        memoryCache.set(cacheKey, { ts: Date.now(), value: data });
-        setLocalCache('country', key, data, opts?.ttl || 86400);
-        return data || [];
+        // Prefer exact/common name matches and independent/population heuristics: sort results so best match is first
+        const prioritizeExact = (arr: any[], name: string) => {
+          if (!Array.isArray(arr) || arr.length === 0) return arr;
+          const target = String(name || '').toLowerCase().trim();
+          const score = (c: any) => {
+            const common = String(c?.name?.common || '').toLowerCase();
+            const official = String(c?.name?.official || '').toLowerCase();
+            const alts = (Array.isArray(c?.altSpellings) ? c.altSpellings : []).map((s: any) => String(s).toLowerCase());
+            // exact name, official name, or alt spellings first
+            if (common === target || official === target || alts.includes(target)) return 1e9;
+            // prefer independent entities
+            if (c?.independent === true) return 1e6;
+            // fallback to population as a tiebreaker
+            return Number(c?.population || 0);
+          };
+          return arr.slice().sort((a, b) => score(b) - score(a));
+        };
+        const ordered = prioritizeExact(data, safeName);
+        memoryCache.set(cacheKey, { ts: Date.now(), value: ordered });
+        setLocalCache('country', key, ordered, opts?.ttl || 86400);
+        return ordered || [];
       }
     } catch (err) {
       logger.error('[fetchCountryByName] Exception fetching country data', err);
@@ -1048,9 +1066,33 @@ export async function fetchCountryNews(country: string, options: any = {}) {
       return [];
     }
 
+    // Filter out sensational/tabloid or explicit headlines before caching
+    const bannedPatterns = [
+      /\b(?:sex|porn|nude|masturb|tits|boob|breast|bitch|slut|whore|cunt|fag|d*ck)\b/i,
+      /\b(?:celebrity|scandal|outrageous|shocking|you won't believe|must[- ]see|must see|you won't|must watch)\b/i,
+      /\bMAFS\b/i, // specific show abbreviations (e.g., 'MAFS') commonly used in clickbait
+    ];
+
+    const isSensational = (title: string) => {
+      if (!title) return false;
+      for (const re of bannedPatterns) {
+        if (re.test(title)) return true;
+      }
+      return false;
+    };
+
+    const filtered = (data || []).filter((a: any) => {
+      if (!a || !a.title) return false; // drop malformed entries
+      return !isSensational(a.title);
+    });
+
+    if ((data || []).length !== filtered.length) {
+      logger.info('[fetchCountryNews] filtered sensational news', { country, removed: (data || []).length - filtered.length });
+    }
+
     // Cache for 6 hours
-    setLocalCache('news', country.toLowerCase(), data || [], 21600);
-    return data || [];
+    setLocalCache('news', country.toLowerCase(), filtered || [], 21600);
+    return filtered || [];
   } catch (err) {
     // Log error internally but return empty
     logger.error('[fetchCountryNews] Exception:', err);

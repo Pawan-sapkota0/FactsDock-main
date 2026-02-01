@@ -25,7 +25,7 @@ interface SEOMetaProps {
  *
  * @example
  * <SEOMeta
- *   title="Country Facts | World Facts"
+ *   title="Country Facts | FactsDock"
  *   description="Explore fascinating facts about countries"
  *   keywords="country facts, world information"
  *   ogImage="https://example.com/image.jpg"

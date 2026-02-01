@@ -1,5 +1,5 @@
 /**
- * Sitemap Generation for World Facts
+ * Sitemap Generation for FactsDock
  * Generates dynamic XML sitemap for SEO
  */
 
@@ -13,7 +13,7 @@ export interface SitemapEntry {
 }
 
 /**
- * Generate complete sitemap entries for World Facts
+ * Generate complete sitemap entries for FactsDock
  */
 export const generateSitemapEntries = (baseUrl: string): SitemapEntry[] => {
   const now = new Date().toISOString().split("T")[0];
@@ -209,7 +209,7 @@ export const generateRobotsTxt = (
   allowCrawling: boolean = true
 ): string => {
   const lines = [
-    "# World Facts robots.txt",
+    "# FactsDock robots.txt",
     `# Generated on ${new Date().toISOString()}`,
     "",
     "# Default rules for all crawlers",
@@ -262,7 +262,7 @@ export const generateAdvancedRobotsTxt = (
   rules: RobotsRules[] = []
 ): string => {
   let content = [
-    "# World Facts robots.txt",
+    "# FactsDock robots.txt",
     `# Generated on ${new Date().toISOString()}`,
     "",
   ].join("\n");

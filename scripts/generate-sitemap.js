@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Generate sitemap.xml for World Facts
+ * Generate sitemap.xml for FactsDock
  * Usage: npm run generate-sitemap
  */
 

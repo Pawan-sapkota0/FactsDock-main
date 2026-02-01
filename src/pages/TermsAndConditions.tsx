@@ -14,13 +14,13 @@ const TermsAndConditions: React.FC = () => {
 
         <section className="space-y-6">
           <p>
-            By accessing or using <strong>World Facts</strong>, you agree to
+            By accessing or using <strong>FactsDock</strong>, you agree to
             comply with these Terms & Conditions.
           </p>
 
           <h2 className="text-xl font-semibold">Use of Website</h2>
           <p>
-            World Facts provides facts, quizzes, country data, galleries, and
+            FactsDock provides facts, quizzes, country data, galleries, and
             weather information for informational and entertainment purposes
             only. The website is provided as-is for personal, non-commercial
             use.
@@ -45,7 +45,7 @@ const TermsAndConditions: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Cache & Local Storage</h2>
           <p>
-            World Facts uses browser storage (IndexedDB, localStorage) to cache
+            FactsDock uses browser storage (IndexedDB, localStorage) to cache
             data for performance. This data is compressed and stored locally on
             your device. Users can clear this data anytime through browser
             settings. We are not responsible for data loss on your device.
@@ -54,14 +54,14 @@ const TermsAndConditions: React.FC = () => {
           <h2 className="text-xl font-semibold">Intellectual Property</h2>
           <p>
             All content, design, features, and functionality are the property of
-            World Facts unless stated otherwise. Gallery images are sourced from
+            FactsDock unless stated otherwise. Gallery images are sourced from
             Unsplash. Unauthorized copying, scraping, or redistribution of any
             content is prohibited.
           </p>
 
           <h2 className="text-xl font-semibold">Third-Party Services</h2>
           <p>
-            World Facts integrates third-party services including Unsplash,
+            FactsDock integrates third-party services including Unsplash,
             weather APIs, and Google Generative AI. Your use of these services
             is subject to their respective terms and policies. We are not
             responsible for their availability, accuracy, or terms.
@@ -77,7 +77,7 @@ const TermsAndConditions: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Limitation of Liability</h2>
           <p>
-            World Facts is not liable for inaccuracies, interruptions, service
+            FactsDock is not liable for inaccuracies, interruptions, service
             downtime, data loss, or damages resulting from use of the website or
             third-party services. We provide the website "as-is" without
             warranty.
@@ -95,10 +95,10 @@ const TermsAndConditions: React.FC = () => {
             If you have questions, contact us at:
             <br />
             <a
-              href="mailto:support@worldfacts.com"
+              href="mailto:support@factsdock.com"
               className="text-blue-600 hover:underline"
             >
-              support@worldfacts.com
+              support@factsdock.com
             </a>
           </p>
         </section>

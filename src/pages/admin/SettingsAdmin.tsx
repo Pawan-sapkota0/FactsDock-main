@@ -346,7 +346,7 @@ const SettingsAdmin: React.FC = () => {
                   onChange={(e) =>
                     handleInputChange("website_name", e.target.value)
                   }
-                  placeholder="World Facts"
+                  placeholder="FactsDock"
                   className="bg-background"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -676,7 +676,7 @@ const SettingsAdmin: React.FC = () => {
                   onChange={(e) =>
                     handleInputChange("meta_title", e.target.value)
                   }
-                  placeholder="World Facts - Discover Amazing Facts"
+                  placeholder="FactsDock - Discover Amazing Facts"
                   maxLength={60}
                   className="bg-background"
                 />

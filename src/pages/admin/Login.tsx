@@ -187,9 +187,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Admin Login</CardTitle>
-          <CardDescription>
-            Sign in to manage World Facts content
-          </CardDescription>
+          <CardDescription>Sign in to manage FactsDock content</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Error Alert */}

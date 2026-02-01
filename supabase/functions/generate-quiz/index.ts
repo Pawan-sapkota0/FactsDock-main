@@ -96,12 +96,12 @@ const getCorsHeaders = (origin?: string) => {
   const ALLOWED_ORIGINS = [
     'http://localhost:8080',
     'http://localhost:5173',
-    'https://worldfacts.com',
-    'https://www.worldfacts.com',
+    'https://factsdock.com',
+    'https://www.factsdock.com',
   ];
   
   return {
-    'Access-Control-Allow-Origin': (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : 'https://worldfacts.com',
+    'Access-Control-Allow-Origin': (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : 'https://factsdock.com',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400',

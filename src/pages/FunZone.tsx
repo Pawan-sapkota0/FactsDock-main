@@ -44,7 +44,7 @@ const gameCategories: GameCategory[] = [
     title: "World Trivia Master",
     icon: <Brain className="text-purple-600 dark:text-purple-400" />,
     games: [
-      "Quick Quiz - Rapid-fire world facts",
+      "Quick Quiz - Rapid-fire FactsDock facts",
       "Timeline Master - Order historical events",
       "Culture Connection - Link traditions to countries",
     ],

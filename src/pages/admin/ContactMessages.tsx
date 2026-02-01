@@ -66,7 +66,7 @@ const ContactMessages: React.FC = () => {
                     </td>
                     <td className="px-4 py-2 align-top">
                       <a
-                        href={`mailto:${email}?subject=Reply from World Facts`}
+                        href={`mailto:${email}?subject=Reply from FactsDock`}
                         className="text-primary underline"
                       >
                         Reply

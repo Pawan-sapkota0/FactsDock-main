@@ -14,7 +14,7 @@ const Navbar = () => {
     { path: "/", label: "Home" },
     { path: "/world-facts", label: "Facts" },
     { path: "/quiz", label: "Quizzes" },
-    { path: "/the-world", label: "World" },
+    { path: "/the-world", label: "The World" },
   ];
 
   return (
@@ -26,13 +26,13 @@ const Navbar = () => {
             <div className="group-hover:scale-110 transition-transform duration-300">
               <img
                 src="/worldfacts-logo.png"
-                alt="World Facts Logo"
+                alt="FactsDock Logo"
                 className="h-8 w-8"
               />
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-bold text-foreground">
-                World Facts
+                FactsDock
               </span>
               <span className="text-xs text-muted-foreground font-medium">
                 Global Knowledge

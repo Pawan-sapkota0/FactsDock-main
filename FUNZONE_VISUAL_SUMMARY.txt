@@ -109,7 +109,7 @@
 │                                                                            │
 │  🧠 WORLD TRIVIA MASTER                                                   │
 │     Challenge yourself with fascinating facts and cultural knowledge      │
-│     • Quick Quiz - Rapid-fire world facts                                 │
+│     • Quick Quiz - Rapid-fire FactsDock facts                                 │
 │     • Timeline Master - Order historical events                           │
 │     • Culture Connection - Link traditions to countries                   │
 │     Route: /games/trivia                                                  │

@@ -1,8 +1,8 @@
-# Copilot Instructions for World Facts Project
+# Copilot Instructions for FactsDock Project
 
 ## Project Overview
 
-World Facts is a Vite + React + TypeScript web application delivering educational content about countries, facts, and quizzes. It features an admin dashboard for content management with AI-powered generation via Supabase Edge Functions and Gemini API.
+FactsDock is a Vite + React + TypeScript web application delivering educational content about countries, facts, and quizzes. It features an admin dashboard for content management with AI-powered generation via Supabase Edge Functions and Gemini API.
 
 ## Architecture
 

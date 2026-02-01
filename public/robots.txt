@@ -1,4 +1,4 @@
-# World Facts robots.txt
+# FactsDock robots.txt
 # Generated for SEO optimization
 
 # Default rules for all crawlers

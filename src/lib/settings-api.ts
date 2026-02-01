@@ -45,12 +45,12 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  website_name: "World Facts",
+  website_name: "FactsDock",
   website_tagline: "Discover amazing facts from around the world",
   default_language: "en",
   default_timezone: "UTC",
   items_per_page: 8,
-  meta_title: "World Facts - Discover Amazing Facts",
+  meta_title: "FactsDock - Discover Amazing Facts",
   meta_description: "Explore interesting facts about countries, history, science, and more",
   meta_keywords: "facts, world, education, countries",
   allow_indexing: true,
