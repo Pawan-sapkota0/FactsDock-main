@@ -41,3 +41,18 @@ COMMENT ON FUNCTION cleanup_old_news() IS 'Removes news articles older than 48 h
 -- Create index for efficient cleanup queries on created_at
 CREATE INDEX IF NOT EXISTS idx_country_news_created_at_cleanup ON country_news(created_at);
 
+-- Migration: Fix image_cache RLS policy for UPDATE operations
+
+-- Drop the overly permissive policy
+DROP POLICY IF EXISTS "Allow authenticated update to image_cache" ON image_cache;
+
+-- Create a restricted policy that only allows admins to update
+CREATE POLICY "Allow admins to update image_cache" ON image_cache
+  FOR UPDATE 
+  USING (EXISTS (SELECT 1 FROM admins WHERE admins.id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM admins WHERE admins.id = auth.uid()));
+
+-- Also add DELETE policy for consistency (currently missing)
+CREATE POLICY "Allow admins to delete image_cache" ON image_cache
+  FOR DELETE 
+  USING (EXISTS (SELECT 1 FROM admins WHERE admins.id = auth.uid()));

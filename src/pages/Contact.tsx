@@ -169,24 +169,7 @@ const Contact = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-muted/30">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      Email us directly
-                    </p>
-                    <a
-                      href="mailto:pawansapkota06@gmail.com"
-                      className="text-primary hover:text-primary-hover transition-colors"
-                    >
-                      pawansapkota06@gmail.com
-                    </a>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
           </div>
         </div>
       </main>

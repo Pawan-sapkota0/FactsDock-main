@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { generateQuizForTopic, generateRandomQuiz } from "@/lib/api";
@@ -319,6 +320,9 @@ const QuizModal: React.FC<Props> = ({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Quiz{topic ? `: ${topic}` : ""}</DialogTitle>
+          <DialogDescription>
+            Answer questions to test your knowledge
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-4">

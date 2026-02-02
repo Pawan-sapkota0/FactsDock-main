@@ -98,7 +98,21 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             {/* Admin routes */}
-            <Route path="/admin/login" element={<Login />} />
+            {/* Hidden admin login - not advertised publicly, only in robots.txt disallow */}
+            <Route path="/secret-admin-login" element={<Login />} />
+            {/* Block public access to /admin/login in production to hide admin panel existence */}
+            <Route
+              path="/admin/login"
+              element={(() => {
+                // In production, redirect to home to hide admin panel existence
+                if (process.env.NODE_ENV === "production") {
+                  window.location.href = "/";
+                  return null;
+                }
+                // In development, allow access to normal login page
+                return <Login />;
+              })()}
+            />
             <Route
               path="/admin"
               element={

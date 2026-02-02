@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Globe, Users, Mountain, Zap } from "lucide-react";
+import { Globe, Users, Mountain, Zap, MapPin } from "lucide-react";
+import GeographyImageOverlay from "@/components/overlays/GeographyImageOverlay";
+import { useGeographyCardImages } from "@/hooks/use-geography-card-images";
 
 interface StatCardProps {
   title: string;
@@ -11,9 +14,19 @@ interface StatCardProps {
   description?: string;
   clickable?: boolean;
   onClick?: () => void;
+  hasImages?: boolean;
+  onViewImages?: () => void;
 }
 
-const StatCard = ({ title, value, description, clickable, onClick }: StatCardProps) => (
+const StatCard = ({
+  title,
+  value,
+  description,
+  clickable,
+  onClick,
+  hasImages,
+  onViewImages,
+}: StatCardProps) => (
   <Card
     className={`relative h-full transition-all duration-300 ${
       clickable
@@ -29,17 +42,93 @@ const StatCard = ({ title, value, description, clickable, onClick }: StatCardPro
     </CardHeader>
     <CardContent>
       <div className="space-y-2">
-        <div className="text-3xl md:text-4xl font-bold text-primary">{value}</div>
+        <div className="text-3xl md:text-4xl font-bold text-primary">
+          {value}
+        </div>
         {description && (
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {description}
+          </p>
         )}
       </div>
     </CardContent>
+    {hasImages && (
+      <div className="absolute bottom-3 right-3">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewImages?.();
+          }}
+          className="text-xs font-medium text-primary hover:text-primary/80 transition-colors hover:underline"
+          title="View images for this card"
+        >
+          View Images
+        </button>
+      </div>
+    )}
   </Card>
 );
 
+interface GeographyCardConfig {
+  id: string;
+  title: string;
+  value: string;
+  description: string;
+  searchQuery: string;
+}
+
+const GEOGRAPHY_CARDS: GeographyCardConfig[] = [
+  {
+    id: "highest",
+    title: "Highest Point",
+    value: "Mt. Everest",
+    description: "8,848.86 m above sea level",
+    searchQuery: "Mount Everest",
+  },
+  {
+    id: "lowest",
+    title: "Lowest Point (Land)",
+    value: "Dead Sea Shore",
+    description: "−430 m below sea level",
+    searchQuery: "Dead Sea",
+  },
+  {
+    id: "ocean",
+    title: "Largest Ocean",
+    value: "Pacific Ocean",
+    description: "Covers ~46% of water surface",
+    searchQuery: "Pacific Ocean",
+  },
+  {
+    id: "desert",
+    title: "Largest Desert",
+    value: "Antarctica",
+    description: "World's largest cold desert",
+    searchQuery: "Antarctica",
+  },
+  {
+    id: "river",
+    title: "Longest River",
+    value: "Nile River",
+    description: "~6,650 km across Africa",
+    searchQuery: "Nile River",
+  },
+  {
+    id: "lake",
+    title: "Largest Lake",
+    value: "Caspian Sea",
+    description: "~371,000 km² in surface area",
+    searchQuery: "Caspian Sea",
+  },
+];
+
 const TheWorld = () => {
   const navigate = useNavigate();
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const selectedCard = GEOGRAPHY_CARDS.find((c) => c.id === selectedCardId);
+  const { images, isLoading } = useGeographyCardImages(
+    selectedCard?.searchQuery || null,
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,7 +148,9 @@ const TheWorld = () => {
 
           {/* Core World Statistics */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-foreground">Core World Statistics</h2>
+            <h2 className="text-3xl font-bold mb-8 text-foreground">
+              Core World Statistics
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Total Continents"
@@ -103,53 +194,39 @@ const TheWorld = () => {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Source: <span className="text-green-600"> •</span> Verified global data
+              Source: <span className="text-green-600"> •</span> Verified global
+              data
             </p>
           </div>
 
           {/* Geography Highlights */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-foreground">Geography Highlights</h2>
+            <h2 className="text-3xl font-bold mb-8 text-foreground">
+              Geography Highlights
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <StatCard
-                title="Highest Point"
-                value="Mt. Everest"
-                description="8,848.86 m above sea level"
-              />
-              <StatCard
-                title="Lowest Point (Land)"
-                value="Dead Sea Shore"
-                description="−430 m below sea level"
-              />
-              <StatCard
-                title="Largest Ocean"
-                value="Pacific Ocean"
-                description="Covers ~46% of water surface"
-              />
-              <StatCard
-                title="Largest Desert"
-                value="Antarctica"
-                description="World's largest cold desert"
-              />
-              <StatCard
-                title="Longest River"
-                value="Nile River"
-                description="~6,650 km across Africa"
-              />
-              <StatCard
-                title="Largest Lake"
-                value="Caspian Sea"
-                description="~371,000 km² in surface area"
-              />
+              {GEOGRAPHY_CARDS.map((card) => (
+                <StatCard
+                  key={card.id}
+                  title={card.title}
+                  value={card.value}
+                  description={card.description}
+                  hasImages={true}
+                  onViewImages={() => setSelectedCardId(card.id)}
+                />
+              ))}
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Source:  <span className="text-green-600"> • </span> Verified global data
+              Source: <span className="text-green-600"> • </span> Verified
+              global data
             </p>
           </div>
 
           {/* Human & Civilization Data */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-foreground">Human & Civilization Data</h2>
+            <h2 className="text-3xl font-bold mb-8 text-foreground">
+              Human & Civilization Data
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Most Populated Country"
@@ -183,19 +260,20 @@ const TheWorld = () => {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Source:  <span className="text-green-600"> •</span> Verified global data
+              Source: <span className="text-green-600"> •</span> Verified global
+              data
             </p>
           </div>
 
           {/* Optional Clickable Navigation Cards */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-foreground">Explore More</h2>
+            <h2 className="text-3xl font-bold mb-8 text-foreground">
+              Explore More
+            </h2>
             <p className="text-muted-foreground mb-6">
               Discover more about our world's countries, facts, and quizzes.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             
-
               <Card
                 className="relative cursor-pointer hover:shadow-lg hover:scale-105 border-2 hover:border-primary transition-all duration-300 h-full"
                 onClick={() => navigate("/world-facts")}
@@ -206,7 +284,9 @@ const TheWorld = () => {
                       <Mountain className="h-8 w-8 text-primary" />
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-center">World Facts</CardTitle>
+                  <CardTitle className="text-lg text-center">
+                    World Facts
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
@@ -225,7 +305,9 @@ const TheWorld = () => {
                       <Zap className="h-8 w-8 text-primary" />
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-center">World Quizzes</CardTitle>
+                  <CardTitle className="text-lg text-center">
+                    World Quizzes
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
@@ -244,7 +326,9 @@ const TheWorld = () => {
                       <Users className="h-8 w-8 text-primary" />
                     </div>
                   </div>
-                  <CardTitle className="text-lg text-center">Fun Facts</CardTitle>
+                  <CardTitle className="text-lg text-center">
+                    Fun Facts
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
@@ -256,6 +340,17 @@ const TheWorld = () => {
           </div>
         </div>
       </main>
+
+      {/* Image Overlay for Geography Cards */}
+      {selectedCard && (
+        <GeographyImageOverlay
+          isOpen={selectedCardId !== null}
+          onClose={() => setSelectedCardId(null)}
+          images={images}
+          title={selectedCard.value}
+          isLoading={isLoading}
+        />
+      )}
 
       <Footer />
     </div>

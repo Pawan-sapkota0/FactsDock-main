@@ -78,3 +78,21 @@ CREATE TRIGGER trigger_image_cache_updated_at
 COMMENT ON TABLE image_cache IS 'Stores cached country images from Unsplash. Refreshed daily by refresh-image-cache function. Expires after 48 hours of inactivity.';
 COMMENT ON COLUMN image_cache.refresh_status IS 'Status of last refresh attempt: pending, success, or failed';
 COMMENT ON COLUMN image_cache.consecutive_failures IS 'Number of consecutive failed refresh attempts for monitoring';
+
+
+
+  CREATE POLICY "Allow admin update" ON country_news
+  FOR UPDATE 
+  WITH CHECK (auth.role() = 'service_role');
+  -- Missing USING clause = always true (unrestricted)
+
+  -- Drop the overly permissive policy
+DROP POLICY IF EXISTS "Allow admin update" ON country_news;
+
+-- Create a restricted policy that only allows service_role to update
+CREATE POLICY "Allow admin update" ON country_news
+  FOR UPDATE 
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+  

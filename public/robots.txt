@@ -6,6 +6,7 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api
+Disallow: /secret-admin-login
 Disallow: /*.json$
 Disallow: /*?*sort=
 Disallow: /*?*filter=

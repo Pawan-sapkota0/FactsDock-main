@@ -30,3 +30,33 @@ CREATE POLICY "Allow authenticated insert to image_cache" ON image_cache
 
 CREATE POLICY "Allow authenticated update to image_cache" ON image_cache
   FOR UPDATE USING (auth.role() = 'authenticated');
+
+
+
+
+
+-- Drop and recreate the function with explicit search_path
+DROP FUNCTION IF EXISTS cleanup_old_news();
+
+CREATE OR REPLACE FUNCTION cleanup_old_news()
+RETURNS TABLE(deleted_count INT) AS $$
+DECLARE
+  v_deleted_count INT;
+BEGIN
+  DELETE FROM country_news
+  WHERE created_at < NOW() - INTERVAL '48 hours';
+  
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+  
+  RETURN QUERY SELECT v_deleted_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+COMMENT ON FUNCTION cleanup_old_news() IS 'Removes news articles older than 48 hours to keep the news table fresh. Should be run periodically (e.g., daily)';
+
+-- Fix contact_messages INSERT policy
+
+DROP POLICY IF EXISTS "Allow public insert contact messages" ON contact_messages;
+
+CREATE POLICY "Allow service role to insert contact messages" ON contact_messages
+  FOR INSERT WITH CHECK (auth.role() = 'service_role');

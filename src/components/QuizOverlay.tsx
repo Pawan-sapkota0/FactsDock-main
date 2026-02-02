@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { generateQuizForTopic } from "@/lib/api";
@@ -198,6 +199,7 @@ const QuizOverlay: React.FC<Props> = ({ open, onOpenChange, topic }) => {
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Quiz: {topic}</DialogTitle>
+          <DialogDescription>Answer questions about {topic}</DialogDescription>
         </DialogHeader>
 
         <div className="p-4">
