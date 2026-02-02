@@ -67,8 +67,7 @@ serve(async (req) => {
 
     // If no rows or fewer than 4 or all zeros -> fallback
     const total = parsed.length;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed array element shape
-    const allZero = parsed.every((p: any) => p.view_count === 0);
+    const allZero = parsed.every((p: Record<string, unknown>) => (p as Record<string, unknown>).view_count === 0);
     if (total < 4 || parsed.length === 0 || allZero) {
       return new Response(JSON.stringify({ data: FALLBACK }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }

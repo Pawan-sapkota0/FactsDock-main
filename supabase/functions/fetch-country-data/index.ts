@@ -28,7 +28,7 @@ serve(async (req: Request) => {
 
   try {
     const { countryName, allCountries } = await req.json();
-    console.log('Fetching country data:', { countryName, allCountries });
+    console.debug('Fetching country data:', { countryName, allCountries });
 
     let url: string;
     
@@ -62,7 +62,7 @@ serve(async (req: Request) => {
     }
 
     const data = await response.json();
-    console.log('Successfully fetched country data');
+    console.info('Successfully fetched country data');
 
     return new Response(
       JSON.stringify({ data }),

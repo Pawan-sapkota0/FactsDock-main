@@ -69,6 +69,9 @@ const inFlightRequests = new Map<string, Promise<any>>();
 const lastCountryFetchTime = new Map<string, number>();
 const COUNTRY_THROTTLE_MS = 5000; // 5 seconds between force-refresh calls
 
+// Weather request deduplication: prevent concurrent duplicate calls
+const inFlightWeatherRequests = new Map<string, Promise<any>>();
+
 // Helper: localStorage-backed cache with TTL (seconds)
 function cacheKey(prefix: string, key: string) {
   return `wf:${prefix}:${key}`;
@@ -1450,5 +1453,231 @@ export async function fetchPendingQuizzes(pageSize = 20, pageNum = 1) {
     // Log error internally but return empty result
     logger.error('[fetchPendingQuizzes] Error:', e);
     return { quizzes: [], total: 0 };
+  }
+}
+
+/**
+ * Fetch weather data for a city with caching, request deduplication, and rate limiting.
+ * Prevents unnecessary API calls via localStorage cache (24 hours TTL) and in-flight request deduplication.
+ * @param city - The city/capital name to fetch weather for
+ * @returns Weather data { temp_c, condition, wind_kph, humidity, tz_id } or null on error
+ */
+export async function fetchWeatherWithCache(city: string) {
+  if (!city || city === 'N/A') {
+    return null;
+  }
+
+  const cacheKey = `weather:${city.toLowerCase()}`;
+
+  // 1. Check localStorage cache (24 hour TTL)
+  const cached = getLocalCache('weather', cacheKey);
+  if (cached) {
+    logger.debug('[fetchWeatherWithCache] Returning cached data', { city });
+    return cached;
+  }
+
+  // 2. Check for in-flight request to prevent duplicate concurrent calls
+  if (inFlightWeatherRequests.has(cacheKey)) {
+    logger.debug('[fetchWeatherWithCache] Returning in-flight request', { city });
+    return inFlightWeatherRequests.get(cacheKey)!;
+  }
+
+  // 3. Create new fetch request
+  const request = (async () => {
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-weather`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ city }),
+      });
+
+      if (!res.ok) {
+        logger.debug('[fetchWeatherWithCache] Fetch failed', { city, status: res.status });
+        return null;
+      }
+
+      const result = await res.json();
+      const data = result.data;
+
+      if (!data?.current) {
+        logger.debug('[fetchWeatherWithCache] Invalid response structure', { city });
+        return null;
+      }
+
+      // Extract and normalize weather data
+      const weatherData = {
+        temp_c: data.current.temp_c,
+        condition: data.current.condition,
+        wind_kph: data.current.wind_kph,
+        humidity: data.current.humidity,
+        tz_id: data.location?.tz_id || null,
+      };
+
+      // Cache for 24 hours
+      setLocalCache('weather', cacheKey, weatherData, 86400);
+
+      logger.debug('[fetchWeatherWithCache] Successfully fetched', {
+        city,
+        temp: data.current.temp_c,
+        condition: data.current.condition?.text,
+      });
+
+      return weatherData;
+    } catch (e) {
+      logger.debug('[fetchWeatherWithCache] Error', { city, error: e });
+      return null;
+    } finally {
+      // Clean up in-flight request tracking
+      inFlightWeatherRequests.delete(cacheKey);
+    }
+  })();
+
+  // Track in-flight request
+  inFlightWeatherRequests.set(cacheKey, request);
+
+  return request;
+}
+
+export async function fetchCountryAbout(countryName: string) {
+  const safeName = sanitizeString(countryName || '', 'countryName', 200);
+  if (!safeName) {
+    logger.debug('[fetchCountryAbout] Invalid country name');
+    return null;
+  }
+
+  const key = safeName.toLowerCase().trim();
+  const cacheKey = 'about:' + key;
+
+  // Check memory cache first
+  const memCached = memoryCache.get(cacheKey);
+  if (memCached) return memCached.value;
+
+  // Check localStorage cache
+  const localCached = getLocalCache('about', key);
+  if (localCached) {
+    memoryCache.set(cacheKey, { ts: Date.now(), value: localCached });
+    return localCached;
+  }
+
+  // Fetch from Supabase if available
+  if (!SUPABASE_AVAILABLE) {
+    logger.debug('[fetchCountryAbout] Supabase not available');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('country_about')
+      .select('about')
+      .eq('country_name', safeName)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') {
+        // PGRST116 = no rows found, which is expected for missing data
+        logger.debug('[fetchCountryAbout] Query error', { country: safeName, error });
+      }
+      return null;
+    }
+
+    if (data?.about) {
+      const about = data.about;
+      // Cache for 24 hours
+      setLocalCache('about', key, about, 86400);
+      memoryCache.set(cacheKey, { ts: Date.now(), value: about });
+      return about;
+    }
+
+    return null;
+  } catch (e) {
+    logger.debug('[fetchCountryAbout] Exception', { country: safeName, error: e });
+    return null;
+  }
+}
+
+export async function updateCountryAbout(
+  countryName: string,
+  aboutText: string
+) {
+  const safeName = sanitizeString(countryName || '', 'countryName', 200);
+  const safeAbout = sanitizeString(aboutText || '', 'aboutText', 2000);
+
+  if (!safeName || !safeAbout) {
+    logger.error('[updateCountryAbout] Invalid country name or about text');
+    throw new Error('Country name and about text are required');
+  }
+
+  if (!SUPABASE_AVAILABLE) {
+    logger.error('[updateCountryAbout] Supabase not available');
+    throw new Error('Supabase not available');
+  }
+
+  try {
+    // Check if record exists
+    const { data: existing, error: checkError } = await supabase
+      .from('country_about')
+      .select('id')
+      .eq('country_name', safeName)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error('[updateCountryAbout] Error checking existing record', checkError);
+      throw checkError;
+    }
+
+    if (existing?.id) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('country_about')
+        .update({
+          about: safeAbout,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        logger.error('[updateCountryAbout] Update failed', updateError);
+        throw updateError;
+      }
+
+      logger.debug('[updateCountryAbout] Record updated', { country: safeName });
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from('country_about')
+        .insert([
+          {
+            country_name: safeName,
+            about: safeAbout,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+
+      if (insertError) {
+        logger.error('[updateCountryAbout] Insert failed', insertError);
+        throw insertError;
+      }
+
+      logger.debug('[updateCountryAbout] Record created', { country: safeName });
+    }
+
+    // Clear cache for this country
+    try {
+      const cacheKey = `wf:about:${safeName.toLowerCase().trim()}`;
+      localStorage.removeItem(cacheKey);
+      memoryCache.delete('about:' + safeName.toLowerCase().trim());
+    } catch (e) {
+      logger.debug('[updateCountryAbout] Cache clearing failed', e);
+    }
+
+    return true;
+  } catch (e) {
+    logger.error('[updateCountryAbout] Exception', { country: safeName, error: e });
+    throw e;
   }
 }

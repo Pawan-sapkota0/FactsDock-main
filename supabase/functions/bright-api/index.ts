@@ -4,8 +4,7 @@
 import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-console.log("Hello from Functions!")
-
+// Startup log removed to avoid noisy dev console output in production
 serve(async (req: Request) => {
   const { name } = await req.json()
   const data = {

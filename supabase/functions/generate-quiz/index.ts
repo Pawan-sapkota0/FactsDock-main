@@ -135,7 +135,7 @@ serve(async (req) => {
     checkUniqueness = false 
   } = body || {};
   
-  console.log('[generate-quiz] Starting with params:', { fact_type_id, category_id, subcategory_id, country, checkUniqueness });
+  console.debug('[generate-quiz] Starting with params:', { fact_type_id, category_id, subcategory_id, country, checkUniqueness });
   
   let uniquenessReport: Record<string, unknown> | null = null;
 
@@ -189,7 +189,7 @@ serve(async (req) => {
         factsUrl += `&country=eq.${encodeURIComponent(country as string)}`;
       }
       
-      console.log('[fetchFacts] URL:', factsUrl);
+      console.debug('[fetchFacts] URL:', factsUrl);
       const res = await fetch(factsUrl, { headers });
       if (!res.ok) {
         console.error('[fetchFacts] Failed to fetch facts from', factsUrl, 'status:', res.status);
@@ -205,30 +205,30 @@ serve(async (req) => {
     const existingRes = await fetch(`${supaUrl}/rest/v1/quizzes?select=fact_id`, { headers });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- REST API response shape
     const existing = existingRes.ok ? ((await existingRes.json()) as any[]).map((r: Record<string, unknown>)=>r.fact_id).filter(Boolean) : [];
-    console.log('[generate-quiz] Existing fact_ids:', existing.length);
-    console.log('[generate-quiz] Request params - fact_type_id:', fact_type_id, 'category_id:', category_id, 'subcategory_id:', subcategory_id, 'country:', country);
+    console.debug('[generate-quiz] Existing fact_ids:', existing.length);
+    console.debug('[generate-quiz] Request params - fact_type_id:', fact_type_id, 'category_id:', category_id, 'subcategory_id:', subcategory_id, 'country:', country);
 
     const allFacts = await fetchFacts();
-    console.log('[generate-quiz] Fetched facts:', allFacts.length);
+    console.debug('[generate-quiz] Fetched facts:', allFacts.length);
     
     // Filter out already-queried facts
     const newFacts = (Array.isArray(allFacts) ? allFacts : []).filter((f: unknown) => !existing.includes((f as Record<string, unknown>)?.id));
-    console.log('[generate-quiz] New facts after filtering existing:', newFacts.length);
+    console.debug('[generate-quiz] New facts after filtering existing:', newFacts.length);
     
     // Shuffle and take questionCount
     for (let i = newFacts.length -1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [newFacts[i], newFacts[j]] = [newFacts[j], newFacts[i]]; }
     const chosen = newFacts.slice(0, questionCount || 10);
-    console.log('[generate-quiz] Chosen items for quiz:', chosen.length);
+    console.debug('[generate-quiz] Chosen items for quiz:', chosen.length);
 
     if (!chosen || chosen.length === 0) {
-      console.log('[generate-quiz] No facts available, returning empty');
+      console.debug('[generate-quiz] No facts available, returning empty');
       return new Response(JSON.stringify({ data: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // ========== UNIQUENESS CHECKING ==========
     let itemsToInsert = chosen;
     if (checkUniqueness) {
-      console.log('[generate-quiz] Starting uniqueness check for', chosen.length, 'items');
+      console.debug('[generate-quiz] Starting uniqueness check for', chosen.length, 'items');
       const uniqueItems: unknown[] = [];
       const duplicates: unknown[] = [];
 
@@ -251,7 +251,7 @@ serve(async (req) => {
         }
       }
 
-      console.log('[generate-quiz] Uniqueness check complete: unique=', uniqueItems.length, 'duplicates=', duplicates.length);
+      console.debug('[generate-quiz] Uniqueness check complete: unique=', uniqueItems.length, 'duplicates=', duplicates.length);
 
       uniquenessReport = {
         totalGenerated: chosen.length,
@@ -262,7 +262,7 @@ serve(async (req) => {
       };
 
       if (uniqueItems.length === 0) {
-        console.log('[generate-quiz] No unique items, returning 409');
+        console.debug('[generate-quiz] No unique items, returning 409');
         return new Response(
           JSON.stringify({ error: 'No unique quizzes generated - all similar to existing content', report: uniquenessReport }),
           { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -274,7 +274,7 @@ serve(async (req) => {
     // ========== END UNIQUENESS CHECKING =========
 
     // Build insert payload
-    console.log('[generate-quiz] Building insert payload for', itemsToInsert.length, 'items');
+    console.debug('[generate-quiz] Building insert payload for', itemsToInsert.length, 'items');
     const inserts = itemsToInsert.map((f) => {
       const fRecord = f as Record<string, unknown>;
       return {
@@ -293,7 +293,7 @@ serve(async (req) => {
       };
     });
 
-    console.log('[generate-quiz] Insert payload sample:', JSON.stringify(inserts[0] || {}, null, 2));
+    console.debug('[generate-quiz] Insert payload sample:', JSON.stringify(inserts[0] || {}, null, 2));
     const insertRes = await fetch(`${supaUrl}/rest/v1/quizzes`, { method: 'POST', headers, body: JSON.stringify(inserts) });
     if (!insertRes.ok) {
       const txt = await insertRes.text();

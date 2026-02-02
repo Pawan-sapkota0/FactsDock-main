@@ -1,8 +1,8 @@
 // Minimal declarations for the Supabase Edge Function Deno environment
 // This file is only for editor/TypeScript intellisense and will not change runtime behavior.
 
+// Deno global namespace with env.get() method
 declare namespace Deno {
-  // Only the env.get API is used in the function; add a minimal typing for it.
   const env: {
     get(key: string): string | undefined;
   };
@@ -21,8 +21,33 @@ declare module "https://deno.land/std/*" {
 // Supabase client module - handle both direct URL and aliased import
 declare module "https://esm.sh/@supabase/supabase-js@2" {
   // SDK boundary: allow flexible options and return type for the external client
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK runtime library type
-  export function createClient(url: string, key: string, options?: any): any;
+  interface QueryBuilder {
+    select(columns?: string, options?: Record<string, unknown>): QueryBuilder;
+    limit(count: number): QueryBuilder;
+    eq(column: string, value: unknown): QueryBuilder;
+    not(column: string, operator: string, value: unknown): QueryBuilder;
+    lt(column: string, value: unknown): QueryBuilder;
+    maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    then(onFulfilled?: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown): Promise<unknown>;
+  }
+  
+  export interface SupabaseClient {
+    from(table: string): {
+      select(columns?: string, options?: Record<string, unknown>): QueryBuilder;
+      insert(values: unknown | unknown[], options?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+      update(values: Record<string, unknown>, options?: Record<string, unknown>): {
+        eq(column: string, value: unknown): Promise<{ data: unknown; error: unknown }>;
+      };
+      upsert(values: unknown | unknown[], options?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+      delete(): {
+        lt(column: string, value: string): Promise<{ data: unknown; error: unknown }>;
+      };
+      [key: string]: unknown;
+    };
+    rpc(fn: string, args?: Record<string, unknown>, options?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+    [key: string]: unknown;
+  }
+  export function createClient(url: string, key: string, options?: Record<string, unknown>): SupabaseClient;
   export * from "https://esm.sh/@supabase/supabase-js@2";
 }
 

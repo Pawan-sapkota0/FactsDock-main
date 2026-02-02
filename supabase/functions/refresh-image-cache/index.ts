@@ -108,13 +108,13 @@ async function refreshCountryImages(
     }
 
     // Get current cache entry
-    const { data: existingCache, error: fetchError } = await supabase
+    const { data: existingCache, error: fetchError } = (await supabase
       .from("image_cache")
       .select("*")
       .eq("country", country)
-      .maybeSingle();
+      .maybeSingle()) as { data: Record<string, unknown> | null; error: { code: string } | null };
 
-    if (fetchError && fetchError.code !== "PGRST116") {
+    if (fetchError && (fetchError as { code: string }).code !== "PGRST116") {
       // PGRST116 = no rows found
       console.error(`Error fetching existing cache for ${country}:`, fetchError);
       return false;
@@ -138,14 +138,14 @@ async function refreshCountryImages(
       const { error: updateError } = await supabase
         .from("image_cache")
         .update(newCacheEntry)
-        .eq("id", existingCache.id);
+        .eq("id", (existingCache as { id: string }).id);
 
       if (updateError) {
         console.error(`Error updating cache for ${country}:`, updateError);
         return false;
       }
 
-      console.log(
+      console.info(
         `✓ Updated cache for ${country}`,
       );
     } else {
@@ -159,7 +159,7 @@ async function refreshCountryImages(
         return false;
       }
 
-      console.log(
+      console.info(
         `✓ Created cache for ${country}`,
       );
     }
@@ -178,28 +178,28 @@ async function refreshCountryImages(
  */
 async function refreshImageCache() {
   try {
-    console.log("Starting daily image cache refresh...");
+    console.info("Starting daily image cache refresh...");
     const startTime = Date.now();
     const MAX_DURATION = 30000; // 30 seconds max
 
     // Get all unique countries from facts
-    const { data: countries, error: countriesError } = await supabase
+    const { data: countries, error: countriesError } = (await supabase
       .from("facts")
       .select("country")
-      .not("country", "is", null);
+      .not("country", "is", null)) as { data: unknown[]; error: unknown };
 
     if (countriesError) {
       console.error("Error fetching countries:", countriesError);
       return {
         success: false,
-        error: `Failed to fetch countries: ${countriesError.message}`,
+        error: `Failed to fetch countries: ${(countriesError as { message?: string }).message || 'Unknown error'}`,
       };
     }
 
     // Get unique countries
     const uniqueCountries = Array.from(
       new Set((countries || [])
-        .map((row: Record<string, unknown>) => row.country as string)
+        .map((row: unknown) => (row as Record<string, unknown>).country as string)
         .filter(Boolean))
     ) as string[];
 
@@ -208,32 +208,32 @@ async function refreshImageCache() {
       return { success: true, refreshed: 0, message: "No countries to refresh" };
     }
 
-    console.log(`Checking ${uniqueCountries.length} countries for refresh`);
+    console.info(`Checking ${uniqueCountries.length} countries for refresh`);
 
     // Check which entries are older than 24 hours
-    const { data: expiredEntries, error: expiredError } = await supabase
+    const { data: expiredEntries, error: expiredError } = (await supabase
       .from("image_cache")
       .select("country")
-      .lt("fetched_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      .lt("fetched_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())) as { data: unknown[]; error: { code: string } | null };
 
-    if (expiredError && expiredError.code !== "PGRST116") {
+    if (expiredError && (expiredError as { code: string }).code !== "PGRST116") {
       console.error("Error checking expired entries:", expiredError);
     }
 
     const expiredCountries = (expiredEntries || [])
-      .map((row: Record<string, unknown>) => row.country as string);
+      .map((row: unknown) => (row as Record<string, unknown>).country as string);
 
     // Countries without cache entries (new countries)
-    const { data: cachedCountries, error: cachedError } = await supabase
+    const { data: cachedCountries, error: cachedError } = (await supabase
       .from("image_cache")
-      .select("country");
+      .select("country")) as { data: unknown[]; error: { code: string } | null };
 
-    if (cachedError && cachedError.code !== "PGRST116") {
+    if (cachedError && (cachedError as { code: string }).code !== "PGRST116") {
       console.error("Error fetching cached countries:", cachedError);
     }
 
     const cachedCountriesSet = new Set(
-      (cachedCountries || []).map((row: Record<string, unknown>) => row.country as string),
+      (cachedCountries || []).map((row: unknown) => (row as Record<string, unknown>).country as string),
     );
     const newCountries = uniqueCountries.filter((c: string) => !cachedCountriesSet.has(c));
 
@@ -241,7 +241,7 @@ async function refreshImageCache() {
       ...new Set([...expiredCountries, ...newCountries]),
     ];
 
-    console.log(
+    console.info(
       `Queued ${countriesToRefresh.length} for refresh (${expiredCountries.length} expired, ${newCountries.length} new)`,
     );
 
@@ -271,31 +271,31 @@ async function refreshImageCache() {
     const successCount = results.filter((r) => r.success).length;
     const failureCount = results.filter((r) => !r.success).length;
 
-    console.log(
+    console.info(
       `Refresh: ${successCount} succeeded, ${failureCount} failed`,
     );
 
     // Clean up expired entries (older than 48 hours)
     console.debug("Starting cleanup...");
     
-    const { data: cleanupResult, error: cleanupError } = await supabase
-      .rpc("cleanup_expired_image_cache");
+    const { data: cleanupResult, error: cleanupError } = (await supabase
+      .rpc("cleanup_expired_image_cache")) as { data: unknown; error: unknown };
 
     if (cleanupError) {
       console.warn("Cleanup warning (non-fatal)");
     } else {
-      const deletedCount = cleanupResult?.[0]?.deleted_count || 0;
+      const deletedCount = (cleanupResult as Array<{ deleted_count: number }>)?.[0]?.deleted_count || 0;
       console.debug(`Cleanup: ${deletedCount} expired entries removed`);
     }
 
     // Clean up old news articles (older than 48 hours)
-    const { data: newsCleanupResult, error: newsCleanupError } = await supabase
-      .rpc("cleanup_old_news");
+    const { data: newsCleanupResult, error: newsCleanupError } = (await supabase
+      .rpc("cleanup_old_news")) as { data: unknown; error: unknown };
 
     if (newsCleanupError) {
       console.warn("News cleanup warning (non-fatal)");
     } else {
-      const newsDeletedCount = newsCleanupResult?.[0]?.deleted_count || 0;
+      const newsDeletedCount = (newsCleanupResult as Array<{ deleted_count: number }>)?.[0]?.deleted_count || 0;
       console.debug(`News cleanup: ${newsDeletedCount} old articles removed`);
     }
 
@@ -303,8 +303,8 @@ async function refreshImageCache() {
       success: true,
       refreshed: successCount,
       failed: failureCount,
-      cleaned: cleanupResult?.[0]?.deleted_count || 0,
-      newsRemoved: newsCleanupResult?.[0]?.deleted_count || 0,
+      cleaned: (cleanupResult as Array<{ deleted_count: number }>)?.[0]?.deleted_count || 0,
+      newsRemoved: (newsCleanupResult as Array<{ deleted_count: number }>)?.[0]?.deleted_count || 0,
       message: `Refreshed ${successCount}/${countriesToRefresh.length} countries`,
     };
   } catch (error) {
@@ -316,7 +316,7 @@ async function refreshImageCache() {
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // CORS headers
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",

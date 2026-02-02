@@ -46,7 +46,7 @@ async function fetchAndStoreNews(country: string): Promise<boolean> {
     const articles = data.articles || [];
 
     if (articles.length === 0) {
-      console.log(`No news found for ${country}`);
+      console.debug(`No news found for ${country}`);
       return true;
     }
 
@@ -71,7 +71,7 @@ async function fetchAndStoreNews(country: string): Promise<boolean> {
       return false;
     }
 
-    console.log(`✓ Stored ${newsRecords.length} news articles for ${country}`);
+    console.info(`✓ Stored ${newsRecords.length} news articles for ${country}`);
     return true;
   } catch (err) {
     console.error(`Exception fetching news for ${country}:`, err);
@@ -97,7 +97,7 @@ async function cleanupOldNews(): Promise<boolean> {
       return false;
     }
 
-    console.log("✓ Cleanup completed");
+    console.info("✓ Cleanup completed");
     return true;
   } catch (err) {
     console.error("Exception during cleanup:", err);
@@ -164,10 +164,10 @@ async function getTopCountries(): Promise<string[]> {
   ];
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = (await supabase
       .from("countries")
       .select("name")
-      .limit(50);
+      .limit(50)) as { data: Array<{ name: string }> | null; error: Error | null };
 
     if (error) {
       console.error("Error fetching countries:", error);
@@ -176,7 +176,7 @@ async function getTopCountries(): Promise<string[]> {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB row shape returned by Supabase
     const result = (data || []).map((c: any) => c.name).filter(Boolean);
-    console.log(`Fetched ${result.length} countries from database`);
+    console.debug(`Fetched ${result.length} countries from database`);
     return result.length > 0 ? result : fallbackCountries;
   } catch (err) {
     console.error("Exception fetching countries:", err);
@@ -225,7 +225,7 @@ serve(async (req) => {
     }
 
     const countries = await getTopCountries();
-    console.log(`Fetching news for ${countries.length} countries...`);
+    console.info(`Fetching news for ${countries.length} countries...`);
 
     // Start background processing without blocking the response
     (async () => {
@@ -237,7 +237,7 @@ serve(async (req) => {
         }
         // Cleanup old news
         await cleanupOldNews();
-        console.log("✓ Background news fetch completed");
+        console.info("✓ Background news fetch completed");
       } catch (err) {
         console.error("Background fetch error:", err);
       }

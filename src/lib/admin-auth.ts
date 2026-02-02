@@ -4,6 +4,8 @@
  * Supports: Email/Password, OAuth (Google)
  */
 
+// Note: The Supabase client stores auth sessions in localStorage by default.
+// For production, prefer server-issued HttpOnly cookies to avoid client-side token exposure via XSS.
 import { supabase } from "@/integrations/supabase/client";
 import logger from "@/lib/logger";
 
@@ -344,11 +346,12 @@ export const logAdminActivity = async (
 };
 
 /**
- * Session management helpers (localStorage)
+ * Session management helpers (sessionStorage)
+ * Note: For production, prefer HttpOnly cookies set by the server to avoid XSS exposure.
  */
 function setSessionInStorage(session: AdminSession): void {
   try {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   } catch (error) {
     logger.error("[AdminAuth] Error storing session:", error);
   }
@@ -356,7 +359,7 @@ function setSessionInStorage(session: AdminSession): void {
 
 function getSessionFromStorage(): AdminSession | null {
   try {
-    const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch (error) {
     logger.error("[AdminAuth] Error retrieving session:", error);
@@ -366,7 +369,7 @@ function getSessionFromStorage(): AdminSession | null {
 
 function clearSessionStorage(): void {
   try {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
   } catch (error) {
     logger.error("[AdminAuth] Error clearing session:", error);
   }

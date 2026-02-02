@@ -63,7 +63,9 @@ app.post('/api/contact', async (req, res) => {
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
-    console.log(`Message from IP: ${ip} at ${new Date().toISOString()}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`Message from IP: ${ip} at ${new Date().toISOString()}`);
+    }
 
     // rate-limit
     const now = Date.now();
@@ -192,4 +194,4 @@ app.get('/api/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => console.info(`Backend running on port ${PORT}`));

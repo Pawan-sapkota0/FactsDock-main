@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Users, DollarSign, Globe, Phone } from "lucide-react";
+import { MapPin, Users, DollarSign, Globe, Phone, Flag } from "lucide-react";
 import { DateTime } from "luxon";
 
 type Props = {

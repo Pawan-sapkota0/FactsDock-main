@@ -37,6 +37,7 @@ import ContactMessages from "./pages/admin/ContactMessages";
 import SettingsAdmin from "./pages/admin/SettingsAdmin";
 import ReviewPending from "./pages/admin/ReviewPending";
 import ImageCacheAdmin from "./pages/admin/ImageCacheAdmin";
+import CountryAboutAdmin from "./pages/admin/CountryAboutAdmin";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,7 @@ const App = () => (
               <Route path="facts/new" element={<FactsEdit />} />
               <Route path="facts/:id/edit" element={<FactsEdit />} />
               <Route path="messages" element={<ContactMessages />} />
+              <Route path="country-about" element={<CountryAboutAdmin />} />
               <Route path="settings" element={<SettingsAdmin />} />
               <Route path="image-cache" element={<ImageCacheAdmin />} />
             </Route>

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import logger from "@/lib/logger";
 
 interface CountryCardProps {
   name: string;
@@ -10,11 +11,18 @@ interface CountryCardProps {
 const CountryCard = ({ name, slug, flag }: CountryCardProps) => {
   const navigate = useNavigate();
 
+  const handleClick = async () => {
+    // Track click immediately (don't wait for completion)
+    recordCountryClick(name);
+    // Navigate to country page
+    navigate(`/country/${slug}`);
+  };
+
   return (
-    <Card 
-      onClick={() => navigate(`/country/${slug}`)}
+    <Card
+      onClick={handleClick}
       className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary"
-      style={{ boxShadow: 'var(--shadow-card)' }}
+      style={{ boxShadow: "var(--shadow-card)" }}
     >
       <CardContent className="p-6 flex items-center justify-center">
         <div className="text-center">
@@ -25,5 +33,19 @@ const CountryCard = ({ name, slug, flag }: CountryCardProps) => {
     </Card>
   );
 };
+
+// Record country click to trending function (fire-and-forget)
+async function recordCountryClick(country: string) {
+  try {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/record-country-view`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ country }),
+    });
+  } catch (e) {
+    logger.debug("[CountryCard] click tracking failed", e);
+  }
+}
 
 export default CountryCard;

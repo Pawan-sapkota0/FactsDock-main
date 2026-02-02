@@ -179,7 +179,7 @@ const CountryImageGallery: React.FC<CountryImageGalleryProps> = ({
                   <div className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-lg text-xs transition-colors">
                     Photo by{" "}
                     <a
-                      href={`${currentImage.photographerUrl}?utm_source=world-facts&utm_medium=referral`}
+                      href={`${currentImage.photographerUrl}?utm_source=factsdock&utm_medium=referral`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-semibold"

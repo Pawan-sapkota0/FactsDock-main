@@ -14,6 +14,7 @@ import {
   X,
   LogOut,
   User,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -58,6 +59,7 @@ const AdminLayout: React.FC = () => {
     { path: "/admin/facts", label: "Facts", icon: BookOpen },
     { path: "/admin/quizzes", label: "Quizzes", icon: HelpCircle },
     { path: "/admin/categories", label: "Categories", icon: Layers },
+    { path: "/admin/country-about", label: "Country About", icon: Globe },
     { path: "/admin/messages", label: "Messages", icon: Mail },
     { path: "/admin/image-cache", label: "Image Cache", icon: Image },
     { path: "/admin/settings", label: "Settings", icon: Settings },

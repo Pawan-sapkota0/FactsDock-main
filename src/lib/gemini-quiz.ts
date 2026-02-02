@@ -38,10 +38,7 @@ interface GeneratedQuiz {
 export async function generateQuizWithGemini(
   config: QuizGenerationConfig
 ): Promise<GeneratedQuiz[]> {
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY as string;
-  if (!geminiApiKey) {
-    throw new Error('Gemini API key not configured');
-  }
+  // Gemini API key is no longer used client-side. Use the Edge Function instead.
 
   // Build the prompt based on selected fields
   const contextParts: string[] = [`Fact Type: ${config.factTypeName}`];
@@ -68,13 +65,6 @@ export async function generateQuizWithGemini(
 ${context}
 
 REQUIREMENTS:
-- Each question must be unique and educational
-- Each question must have exactly 4 options (A, B, C, D)
-- Exactly one option must be the correct answer
-- The correct answer can be any of the 4 options
-- Content must strictly match the fact type${config.categoryName ? ', category' : ''}${config.subcategoryName ? ', subcategory' : ''}${config.country ? ', and country' : ''} specified
-- Difficulty level must be ${config.difficulty}
-- Questions must be factual and accurate
 
 RESPONSE FORMAT (JSON ONLY, no markdown):
 {
@@ -90,85 +80,12 @@ RESPONSE FORMAT (JSON ONLY, no markdown):
 Generate the quiz now:`;
 
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiApiKey, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4096,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Gemini API error');
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    if (!text) {
-      throw new Error('No response from Gemini');
-    }
-
-    // Parse the JSON response (strip markdown code blocks if present)
-    let jsonStr = text;
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1];
-    }
-
-    const parsed = JSON.parse(jsonStr);
-    const questions = parsed.questions || [];
-
-    if (!Array.isArray(questions) || questions.length === 0) {
-      throw new Error('No valid questions in Gemini response');
-    }
-
-    // Validate and transform questions
-    const validQuestions: GeneratedQuiz[] = (questions as unknown[])
-      .filter((q): q is Record<string, unknown> => {
-        if (!q || typeof q !== 'object') return false;
-        const qObj = q as Record<string, unknown>;
-        const opts = qObj.options;
-        return (
-          typeof qObj.question === 'string' &&
-          Array.isArray(opts) &&
-          opts.length === 4 &&
-          typeof qObj.correct_answer === 'string' &&
-          opts.includes(qObj.correct_answer)
-        );
-      })
-      .map((q) => ({
-        question: String(q.question),
-        options: (q.options as unknown[]).map((o) => String(o)),
-        correct_answer: String(q.correct_answer),
-        fact_type_id: config.factTypeId,
-        category_id: config.categoryId,
-        country: config.country,
-        difficulty: config.difficulty,
-      }));
-
-    if (validQuestions.length === 0) {
-      throw new Error('No valid questions generated');
-    }
-
-    return validQuestions;
+    // Gemini API fetch removed. Use the Edge Function instead.
   } catch (error: unknown) {
     try { const { default: log } = await import('@/lib/logger'); log.error('Gemini quiz generation error:', error); } catch (_e) { /* ignored - logging best-effort */ }
     throw error;
   }
+    // Gemini API calls must now be made via the Edge Function (generate-content)
+    // This function is deprecated and will throw if called directly.
+    throw new Error('generateQuizWithGemini is deprecated. Use the Edge Function (generate-content) via generateQuizzesWithUniqueness in api.ts.');
 }

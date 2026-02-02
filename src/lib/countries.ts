@@ -255,3 +255,47 @@ export const removeDuplicateFacts = (
 
   return result;
 };
+
+/**
+ * Extract calling code from country data
+ * Priority: callingCodes[0] > callingCode > idd.root+suffixes (if 1 suffix) > idd.root
+ * Avoids concatenating with multiple suffixes (which are usually area codes, not country codes)
+ */
+export const extractCallingCode = (country: Record<string, unknown>, meta?: Record<string, unknown>): string | null => {
+  // 1. Try callingCodes array (authoritative source)
+  if (Array.isArray(country?.callingCodes) && country.callingCodes.length > 0) {
+    return country.callingCodes[0];
+  }
+
+  // 2. Try callingCode field
+  if (country?.callingCode) {
+    return country.callingCode;
+  }
+
+  // 3. Try metadata callingCodes
+  if (meta && Array.isArray(meta.callingCodes) && meta.callingCodes.length > 0) {
+    return meta.callingCodes[0];
+  }
+
+  // 4. Try metadata callingCode
+  if (meta?.callingCode) {
+    return meta.callingCode;
+  }
+
+  // 5. Concatenate idd.root + idd.suffixes[0] ONLY if exactly 1 suffix (Nepal case)
+  // Don't concatenate with multiple suffixes (US has 200+ area codes)
+  if (
+    country?.idd?.root &&
+    Array.isArray(country.idd.suffixes) &&
+    country.idd.suffixes.length === 1
+  ) {
+    return `${country.idd.root}${country.idd.suffixes[0]}`;
+  }
+
+  // 6. Fall back to idd.root alone (Russia, etc.)
+  if (country?.idd?.root) {
+    return country.idd.root;
+  }
+
+  return null;
+};

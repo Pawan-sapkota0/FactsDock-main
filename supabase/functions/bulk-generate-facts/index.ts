@@ -2,6 +2,16 @@ import "../deno.d.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// ========== TYPE DEFINITIONS ==========
+interface AiFact {
+  text?: string;
+  fact?: string;
+  description?: string;
+  title?: string;
+  source?: string;
+  [key: string]: unknown;
+}
+
 // ========== UNIQUENESS CHECKING UTILITIES ==========
 function normalizeForComparison(text: string): string {
   return text.toLowerCase().replace(/[^\w\s]/g, '').trim();
@@ -454,7 +464,7 @@ serve(async (req) => {
       ? countries 
       : COUNTRIES_A_TO_Z;
     
-    console.log(`[bulk-generate-facts] Processing ${countriesToProcess.length} countries`);
+    console.info(`[bulk-generate-facts] Processing ${countriesToProcess.length} countries`);
 
     // Create a ReadableStream to stream results immediately
     const stream = new ReadableStream({
@@ -466,7 +476,7 @@ serve(async (req) => {
 
         for (let i = 0; i < countriesToProcess.length; i++) {
           const country = countriesToProcess[i];
-          console.log(`[bulk-generate-facts] Processing country ${i + 1}/${countriesToProcess.length}: ${country}`);
+          console.info(`[bulk-generate-facts] Processing country ${i + 1}/${countriesToProcess.length}: ${country}`);
 
       try {
         // Check for existing facts to avoid duplicates
@@ -540,8 +550,8 @@ serve(async (req) => {
         }
 
         // Filter out duplicates and structure for storage with uniqueness check
-        const facts = Array.isArray(parsed) ? parsed : [parsed];
-        const validFacts = [];
+        const facts: AiFact[] = Array.isArray(parsed) ? parsed : [parsed];
+        const validFacts: AiFact[] = [];
 
         for (const f of facts) {
           const text = (f.text || f.fact || f.description || "").toString();
@@ -571,8 +581,7 @@ serve(async (req) => {
         // Write result immediately (newline-delimited JSON)
         const countryResult = {
           country,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- parsed AI item shape
-          facts: validFacts.map((f: any) => ({
+          facts: validFacts.map((f: AiFact) => ({
             text: (f.text || f.fact || f.description || f.title || "")
               .toString()
               .slice(0, 1000),
@@ -586,7 +595,7 @@ serve(async (req) => {
           factCount: validFacts.length,
         };
         controller.enqueue(encoder.encode(JSON.stringify(countryResult) + '\n'));
-        console.log(`[bulk-generate-facts] Sent result for ${country}: ${validFacts.length} facts`);
+        console.info(`[bulk-generate-facts] Sent result for ${country}: ${validFacts.length} facts`);
 
         // Rate limiting: small delay between requests
         await delay(500);

@@ -50,7 +50,7 @@ export default function NewsSection({ country }: NewsSectionProps) {
   if (isLoading) {
     return (
       <div className="mb-8" id="latest-news">
-        <h2 className="text-2xl font-bold mb-4">Latest News about {country}</h2>
+        <h2 className="text-2xl font-bold mb-4">Latest Highlights</h2>
         <NewsSkeleton />
       </div>
     );
@@ -59,7 +59,7 @@ export default function NewsSection({ country }: NewsSectionProps) {
   if (!news || news.length === 0) {
     return (
       <div className="mb-8" id="latest-news">
-        <h2 className="text-2xl font-bold mb-4">Latest News about {country}</h2>
+        <h2 className="text-2xl font-bold mb-4">Latest Highlights</h2>
         <Card className="p-6 border-dashed">
           <div className="flex items-center justify-center text-muted-foreground gap-2">
             <AlertCircle className="h-5 w-5" />
@@ -72,7 +72,7 @@ export default function NewsSection({ country }: NewsSectionProps) {
 
   return (
     <div className="mb-8" id="latest-news">
-      <h2 className="text-2xl font-bold mb-4">Latest News about {country}</h2>
+      <h2 className="text-2xl font-bold mb-4">Latest Highlights</h2>
       <div className="space-y-3">
         {news.map((item, index) => {
           const publishedDate = item.published_at
