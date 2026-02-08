@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import PreFooterCTA from "@/components/layout/PreFooterCTA";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Globe, Users, Mountain, Zap, MapPin } from "lucide-react";
@@ -352,6 +353,7 @@ const TheWorld = () => {
         />
       )}
 
+      <PreFooterCTA />
       <Footer />
     </div>
   );

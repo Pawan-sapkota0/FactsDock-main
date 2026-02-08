@@ -38,7 +38,7 @@ const Footer = () => {
                 alt="FactsDock Logo"
                 className="h-8 w-8"
               />
-              <span className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
                 FactsDock
               </span>
             </div>

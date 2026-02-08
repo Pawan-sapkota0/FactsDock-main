@@ -1,54 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useEffect, useState, useCallback } from "react";
 import logger from "@/lib/logger";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  getCurrentAdminUser,
-  AdminUser,
-  AdminPermission,
-} from "@/lib/admin-auth";
+import { Loader2, AlertCircle, LogOut } from "lucide-react";
+import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useUserAuth } from "@/context/UserAuthContext";
+import { AdminPermission } from "@/lib/admin-auth";
 
 interface AdminGuardProps {
   children: React.ReactNode;
   requiredPermission?: AdminPermission;
 }
-
-/**
- * Helper: Create timeout promise that rejects after N milliseconds
- */
-const createTimeoutPromise = (ms: number): Promise<never> => {
-  return new Promise((_, reject) => {
-    setTimeout(() => reject(new Error(`Operation timeout after ${ms}ms`)), ms);
-  });
-};
-
-/**
- * Helper: Retry logic with exponential backoff
- * Retries up to 2 times with 1s, then 2s delays
- */
-const withRetry = async <T,>(
-  fn: () => Promise<T>,
-  maxRetries: number = 2,
-): Promise<T> => {
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      if (attempt < maxRetries) {
-        const delay = Math.pow(1000, attempt + 1); // 1s, 2s
-        logger.debug(
-          `[AdminGuard] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`,
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
-  }
-  throw lastError;
-};
 
 const AdminGuard: React.FC<AdminGuardProps> = ({
   children,
@@ -56,327 +17,286 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [notAdmin, setNotAdmin] = useState(false);
-  const [insufficientPermissions, setInsufficientPermissions] = useState(false);
-  const [userInfo, setUserInfo] = useState<{
-    id?: string;
-    email?: string;
-    role?: string;
-  } | null>(null);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
+  const {
+    user: adminUser,
+    loading: authLoading,
+    error: authError,
+    checkPermission,
+  } = useAdminAuth();
+
+  const {
+    user: userSession,
+    loading: userLoading,
+    sessionRestored,
+    logout: userLogout,
+  } = useUserAuth();
+
+  type AuthState = "loading" | "authorized" | "denied" | "error";
+  const [state, setState] = useState<AuthState>("loading");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  /**
+   * Handle non-admin user logout
+   * Uses UserAuthContext logout, not AdminAuthContext
+   * This ensures normal users can logout without special admin handling
+   */
+  const handleLogout = useCallback(async () => {
+    try {
+      setIsLoggingOut(true);
+      await userLogout();
+      logger.debug("[AdminGuard] User logged out successfully");
+      navigate("/auth/login", { replace: true });
+    } catch (err) {
+      logger.error("[AdminGuard] Logout failed:", err);
+      // Fallback: redirect anyway
+      window.location.href = "/auth/login";
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [userLogout, navigate]);
+
+  /**
+   * THREE-PHASE AUTHORIZATION CHECK
+   *
+   * Phase 1: Wait for cached session to restore (sessionRestored = true)
+   *   - User session loads from localStorage (~0-100ms)
+   *   - SessionRestoreLoader shows skeleton during this
+   *   - Admin checks do NOT block this phase
+   *
+   * Phase 2: Session restored, check if user is admin (authLoading completes)
+   *   - Queries admins table via RLS
+   *   - Very fast if admin, returns null if not
+   *   - No flicker, no messages
+   *
+   * Phase 3: Authorization decision
+   *   - Admin + has permission → Render children
+   *   - Not admin → Show denial message (keep user logged in)
+   *   - Error → Show error message
+   */
   useEffect(() => {
     let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const checkAuth = async () => {
-      try {
+    // Dev bypass for testing
+    if (import.meta.env.DEV && import.meta.env.VITE_ADMIN_BYPASS === "true") {
+      logger.debug("[AdminGuard] Dev bypass enabled");
+      if (!cancelled) {
+        setState("authorized");
         setError(null);
-
-        // Dev bypass: set VITE_ADMIN_BYPASS=true in your local env to skip auth checks
-        if (
-          import.meta.env.DEV &&
-          import.meta.env.VITE_ADMIN_BYPASS === "true"
-        ) {
-          logger.debug("[AdminGuard] dev bypass enabled");
-          if (!cancelled) {
-            setAuthorized(true);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Wrap auth check with timeout (60 seconds)
-        await Promise.race([
-          withRetry(async () => {
-            // Check if user is authenticated with Supabase
-            const {
-              data: { session },
-            } = await supabase.auth.getSession();
-
-            if (!session?.user) {
-              logger.debug(
-                "[AdminGuard] no session found, redirecting to login",
-              );
-              if (!cancelled && location.pathname !== "/admin/login") {
-                navigate("/admin/login", {
-                  state: { from: location.pathname },
-                  replace: true,
-                });
-              }
-              return;
-            }
-
-            // Attempt to refresh session if needed
-            try {
-              await supabase.auth.refreshSession();
-            } catch (refreshError) {
-              logger.warn(
-                "[AdminGuard] Session refresh attempt failed:",
-                refreshError,
-              );
-              // Continue anyway, getSession above should have valid session
-            }
-
-            // Get admin user from database
-            const { data: admins, error } = await supabase
-              .from("admins")
-              .select("id, email, role, permissions, created_at, is_active")
-              .eq("id", session.user.id)
-              .limit(1);
-
-            if (error || !admins || admins.length === 0) {
-              logger.warn("[AdminGuard] user is not an admin");
-              setUserInfo({
-                id: session.user.id,
-                email: session.user.email || "unknown",
-              });
-              setNotAdmin(true);
-              if (!cancelled) setLoading(false);
-              return;
-            }
-
-            const adminRecord = admins[0] as Record<string, unknown>;
-
-            // Check if user is active
-            if (!(adminRecord.is_active as boolean)) {
-              logger.warn("[AdminGuard] user admin account is inactive");
-              setUserInfo({
-                id: String(adminRecord.id),
-                email: String(adminRecord.email || ""),
-                role: String(adminRecord.role || ""),
-              });
-              setNotAdmin(true);
-              if (!cancelled) setLoading(false);
-              return;
-            }
-
-            // Check if user has required permission
-            if (requiredPermission) {
-              const isSuperadmin = String(adminRecord.role) === "superadmin";
-              const perms =
-                (adminRecord.permissions as string[] | undefined) || [];
-              const hasPermission =
-                isSuperadmin || perms.includes(requiredPermission);
-
-              if (!hasPermission) {
-                logger.warn(
-                  `[AdminGuard] user lacks permission: ${requiredPermission}`,
-                );
-                setCurrentUser({
-                  id: String(adminRecord.id),
-                  email: String(adminRecord.email || ""),
-                  role: String(adminRecord.role || "editor") as
-                    | "admin"
-                    | "superadmin"
-                    | "editor",
-                  permissions: perms as AdminPermission[],
-                  createdAt: String(adminRecord.created_at),
-                  isActive: Boolean(adminRecord.is_active),
-                });
-                setInsufficientPermissions(true);
-                if (!cancelled) setLoading(false);
-                return;
-              }
-            }
-
-            // Get current admin user from service
-            const adminUser = await getCurrentAdminUser();
-            if (adminUser) {
-              setCurrentUser(adminUser);
-            }
-
-            if (!cancelled) {
-              setAuthorized(true);
-              setLoading(false);
-            }
-          }),
-          createTimeoutPromise(60000), // 60 second timeout
-        ]);
-      } catch (e) {
-        logger.error("[AdminGuard] auth check error:", e);
-        if (!cancelled) {
-          setError(
-            e instanceof Error ? e.message : "Authentication check failed",
-          );
-          setLoading(false);
-
-          // If timeout or repeated failures, redirect to login with error state
-          if (
-            location.pathname !== "/admin/login" &&
-            location.pathname !== "/"
-          ) {
-            timeoutId = setTimeout(() => {
-              if (!cancelled) {
-                navigate("/admin/login", {
-                  state: {
-                    from: location.pathname,
-                    error: "Session verification failed. Please log in again.",
-                  },
-                  replace: true,
-                });
-              }
-            }, 2000); // Give user time to see error
-          }
-        }
       }
-    };
+      return;
+    }
 
-    checkAuth();
+    // STEP 1: Wait for user session to restore
+    // Don't check admin status until user session is ready
+    if (!sessionRestored) {
+      logger.debug("[AdminGuard] Waiting for user session to restore...");
+      if (!cancelled) {
+        setState("loading");
+      }
+      return;
+    }
+
+    // STEP 2: User session is ready, now check admin status
+    // Still loading admin check? Show loading
+    if (authLoading) {
+      logger.debug("[AdminGuard] User session ready, checking admin status...");
+      if (!cancelled) {
+        setState("loading");
+      }
+      return;
+    }
+
+    // Error from AdminAuthContext
+    if (authError) {
+      logger.error("[AdminGuard] Admin auth error:", authError);
+      if (!cancelled) {
+        setState("error");
+        setError("Failed to verify admin status");
+      }
+      return;
+    }
+
+    // STEP 3: User session ready + admin check done. Now evaluate authorization
+    // NOT an admin user - deny access but KEEP user logged in
+    if (!adminUser) {
+      logger.debug(
+        "[AdminGuard] User not admin - access denied (user stays logged in)",
+        {
+          userEmail: userSession?.email,
+        },
+      );
+      if (!cancelled) {
+        setState("denied");
+        setError(null);
+      }
+      return;
+    }
+
+    // Check permission if required
+    if (requiredPermission) {
+      const hasPermission = checkPermission(requiredPermission);
+      if (!hasPermission) {
+        logger.warn("[AdminGuard] Missing permission:", requiredPermission);
+        if (!cancelled) {
+          setState("denied");
+          setError(`Missing permission: ${requiredPermission}`);
+        }
+        return;
+      }
+    }
+
+    // Authorized
+    logger.debug("[AdminGuard] Admin authorized");
+    if (!cancelled) {
+      setState("authorized");
+      setError(null);
+    }
 
     return () => {
       cancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [navigate, location, requiredPermission]);
+  }, [
+    sessionRestored,
+    authLoading,
+    authError,
+    adminUser,
+    requiredPermission,
+    checkPermission,
+    userSession?.email,
+  ]);
 
-  // Loading state
-  if (loading) {
+  /**
+   * Clear admin verification pending flag when denied
+   * This effect runs at top-level (not conditionally)
+   */
+  useEffect(() => {
+    if (state === "denied") {
+      const wasAdminLoginAttempt =
+        localStorage.getItem("wf:adminVerificationPending") === "true";
+
+      if (wasAdminLoginAttempt) {
+        logger.debug(
+          "[AdminGuard] Clearing admin verification pending flag on denial",
+        );
+        localStorage.removeItem("wf:adminVerificationPending");
+      }
+    }
+  }, [state]);
+
+  // Loading state - smooth skeleton, no messages
+  if (state === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">
-            Verifying admin access...
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (state === "error") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex max-w-md flex-col gap-4 rounded-lg border border-destructive/50 bg-destructive/10 p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1">
+              <h2 className="font-semibold text-destructive">Access Error</h2>
+              <p className="mt-1 text-sm text-destructive/80">{error}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate("/admin/login")}
+            className="mt-4 rounded bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Denied state - show permission denied message with user info
+  if (state === "denied") {
+    // Check if this is a failed admin login attempt
+    const wasAdminLoginAttempt =
+      localStorage.getItem("wf:adminVerificationPending") === "true";
+
+    const denialMessage = wasAdminLoginAttempt
+      ? "You do not have permission to access the admin panel. You are signed in as a regular user. If you believe you should have admin access, please contact the administrator."
+      : "You do not have permission to access this area. You are signed in as a user.";
+
+    return (
+      <div className="flex h-screen items-center justify-center bg-background p-4">
+        <div className="flex max-w-md flex-col gap-6 rounded-lg border border-warning/50 bg-warning/10 p-8">
+          {/* Header */}
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 flex-shrink-0 text-warning mt-0.5" />
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-foreground">
+                {wasAdminLoginAttempt
+                  ? "Admin Access Denied"
+                  : "You Don't Have Admin Access"}
+              </h2>
+            </div>
+          </div>
+
+          {/* User Info */}
+          <div className="space-y-2 bg-background/50 rounded p-4">
+            <p className="text-sm text-muted-foreground">
+              You are signed in as:
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {userSession?.email || "User"}
+            </p>
+          </div>
+
+          {/* Message */}
+          <p className="text-sm text-muted-foreground">{denialMessage}</p>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate("/")}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Go to Home
+            </button>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Logging out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Footer help text */}
+          <p className="text-xs text-muted-foreground text-center">
+            If you believe you should have admin access, please contact the
+            administrator.
           </p>
-          {error && (
-            <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 max-w-xs text-center">
-              {error}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Not an admin
-  if (notAdmin && userInfo) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-xl w-full space-y-6 p-6 border rounded-lg shadow-sm bg-card">
-          <div className="flex gap-3">
-            <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Admin Access Required
-              </h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                Your account is not configured as an admin.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-muted p-4 rounded space-y-2 text-sm">
-            <p>
-              <span className="font-semibold">Signed in as:</span>{" "}
-              {userInfo.email}
-            </p>
-            {userInfo.id && (
-              <p>
-                <span className="font-semibold">User ID:</span> {userInfo.id}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground pt-2">
-              Contact a superadmin to grant you admin access, or run this SQL in
-              Supabase:
-            </p>
-            <pre className="bg-background p-2 rounded text-xs font-mono mt-2 overflow-auto">
-              INSERT INTO admins (id, email, created_at) VALUES ('{userInfo.id}
-              ', '{userInfo.email}', now());
-            </pre>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate("/")}
-              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
-            >
-              Go Home
-            </button>
-            <button
-              onClick={() => {
-                supabase.auth.signOut();
-                navigate("/");
-              }}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Insufficient permissions
-  if (insufficientPermissions && currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-xl w-full space-y-6 p-6 border rounded-lg shadow-sm bg-card">
-          <div className="flex gap-3">
-            <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Insufficient Permissions
-              </h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                You don't have permission to access this area.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-muted p-4 rounded space-y-2 text-sm">
-            <p>
-              <span className="font-semibold">User:</span> {currentUser.email}
-            </p>
-            <p>
-              <span className="font-semibold">Role:</span> {currentUser.role}
-            </p>
-            {currentUser.permissions.length > 0 && (
-              <p>
-                <span className="font-semibold">Permissions:</span>{" "}
-                {currentUser.permissions.join(", ")}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground pt-2">
-              Contact a superadmin to grant you the required permissions.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate("/admin")}
-              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
-            >
-              Go to Dashboard
-            </button>
-            <button
-              onClick={() => navigate("/")}
-              className="flex-1 px-4 py-2 border rounded hover:bg-muted transition-colors text-sm font-medium"
-            >
-              Go Home
-            </button>
-          </div>
         </div>
       </div>
     );
   }
 
   // Authorized - render children
-  if (authorized) {
-    return <>{children}</>;
-  }
-
-  // Fallback
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <p className="text-muted-foreground">Checking permissions...</p>
-    </div>
-  );
+  return <>{children}</>;
 };
 
 export default AdminGuard;

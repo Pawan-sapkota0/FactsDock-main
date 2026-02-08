@@ -15,7 +15,16 @@ export const SUPABASE_AVAILABLE = Boolean(supabaseUrl && supabaseAnonKey);
 let supabaseClient: unknown = null;
 
 if (SUPABASE_AVAILABLE) {
-  supabaseClient = createClient(supabaseUrl as string, supabaseAnonKey as string);
+  // Configure Supabase client with persistent storage for auth sessions
+  // This ensures sessions survive page reloads and navigation
+  supabaseClient = createClient(supabaseUrl as string, supabaseAnonKey as string, {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  });
 } else {
   // Use centralized logger so production builds do not leak messages at module init
   try {

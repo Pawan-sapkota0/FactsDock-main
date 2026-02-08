@@ -873,9 +873,9 @@ export async function fetchCountryFacts(
 export async function generateQuizForTopic(
   topic?: string,
   questionCount = 10,
-  opts?: { ttl?: number; sourceType?: string; fact_type_slug?: string; force?: boolean }
+  opts?: { ttl?: number; sourceType?: string; fact_type_slug?: string; difficulty?: string; force?: boolean }
 ) {
-  const key = `quiz:${(topic || 'world').toLowerCase()}:${questionCount}:${opts?.sourceType || opts?.fact_type_slug || ''}`;
+  const key = `quiz:${(topic || 'world').toLowerCase()}:${questionCount}:${opts?.sourceType || opts?.fact_type_slug || ''}:${opts?.difficulty || ''}`;
   // Respect force flag to bypass cache when caller requests fresh data
   if (!opts?.force) {
     const mem = memoryCache.get(key);
@@ -893,7 +893,7 @@ export async function generateQuizForTopic(
       // prefer statuses that indicate public visibility
       const allowedStatuses = ['approved', 'published'];
       // Build query - EXCLUDE random quizzes (is_random=false OR is_random IS NULL)
-      let q = supabase.from('quizzes').select('id, questions, country, status, is_random, fact_type_id');
+      let q = supabase.from('quizzes').select('id, questions, country, status, is_random, fact_type_id, difficulty');
       // filter by topic/country if provided. For country-scoped quizzes use a
       // case-insensitive partial match (ilike) so slugs or partial names match DB values.
       if (topic) {
@@ -909,6 +909,10 @@ export async function generateQuizForTopic(
         } else {
           q = q.eq('country', topic);
         }
+      }
+      // Filter by difficulty if provided
+      if (opts?.difficulty) {
+        q = q.eq('difficulty', opts.difficulty);
       }
       // If caller requested a specific sourceType/fact_type_slug, resolve and filter by fact_type_id
       let factTypeId: string | null = null;
@@ -989,48 +993,52 @@ export async function generateQuizForTopic(
 
 /**
  * Fetch random quizzes from the server-side Edge Function
- * Uses SQL ORDER BY RANDOM() for efficient server-side selection
- * Returns a fresh random set each time (no caching)
+ * Caches results with TTL like facts
+ * Returns fresh data each request by default
  */
 export async function generateRandomQuiz(questionCount = 10, opts?: { ttl?: number; force?: boolean }) {
-  // When Supabase is available, use the server-side fetch-random-quiz function
-  if (SUPABASE_AVAILABLE) {
-    try {
-      const safeCount = Math.max(1, Math.min(Number(questionCount) || 10, 100));
-      const res = await supabase.functions.invoke('fetch-random-quiz', {
-        body: { count: safeCount },
-      });
-      if (res.error) {
-        // Log error internally, return empty array
-        logger.error('[generateRandomQuiz] Error:', res.error);
-        return [];
-      }
-      return res.data?.data || [];
-    } catch (e) {
-      // Log error internally, fallback to mock data
-      logger.error('[generateRandomQuiz] Exception:', e);
-      return [];
-    }
+  if (!SUPABASE_AVAILABLE) {
+    logger.error('[generateRandomQuiz] Supabase not available');
+    return [];
   }
 
-  // Fallback for local development when Supabase isn't available
-  const body = { type: 'quiz', country: 'random', questionCount };
-  const result = await callGenerateContent(body);
-
-  // Normalize quiz items
-  const normalized = (result || []).map((q: any) => {
-    const obj: any = { ...q };
-    if (typeof obj.correctAnswer === 'number' && Array.isArray(obj.options)) {
-      obj.answer = obj.options[obj.correctAnswer];
-    } else if (typeof obj.correctAnswer === 'string') {
-      obj.answer = obj.correctAnswer;
-    } else if (obj.answer) {
-      // already present
+  try {
+    const safeCount = Math.max(1, Math.min(Number(questionCount) || 10, 100));
+    const cacheKeyStr = `random-quiz:${safeCount}`;
+    
+    // Check cache if not forcing refresh
+    if (!opts?.force) {
+      const cached = getLocalCache('quiz', cacheKeyStr);
+      if (cached) {
+        return cached;
+      }
     }
-    return obj;
-  });
-
-  return normalized;
+    
+    const res = await supabase.functions.invoke('fetch-random-quiz', {
+      body: { count: safeCount },
+    });
+    
+    if (res.error) {
+      logger.error('[generateRandomQuiz] Error:', res.error);
+      return [];
+    }
+    
+    // Extract data from response
+    let data = res.data?.data || res.data || [];
+    if (!Array.isArray(data)) {
+      data = [];
+    }
+    
+    // Cache results with TTL (default 1 hour)
+    if (data.length > 0) {
+      setLocalCache('quiz', cacheKeyStr, data, opts?.ttl || 3600);
+    }
+    
+    return data;
+  } catch (e) {
+    logger.error('[generateRandomQuiz] Exception:', e);
+    return [];
+  }
 }
 
 // ============================================================

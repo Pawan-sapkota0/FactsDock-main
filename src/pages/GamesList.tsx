@@ -313,10 +313,8 @@ const GamesList = () => {
 
                       {/* Play Button */}
                       <button
-                        onClick={() =>
-                          navigate(`/games/${categoryId}/${game.id}`)
-                        }
-                        className="ml-auto px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm"
+                        disabled
+                        className="ml-auto px-4 py-2 bg-muted text-muted-foreground rounded-lg cursor-not-allowed opacity-60 font-medium text-sm"
                       >
                         Play Now
                       </button>

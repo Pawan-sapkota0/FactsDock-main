@@ -75,7 +75,7 @@ const Contact = () => {
           <div className="max-w-2xl mx-auto space-y-8">
             <div className="text-center">
               <h1 className="text-5xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
                   Contact Us
                 </span>
               </h1>

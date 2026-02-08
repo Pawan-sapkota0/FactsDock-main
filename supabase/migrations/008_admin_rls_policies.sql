@@ -4,13 +4,15 @@
 ALTER TABLE IF EXISTS admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS admin_activity_logs ENABLE ROW LEVEL SECURITY;
 
--- Admins table: only superadmins and the user themselves can view
+-- Admins table: allow any authenticated user to check their own admin status (for login verification)
+-- Superadmins can view all admin records for management purposes
+CREATE POLICY "Users view own admin record" ON admins
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL AND auth.uid() = id);
+
 CREATE POLICY "Superadmins view all admins" ON admins
   FOR SELECT
-  USING (auth.uid() IS NOT NULL AND (
-    auth.uid() IN (SELECT id FROM admins WHERE role = 'superadmin' AND is_active)
-    OR auth.uid() = id
-  ));
+  USING (auth.uid() IS NOT NULL AND auth.uid() IN (SELECT id FROM admins WHERE role = 'superadmin' AND is_active));
 
 CREATE POLICY "Superadmins manage admins" ON admins
   FOR ALL

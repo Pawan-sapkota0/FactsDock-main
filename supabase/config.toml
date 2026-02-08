@@ -40,15 +40,15 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "http://127.0.0.1:5173"
-additional_redirect_urls = ["https://localhost:5173"]
+site_url = "http://127.0.0.1:8080"
+additional_redirect_urls = ["http://localhost:8080", "http://127.0.0.1:8080"]
 jwt_expiry = 3600
 enable_signup = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 [functions.fetch-country-data]
 verify_jwt = false

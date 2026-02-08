@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import PreFooterCTA from "@/components/layout/PreFooterCTA";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -611,9 +612,7 @@ const FunFacts = () => {
                   size="lg"
                   className="transform transition-transform duration-200 ease-out hover:scale-105 hover:shadow-[0_12px_30px_rgba(99,102,241,0.12)]"
                   onClick={() => {
-                    // open inline quiz modal (random)
-                    setQuizModalTopic(undefined);
-                    setOpenQuizModal(true);
+                    navigate("/quiz/play/fun");
                   }}
                 >
                   Play Quiz
@@ -685,6 +684,7 @@ const FunFacts = () => {
         </DialogContent>
       </Dialog>
 
+      <PreFooterCTA />
       <Footer />
       <React.Suspense fallback={<div />}>
         <QuizModal

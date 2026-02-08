@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
   CardContent,
@@ -11,98 +12,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import {
-  signInWithEmailPassword,
-  signInWithGoogle,
-  getCurrentAdminUser,
-} from "@/lib/admin-auth";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { AlertCircle, Loader2, Eye, EyeOff, Mail, Chrome } from "lucide-react";
-
-type AuthMethod = "select" | "email-password" | "google";
-type Step = "method-select" | "credentials" | "verifying" | "success" | "error";
+import { cleanAdminLoginSession } from "@/lib/admin-auth";
+import logger from "@/lib/logger";
+import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, loading: authLoading } = useAdminAuth();
 
-  // Form state
-  const [authMethod, setAuthMethod] = useState<AuthMethod>("select");
-  const [step, setStep] = useState<Step>("method-select");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if authenticated
+  // Redirect if already authenticated as admin
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      navigate("/admin");
+      logger.debug("[AdminLogin] Already authenticated, redirecting to /admin");
+      navigate("/admin", { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Handle OAuth redirect
-  useEffect(() => {
-    const checkOAuthCallback = async () => {
-      const hash = window.location.hash;
-      const params = new URLSearchParams(window.location.search);
-
-      // Check for OAuth error - sanitize to prevent XSS
-      const errorParam = params.get("error");
-      if (errorParam) {
-        // Only accept specific, known error codes to prevent XSS
-        const ALLOWED_ERRORS = [
-          "access_denied",
-          "server_error",
-          "timeout",
-          "user_cancelled",
-        ];
-        if (ALLOWED_ERRORS.includes(String(errorParam).toLowerCase())) {
-          setError("OAuth login failed. Please try again.");
-        } else {
-          // Unknown error - show generic message
-          setError("An authentication error occurred. Please try again.");
-        }
-        setStep("error");
-        return;
-      }
-
-      // Check for OAuth token in hash or localStorage (Supabase sets it)
-      if (hash.includes("access_token")) {
-        setStep("verifying");
-        try {
-          const adminUser = await getCurrentAdminUser();
-          if (adminUser) {
-            setStep("success");
-            toast({
-              title: "Success!",
-              description: "You are now logged in as an admin.",
-            });
-            setTimeout(() => navigate("/admin"), 2500);
-          } else {
-            setError("Access Denied: You do not have admin permissions");
-            setStep("error");
-          }
-        } catch (err: unknown) {
-          const e = err as Record<string, unknown> | undefined;
-          const msg =
-            (e && (e.message as string)) ||
-            String(err || "Failed to verify login");
-          setError(msg);
-          setStep("error");
-        }
-      } else if (hash.includes("error")) {
-        setError("OAuth login failed. Please try again.");
-        setStep("error");
-      }
-    };
-
-    checkOAuthCallback();
-  }, [navigate, toast]);
-
-  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -114,57 +48,181 @@ export default function Login() {
       return;
     }
 
-    setStep("verifying");
-    const { user, error: authError } = await signInWithEmailPassword(
-      email,
-      password,
-    );
+    try {
+      logger.debug("[AdminLogin] Attempting admin login for:", email);
 
-    if (authError) {
-      const errorMessage =
-        (authError as Record<string, unknown>)?.message ||
-        "Invalid email or password";
-      setError(String(errorMessage));
-      setStep("error");
-      setLoading(false);
-    } else if (user) {
-      setStep("success");
+      // STEP 1: Pre-login session cleanup
+      // If user is logged in but NOT admin, sign them out
+      // This allows same email to be used for both user and admin accounts
+      logger.debug("[AdminLogin] Checking if existing session is admin...");
+      await cleanAdminLoginSession();
+
+      // STEP 2: Set verification pending flag
+      // This tells AdminAuthContext to expect admin verification
+      localStorage.setItem("wf:adminVerificationPending", "true");
+      logger.debug("[AdminLogin] Set verification pending flag");
+
+      // STEP 3: Attempt Supabase auth with cleaned session
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        },
+      );
+
+      if (authError) {
+        // Clear pending flag on auth failure
+        localStorage.removeItem("wf:adminVerificationPending");
+        logger.error("[AdminLogin] Auth error:", authError.message);
+        setError(authError.message || "Invalid email or password");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.session) {
+        // Clear pending flag on failure
+        localStorage.removeItem("wf:adminVerificationPending");
+        logger.error("[AdminLogin] No session returned");
+        setError("Login failed - no session");
+        setLoading(false);
+        return;
+      }
+
+      logger.debug(
+        "[AdminLogin] Session created, verifying admin status using UUID...",
+      );
+
+      // STEP 4: Get the logged-in user's UUID from session
+      const userUuid = data.session.user.id;
+      logger.debug("[AdminLogin] User UUID from session:", userUuid);
+
+      // STEP 5: Query admins table using auth_user_id (UUID), not email
+      // RLS policy ensures only this user can query their own admin record
+      // Filter by auth_user_id and is_active = true
+      try {
+        const { data: admin, error: adminError } = await supabase
+          .from("admins")
+          .select("id, email, role, is_active, auth_user_id")
+          .eq("auth_user_id", userUuid)
+          .eq("is_active", true)
+          .single();
+
+        if (adminError) {
+          // Not found or RLS denied - user is not an admin or not active
+          logger.warn("[AdminLogin] Admin verification failed:", {
+            code: adminError.code,
+            message: adminError.message,
+            userUuid,
+            email,
+          });
+
+          if (adminError.code === "42P17") {
+            const recursionMessage =
+              "Database configuration issue: RLS policies need to be updated. " +
+              "Please contact your administrator.";
+
+            logger.error(
+              "[AdminLogin] RLS Infinite Recursion Error:",
+              recursionMessage,
+            );
+
+            // Sign out
+            const { error: signOutError } = await supabase.auth.signOut();
+            if (signOutError) {
+              logger.warn("[AdminLogin] Sign out error:", signOutError.message);
+            }
+
+            // Clear pending flag
+            localStorage.removeItem("wf:adminVerificationPending");
+
+            setError(recursionMessage);
+            setLoading(false);
+            return;
+          }
+
+          // Sign out non-admin user immediately
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) {
+            logger.warn("[AdminLogin] Sign out error:", signOutError.message);
+          }
+
+          // Clear pending flag
+          localStorage.removeItem("wf:adminVerificationPending");
+
+          // Show error and stay on login page
+          setError("You do not have permission to access this area");
+          setLoading(false);
+          return;
+        }
+
+        if (!admin) {
+          // Query succeeded but no record found
+          logger.warn("[AdminLogin] No admin record found for UUID:", userUuid);
+
+          // Sign out non-admin user
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) {
+            logger.warn("[AdminLogin] Sign out error:", signOutError.message);
+          }
+
+          // Clear pending flag
+          localStorage.removeItem("wf:adminVerificationPending");
+
+          setError("You do not have permission to access this area");
+          setLoading(false);
+          return;
+        }
+
+        // ✅ ADMIN VERIFIED - auth_user_id matches session UUID and is_active = true
+        logger.debug(
+          "[AdminLogin] Admin verified using UUID:",
+          admin.email,
+          "Role:",
+          admin.role,
+        );
+      } catch (verifyErr) {
+        logger.error("[AdminLogin] Admin verification error:", verifyErr);
+
+        // Sign out on any verification error
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          logger.warn("[AdminLogin] Sign out error:", signOutError.message);
+        }
+
+        // Clear pending flag
+        localStorage.removeItem("wf:adminVerificationPending");
+
+        // Show error
+        setError(
+          verifyErr instanceof Error
+            ? verifyErr.message
+            : "Admin verification failed",
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Clear pending flag
+      localStorage.removeItem("wf:adminVerificationPending");
+
       toast({
-        title: "Success!",
-        description: `Welcome back, ${user.email}!`,
+        title: "Signed In",
+        description: "Welcome Admin! Redirecting...",
       });
-      setTimeout(() => navigate("/admin"), 2500);
-    } else {
-      setError("Access Denied: You do not have admin permissions");
-      setStep("error");
+
+      // Navigate to admin dashboard
+      logger.debug(
+        "[AdminLogin] Admin login successful, redirecting to /admin",
+      );
+      setLoading(false);
+      navigate("/admin", { replace: true });
+    } catch (err) {
+      // Clear pending flag on any exception
+      localStorage.removeItem("wf:adminVerificationPending");
+      logger.error("[AdminLogin] Login error:", err);
+      setError(err instanceof Error ? err.message : "Login failed");
       setLoading(false);
     }
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    setStep("verifying");
-
-    const { error: oauthError } = await signInWithGoogle();
-
-    if (oauthError) {
-      const errorMessage =
-        (oauthError as Record<string, unknown>)?.message ||
-        "Failed to initiate Google login";
-      setError(String(errorMessage));
-      setStep("error");
-      setLoading(false);
-    }
-    // If successful, OAuth will redirect to Supabase which redirects back to us
-  };
-
-  const handleBackToMethodSelect = () => {
-    setAuthMethod("select");
-    setStep("method-select");
-    setEmail("");
-    setPassword("");
-    setError(null);
   };
 
   if (authLoading) {
@@ -186,183 +244,75 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
-          <CardDescription>Sign in to manage FactsDock content</CardDescription>
+          <CardTitle>Admin Panel</CardTitle>
+          <CardDescription>Sign in with your admin credentials</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Error Alert */}
-          {error && step === "error" && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {/* Success State */}
-          {step === "success" && (
-            <div className="space-y-4 text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-2xl">✓</span>
-              </div>
-              <p className="text-green-700 font-medium">Login successful!</p>
-              <p className="text-sm text-gray-600">Redirecting...</p>
-            </div>
-          )}
-
-          {/* Verifying State */}
-          {step === "verifying" && (
-            <div className="space-y-4 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto" />
-              <p className="text-sm text-gray-600">Verifying your login...</p>
-            </div>
-          )}
-
-          {/* Method Selection */}
-          {step === "method-select" && authMethod === "select" && (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-700 mb-4">
-                Choose a login method:
-              </p>
-
-              <Button
-                onClick={() => {
-                  setAuthMethod("email-password");
-                  setStep("credentials");
-                }}
-                variant="outline"
-                className="w-full justify-start h-12 border-2"
-              >
-                <Mail className="w-5 h-5 mr-3" />
-                Email & Password
-              </Button>
-
-              <Button
-                onClick={handleGoogleLogin}
-                variant="outline"
-                className="w-full justify-start h-12 border-2"
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                placeholder="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-              >
-                <Chrome className="w-5 h-5 mr-3" />
-                {loading ? "Connecting..." : "Google Account"}
-              </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => {
-                  setAuthMethod("email-password");
-                  setStep("credentials");
-                }}
-                variant="ghost"
-                className="w-full text-indigo-600 hover:text-indigo-700"
-              >
-                Other login method
-              </Button>
+                required
+              />
             </div>
-          )}
 
-          {/* Email & Password Form */}
-          {step === "credentials" && authMethod === "email-password" && (
-            <form onSubmit={handleEmailPasswordLogin} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Email
-                </label>
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Password</label>
+              <div className="relative">
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
                   required
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    disabled={loading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign in"
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                onClick={handleBackToMethodSelect}
-                variant="ghost"
-                className="w-full"
-                disabled={loading}
-              >
-                Back
-              </Button>
-
-              {/* Forgot Password Link */}
-              <div className="text-center text-sm">
                 <button
                   type="button"
-                  className="text-indigo-600 hover:underline"
-                  disabled={loading}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  Forgot password?
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
-            </form>
-          )}
-
-          {/* Error State - Retry Options */}
-          {step === "error" && (
-            <div className="space-y-4">
-              <Button onClick={handleBackToMethodSelect} className="w-full">
-                Try Again
-              </Button>
             </div>
-          )}
+
+            {/* Submit */}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+
+          {/* Info */}
+          <p className="mt-4 text-xs text-gray-500 text-center">
+            Only authorized administrators can access this panel.
+          </p>
         </CardContent>
       </Card>
     </div>

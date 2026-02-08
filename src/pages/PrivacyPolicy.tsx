@@ -20,11 +20,25 @@ const PrivacyPolicy: React.FC = () => {
           </p>
 
           <h2 className="text-xl font-semibold">Information We Collect</h2>
-          <p>
-            We may collect non-personal information such as browser type, device
-            information, pages visited, and time spent on the website. This data
-            is used only to improve user experience and performance. We do not
-            collect personal information unless you voluntarily submit it.
+          <p>We collect information in two categories:</p>
+          <ul className="list-disc list-inside space-y-2 ml-4">
+            <li>
+              <strong>Non-Personal Information:</strong> Browser type, device
+              information, pages visited, time spent on the website, and general
+              usage analytics.
+            </li>
+            <li>
+              <strong>
+                User Account Information (if you create an account):
+              </strong>{" "}
+              When you create a user account, we collect your email address,
+              username, and password (encrypted). We may also store your quiz
+              progress, achievement levels, and performance data.
+            </li>
+          </ul>
+          <p className="mt-4">
+            This data is used to improve user experience, personalize content,
+            track learning progress, and analyze performance metrics.
           </p>
 
           <h2 className="text-xl font-semibold">Local Storage & Caching</h2>
@@ -46,12 +60,37 @@ const PrivacyPolicy: React.FC = () => {
             complete security.
           </p>
 
+          <h2 className="text-xl font-semibold">
+            User Accounts & Authentication
+          </h2>
+          <p>
+            If you create a user account, your login credentials and account
+            data are securely stored in our database (Supabase). We implement
+            industry-standard encryption for passwords. Your account data is
+            used to track quiz progress, achievement levels, and personalize
+            your learning experience. You can delete your account at any time
+            through your account settings.
+          </p>
+
+          <h2 className="text-xl font-semibold">
+            Quiz Progress & Learning Data
+          </h2>
+          <p>
+            When you participate in level-wise quizzes, we store your quiz
+            attempts, scores, correct/incorrect answers, completion time, and
+            achievement levels. This data helps us provide personalized learning
+            recommendations and track your progress over time. Only you can
+            access your own quiz history and performance data through your
+            account.
+          </p>
+
           <h2 className="text-xl font-semibold">Third-Party Services</h2>
           <p>
             We use third-party services including: Unsplash for gallery images,
             Google Generative AI for content assistance, weather APIs for
-            real-time data, and analytics services. These services may have
-            their own privacy policies that we recommend you review.
+            real-time data, Supabase for authentication and database storage,
+            and analytics services. These services may have their own privacy
+            policies that we recommend you review.
           </p>
 
           <h2 className="text-xl font-semibold">Cookies</h2>

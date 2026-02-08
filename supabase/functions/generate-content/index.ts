@@ -183,7 +183,7 @@ Example format:
         generated = gres;
       }
     } catch (e: unknown) {
-      console.error('Gemini generation error', e);
+      console.error('Gemini generation error:', e instanceof Error ? e.message : String(e));
       return new Response(JSON.stringify({ error: 'AI generation failed' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

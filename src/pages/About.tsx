@@ -13,7 +13,7 @@ const About = () => {
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="text-center">
               <h1 className="text-5xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
                   About FactsDock
                 </span>
               </h1>
@@ -115,14 +115,38 @@ const About = () => {
                     facts by category and subcategory.
                   </p>
                 </div>
-                <div>
+                <div className="pb-4 border-b border-border/50">
                   <h3 className="font-semibold text-lg mb-2 text-foreground">
                     Interactive Quizzes
                   </h3>
                   <p className="text-muted-foreground">
                     Test your knowledge with our engaging quiz system featuring
-                    both country-specific and random quizzes. Track your
-                    progress and learn while having fun.
+                    both country-specific and random quizzes. Our level-wise
+                    quiz structure adapts to your skill level, from beginner to
+                    expert.
+                  </p>
+                </div>
+                <div className="pb-4 border-b border-border/50">
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">
+                    User Accounts & Progress Tracking
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Create a user account to personalize your learning
+                    experience. Track your quiz progress across difficulty
+                    levels, earn achievements, and watch your learning
+                    statistics improve over time. Your account keeps all your
+                    data secure and synced across devices.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">
+                    Level-Based Learning
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Progress through different difficulty levels as you improve
+                    your knowledge. Start as a beginner and work your way up to
+                    expert level. Each level presents increasingly challenging
+                    questions to keep your learning engaging and rewarding.
                   </p>
                 </div>
               </CardContent>

@@ -176,7 +176,7 @@ Example format:
         generated = gres;
       }
     } catch (e: unknown) {
-      console.error('Gemini generation error', e);
+      console.error('Gemini generation error:', e instanceof Error ? e.message : String(e));
       return new Response(JSON.stringify({ error: 'AI generation failed' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -300,7 +300,7 @@ Example format:
       },
     });
   } catch (err) {
-    console.error('generate-facts error', err);
+    console.error('generate-facts error:', err instanceof Error ? err.message : String(err));
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

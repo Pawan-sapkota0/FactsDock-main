@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import PreFooterCTA from "@/components/layout/PreFooterCTA";
 import CategoryCard from "@/components/cards/CategoryCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -534,9 +535,7 @@ const WorldFacts = () => {
                   size="lg"
                   className="transform transition-transform duration-200 ease-out hover:scale-105 hover:shadow-[0_12px_30px_rgba(99,102,241,0.12)]"
                   onClick={() => {
-                    // open inline quiz modal (random)
-                    setQuizModalTopic(undefined);
-                    setOpenQuizModal(true);
+                    navigate("/quiz/play/world");
                   }}
                 >
                   Play Quiz
@@ -623,6 +622,7 @@ const WorldFacts = () => {
         </DialogContent>
       </Dialog>
 
+      <PreFooterCTA />
       <Footer />
       <React.Suspense fallback={<div />}>
         <QuizModal

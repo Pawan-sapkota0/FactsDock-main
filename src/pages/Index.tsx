@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import PreFooterCTA from "@/components/layout/PreFooterCTA";
 
 import SearchBar from "@/components/common/SearchBar";
 import { useNavigate, Link } from "react-router-dom";
@@ -424,6 +425,7 @@ const Index = () => {
         </section>
       </main>
 
+      <PreFooterCTA />
       <Footer />
     </div>
   );

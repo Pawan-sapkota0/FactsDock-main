@@ -23,7 +23,9 @@ const TermsAndConditions: React.FC = () => {
             FactsDock provides facts, quizzes, country data, galleries, and
             weather information for informational and entertainment purposes
             only. The website is provided as-is for personal, non-commercial
-            use.
+            use. You may create a user account to access personalized features
+            including quiz progress tracking, achievement levels, and learning
+            statistics.
           </p>
 
           <h2 className="text-xl font-semibold">Image Protection & Use</h2>
@@ -33,6 +35,29 @@ const TermsAndConditions: React.FC = () => {
             blocked mobile long-press). Images are provided under Unsplash's
             license terms. Users agree not to attempt to circumvent these
             protections for unauthorized copying or distribution.
+          </p>
+
+          <h2 className="text-xl font-semibold">
+            User Accounts & Responsibility
+          </h2>
+          <p>
+            If you create a user account, you are responsible for maintaining
+            the confidentiality of your login credentials and password. You
+            agree to provide accurate information during registration. You are
+            responsible for all activities that occur under your account.
+            FactsDock reserves the right to suspend or terminate accounts that
+            violate these terms.
+          </p>
+
+          <h2 className="text-xl font-semibold">Quiz System & Learning</h2>
+          <p>
+            FactsDock offers level-wise quizzes designed for learning and
+            assessment. Quiz questions, answers, and difficulty levels may be
+            generated or assisted by artificial intelligence. We do not
+            guarantee absolute accuracy of quiz content. Users should not rely
+            solely on our quizzes for formal education or certification. Quiz
+            scores and progress are recorded for logged-in users to track
+            learning achievements.
           </p>
 
           <h2 className="text-xl font-semibold">Content & Accuracy</h2>
@@ -69,10 +94,11 @@ const TermsAndConditions: React.FC = () => {
 
           <h2 className="text-xl font-semibold">Prohibited Activities</h2>
           <p>
-            Users must not: attempt unauthorized access, misuse services, scrape
-            or extract data (including images), bypass image protection
-            measures, engage in illegal activities, or violate any third-party
-            terms.
+            Users must not: attempt unauthorized access to other user accounts,
+            misuse services, scrape or extract data (including images), bypass
+            image protection measures, engage in illegal activities, violate any
+            third-party terms, share account credentials, or manipulate quiz
+            systems to artificially inflate scores.
           </p>
 
           <h2 className="text-xl font-semibold">Limitation of Liability</h2>

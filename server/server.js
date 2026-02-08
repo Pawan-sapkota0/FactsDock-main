@@ -13,56 +13,42 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Security headers with Helmet.js
-app.use(helmet());
-
-// Middleware: Block and log admin path discovery attempts (security through obscurity)
-const blockAdminDiscovery = (req, res, next) => {
-  const path = req.path.toLowerCase();
-  
-  // Block common admin discovery paths in production
-  if (process.env.NODE_ENV === 'production') {
-    const blockedPaths = [
-      '/admin',
-      '/admin/login',
-      '/admin/panel',
-      '/admin/dashboard',
-      '/administrator',
-      '/admin.php',
-      '/wp-admin',
-      '/api/admin',
-    ];
-    
-    if (blockedPaths.includes(path)) {
-      // Log suspicious activity
-      const ip = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
-      console.warn(`[Security] Blocked admin discovery attempt from IP: ${ip} at ${new Date().toISOString()}`);
-      
-      // Return 404 to hide that admin panel exists
-      return res.status(404).json({ error: 'Not found' });
-    }
-  }
-  
-  next();
-};
-
-app.use(blockAdminDiscovery);
-
-// Dynamic CSP directive with environment-based Supabase URL
-const supabaseUrl = process.env.SUPABASE_URL || 'https://bqijevhxrnekfsmvljrd.supabase.co';
-const supabaseHostname = new URL(supabaseUrl).hostname;
-
-app.use(
-  helmet.contentSecurityPolicy({
+// Comprehensive security headers with Helmet.js and additional configurations
+app.use(helmet({
+  contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", `https://${supabaseHostname}`],
+      connectSrc: ["'self'", "https:"],
+      fontSrc: ["'self'", "data:", "https:"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      childSrc: ["'none'"],
     },
-  })
-);
+  },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  xContentTypeOptions: true,
+  xFrameOptions: { action: "deny" },
+  xXssProtection: true,
+  strictTransportSecurity: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  next();
+});
 
 // Enforce HTTPS in production
 if (process.env.NODE_ENV === 'production') {
@@ -225,7 +211,90 @@ app.post('/api/admin/verify-token', verifyAdminToken, (req, res) => {
   });
 });
 
-// POST /api/auth/login-attempt
+// POST /api/admin/verify-login
+// Verify user is an admin during login flow using service role key
+// This happens AFTER Supabase auth succeeds, before redirecting to /admin
+// Verifies by auth_user_id (linked to auth.users), NOT by email
+// Rate limited to prevent brute force attempts
+app.post('/api/admin/verify-login', checkLoginRateLimit, async (req, res) => {
+  try {
+    const { accessToken } = req.body || {};
+
+    // Validate input
+    if (!accessToken) {
+      return res.status(400).json({ success: false, error: 'Access token is required' });
+    }
+
+    // Verify Supabase admin client is configured
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not configured for admin verification');
+      return res.status(503).json({ success: false, error: 'Admin verification service unavailable' });
+    }
+
+    // STEP 1: Extract authenticated user ID from the access token
+    // This confirms the user is actually authenticated with Supabase
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
+
+    if (authError || !authData?.user?.id) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.info(`Admin verification failed: invalid or expired access token`);
+      }
+      // Record failed attempt
+      recordFailedLoginAttempt(req.clientIp);
+      return res.status(401).json({ success: false, error: 'Invalid or expired session' });
+    }
+
+    const authenticatedUserId = authData.user.id;
+
+    // STEP 2: Query admins table by auth_user_id (not email!)
+    // This ensures the user is a linked admin and is active
+    const { data: adminData, error: adminError } = await supabaseAdmin
+      .from('admins')
+      .select('id, email, role, is_active, auth_user_id')
+      .eq('auth_user_id', authenticatedUserId)
+      .eq('is_active', true)
+      .single();
+
+    // Admin not found, not linked, or not active
+    if (adminError || !adminData) {
+      // Log attempt for security monitoring (no sensitive details)
+      if (process.env.NODE_ENV !== 'production') {
+        console.info(`Admin verification failed: user ${authenticatedUserId} is not authorized as admin`);
+      }
+      // Record failed attempt
+      recordFailedLoginAttempt(req.clientIp);
+      return res.status(403).json({ success: false, error: 'You do not have permission to access this area' });
+    }
+
+    // STEP 3: Verify the auth_user_id matches (defense in depth)
+    if (adminData.auth_user_id !== authenticatedUserId) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`Admin verification failed: auth_user_id mismatch`);
+      }
+      recordFailedLoginAttempt(req.clientIp);
+      return res.status(403).json({ success: false, error: 'You do not have permission to access this area' });
+    }
+
+    // Clear rate limit on successful verification
+    clearLoginAttempts(req.clientIp);
+
+    // STEP 4: Return admin data to frontend
+    return res.status(200).json({
+      success: true,
+      admin: {
+        id: adminData.id,
+        email: adminData.email,
+        role: adminData.role,
+        is_active: adminData.is_active,
+      },
+    });
+  } catch (err) {
+    console.error('Admin verify-login error (internal only):', err);
+    return res.status(500).json({ success: false, error: 'Admin verification failed' });
+  }
+});
+
+
 // Track login attempts and enforce rate limiting
 app.post('/api/auth/login-attempt', checkLoginRateLimit, (req, res) => {
   const { email, success } = req.body || {};

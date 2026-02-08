@@ -21,8 +21,9 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   topic?: string;
-  sourceType?: "fun" | "world" | "country" | "global";
+  sourceType?: "fun" | "world" | "country" | "global" | "random";
   questionCount?: number;
+  onComplete?: () => void;
 };
 
 type Q = { question: string; options: unknown[]; answer: unknown };
@@ -79,6 +80,7 @@ const QuizModal: React.FC<Props> = ({
   topic,
   sourceType,
   questionCount = 10,
+  onComplete,
 }) => {
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<Q[]>([]);
@@ -396,11 +398,29 @@ const QuizModal: React.FC<Props> = ({
                       : "💪 Nice try — practice more to improve."}
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={replayLastQuiz}>Replay Last Quiz</Button>
-                <Button onClick={handlePlayAgain}>New Quiz</Button>
-                <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                  Close
+                <Button
+                  onClick={() => {
+                    // Call completion callback if provided (for level progression)
+                    onComplete?.();
+                    // Then allow replay options if user stays
+                  }}
+                  className="mr-2"
+                >
+                  {onComplete ? "Level Complete ✓" : "Replay Last Quiz"}
                 </Button>
+                {!onComplete && (
+                  <>
+                    <Button onClick={handlePlayAgain}>New Quiz</Button>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                      Close
+                    </Button>
+                  </>
+                )}
+                {onComplete && (
+                  <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                    Back
+                  </Button>
+                )}
               </div>
             </div>
           )}

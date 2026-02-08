@@ -5,63 +5,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { log, debug, warn, error } from "@/lib/logger";
 import "@/lib/silence-console";
 import { initTelemetry } from "@/lib/telemetry";
+import { cleanupAdminStorageFlags } from "@/lib/storage-cleanup";
 
-// Listen for auth changes and redirect to /admin when a user signs in.
-// This helps handle the magic-link redirect flow where the SDK triggers
-// a SIGNED_IN event after the redirect back to the app.
-if (supabase?.auth && typeof supabase.auth.onAuthStateChange === "function") {
-  try {
-    let redirected = false;
+/**
+ * IMPORTANT: Clean up any leftover admin flags BEFORE rendering the app
+ * This ensures UserAuthContext and SessionRestoreLoader have a clean slate
+ */
+cleanupAdminStorageFlags();
 
-    // Determine whether a session already existed at page load. If a session
-    // existed, we avoid automatically redirecting on a SIGNED_IN event (this
-    // happens during page hydration when the SDK restores a persisted session).
-    (async () => {
-      let hadSessionAtLoad = false;
-      try {
-        const { data } = await supabase.auth.getSession();
-        hadSessionAtLoad = !!data?.session;
-      } catch (e) {
-        /* ignored - auth check */
-      }
+/**
+ * REMOVED: Auto-redirect to /admin after signin
+ *
+ * Previous flow: User signs in → automatically redirected to /admin
+ * Problem: This redirects EVERY user to /admin, even non-admins
+ * New flow: User signs in → stays on current page → AdminAuthContext handles authorization
+ *
+ * If user is admitted → AdminAuthContext allows access
+ * If user is not admin → AdminGuard shows denial message, user stays logged in
+ * This gives proper control to AdminAuthContext + AdminGuard
+ */
 
-      const { data: listener } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          // Only redirect to /admin when the user has just signed in *and*
-          // there was no session at page load. Also limit redirects to when
-          // the user is on a public entry page to avoid surprise navigations.
-          if (event === "SIGNED_IN" && !redirected && !hadSessionAtLoad) {
-            const pathname = window.location.pathname;
-            if (
-              pathname === "/" ||
-              pathname === "/admin/login" ||
-              pathname === "/login"
-            ) {
-              redirected = true;
-              window.location.href = "/admin";
-            }
-          }
-        },
-      );
-
-      // Optionally clean up on hot reloads (Vite)
-      const meta = import.meta as unknown as {
-        hot?: { dispose?: (fn: () => void) => void };
-      };
-      if (meta.hot) {
-        meta.hot.dispose(() => {
-          try {
-            listener?.subscription?.unsubscribe?.();
-          } catch (e) {
-            /* ignored - hot cleanup */
-          }
-        });
-      }
-    })();
-  } catch (e) {
-    warn("Failed to attach Supabase auth listener", e);
-  }
-}
+// DEPRECATED: The code that automatically redirected users to /admin has been removed
+// Auth flow is now handled by:
+// - UserAuthContext: handles user authentication (/auth/login, /auth/signup)
+// - AdminAuthContext: handles admin verification (only on /admin routes)
+// - AdminGuard: handles authorization (redirects non-admins with clear message)
 
 createRoot(document.getElementById("root")!).render(<App />);
 

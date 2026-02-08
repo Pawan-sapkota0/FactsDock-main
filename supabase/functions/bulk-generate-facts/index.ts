@@ -524,7 +524,7 @@ serve(async (req) => {
             generated = gres;
           }
         } catch (geminiError: unknown) {
-          console.error(`Gemini API error for ${country}:`, geminiError);
+          console.error(`Gemini API error for ${country}:`, geminiError instanceof Error ? geminiError.message : String(geminiError));
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `Gemini API error for ${country}` })}\n\n`));
           continue;
         }

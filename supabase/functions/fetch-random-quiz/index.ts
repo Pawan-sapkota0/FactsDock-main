@@ -19,7 +19,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const getCorsHeaders = (origin?: string) => {
   const ALLOWED_ORIGINS = [
     'http://localhost:8080',
+    'http://localhost:8081',
     'http://localhost:5173',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:8080',
     'https://factsdock.com',
     'https://www.factsdock.com',
   ];
@@ -50,12 +53,16 @@ serve(async (req) => {
     let body: any = {};
     try {
       body = await req.json();
+      console.log('[fetch-random-quiz] Request body:', body);
     } catch {
       // Body is not JSON, that's fine
+      console.log('[fetch-random-quiz] No JSON body');
     }
     const count = Math.min(parseInt(body.count || url.searchParams.get('count') || '10'), 100);
     const topic = body.topic || url.searchParams.get('topic') || null;
     const sourceType = body.sourceType || url.searchParams.get('sourceType') || null;
+
+    console.log('[fetch-random-quiz] Parameters - count:', count, 'topic:', topic, 'sourceType:', sourceType);
 
     if (count <= 0) {
       return new Response(
@@ -74,109 +81,56 @@ serve(async (req) => {
       );
     }
 
-    // Build SQL filter: published quizzes, optionally filtered by topic/sourceType
-    let whereClause = "status = 'published' AND is_random = true";
+    // Build REST API filter for published is_random=true quizzes
+    // Random quizzes only have: questions and difficulty columns (no country/fact_type)
+    const filterParams = new URLSearchParams();
+    filterParams.append('select', 'id,questions,difficulty,is_random');
+    filterParams.append('status', 'eq.published');
+    filterParams.append('is_random', 'eq.true');
+    filterParams.append('order', 'created_at.desc');
+    filterParams.append('limit', '1000');
 
-    if (topic) {
-      const normalizedTopic = topic.replace(/-/g, ' ').trim();
-      whereClause += ` AND country ILIKE '%${normalizedTopic}%'`;
-    }
+    const apiUrl = `${supaUrl}/rest/v1/quizzes?${filterParams.toString()}`;
+    console.log('[fetch-random-quiz] API URL:', apiUrl);
 
-    if (sourceType) {
-      // Resolve sourceType slug to fact_type_id
-      let slug = sourceType;
-      if (sourceType === 'fun') slug = 'fun-facts';
-      else if (sourceType === 'world') slug = 'world-facts';
-      else if (sourceType === 'country') slug = 'country-facts';
-
-      whereClause += ` AND fact_type_id = (SELECT id FROM fact_types WHERE slug = '${slug}' LIMIT 1)`;
-    }
-
-    // Query with ORDER BY RANDOM() to get fresh shuffled results
-    const query = `
-      SELECT id, questions, country, is_random, fact_type_id
-      FROM quizzes
-      WHERE ${whereClause}
-      ORDER BY RANDOM()
-      LIMIT 1000
-    `;
-
-    const response = await fetch(`${supaUrl}/rest/v1/rpc/sql`, {
-      method: 'POST',
+    const response = await fetch(apiUrl, {
       headers: {
         'apikey': supaKey,
         'Authorization': `Bearer ${supaKey}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query }),
     });
 
     if (!response.ok) {
-      // Fallback: use standard query endpoint if RPC is unavailable
-      const fallbackRes = await fetch(
-        `${supaUrl}/rest/v1/quizzes?select=id,questions,country,is_random,fact_type_id&status=eq.published&is_random=eq.true&limit=1000`,
-        {
-          headers: {
-            'apikey': supaKey,
-            'Authorization': `Bearer ${supaKey}`,
-          },
-        }
-      );
-
-      if (!fallbackRes.ok) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to fetch quizzes' }),
-          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/HTTP response boundary
-      let rows: any[] = await fallbackRes.json();
-
-      // Filter by topic/sourceType in JS if needed
-      if (topic) {
-        const normalizedTopic = topic.toLowerCase().replace(/-/g, ' ');
-        rows = rows.filter(r => 
-          String(r.country || '').toLowerCase().includes(normalizedTopic)
-        );
-      }
-
-      // Shuffle rows
-      for (let i = rows.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rows[i], rows[j]] = [rows[j], rows[i]];
-      }
-
-      // Flatten and select
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/DB row shape (questions array)
-      const allQuestions: any[] = [];
-      for (const r of rows) {
-        const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
-        for (const q of qs) allQuestions.push(q);
-        if (allQuestions.length >= count) break;
-      }
-
-      const selected = allQuestions.slice(0, count);
+      console.error('[fetch-random-quiz] API request failed:', response.status);
       return new Response(
-        JSON.stringify({ data: selected }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to fetch quizzes' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/HTTP response boundary
     const rows: any[] = await response.json();
+    console.log('[fetch-random-quiz] Quizzes fetched:', rows.length);
 
-    // Flatten questions from result rows
+    // Shuffle rows to randomize order
+    for (let i = rows.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rows[i], rows[j]] = [rows[j], rows[i]];
+    }
+
+    // Flatten questions from quiz objects
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK/DB row shape (questions array)
     const allQuestions: any[] = [];
     for (const r of rows) {
       const qs = Array.isArray(r.questions) ? r.questions : (r.questions?.data || []);
+      console.log('[fetch-random-quiz] Quiz has', qs?.length || 0, 'questions');
       for (const q of qs) allQuestions.push(q);
       if (allQuestions.length >= count) break;
     }
 
     // Return selected subset
     const selected = allQuestions.slice(0, count);
+    console.log('[fetch-random-quiz] Returning', selected.length, 'questions');
     return new Response(
       JSON.stringify({ data: selected }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
