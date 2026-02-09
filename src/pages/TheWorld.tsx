@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Globe, Users, Mountain, Zap, MapPin } from "lucide-react";
 import GeographyImageOverlay from "@/components/overlays/GeographyImageOverlay";
 import { useGeographyCardImages } from "@/hooks/use-geography-card-images";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 interface StatCardProps {
   title: string;

@@ -1,10 +1,17 @@
 import React from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 const TermsAndConditions: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title="FactsDock | Terms & Conditions"
+        description="Read the Terms & Conditions for using FactsDock. Learn about our policies, user responsibilities, and service terms."
+        keywords="terms and conditions, terms of service, user agreement"
+        robots="index, follow"
+      />
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-bold mb-6">Terms & Conditions</h1>

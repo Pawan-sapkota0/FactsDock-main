@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useParams, useNavigate } from "react-router-dom";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,9 +15,18 @@ const QuizCountry = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const countryTitle = slug
+    ? slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Country";
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={`FactsDock | ${countryTitle} Quiz`}
+        description={`Take a quiz about ${countryTitle}. Test your knowledge and learn interesting facts about ${countryTitle}.`}
+        keywords={`${countryTitle} quiz, ${countryTitle} facts, geography quiz, ${countryTitle} knowledge`}
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">

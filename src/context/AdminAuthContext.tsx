@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logger from "@/lib/logger";
@@ -13,6 +14,7 @@ import {
   getCurrentAdminUser,
   AdminPermission,
 } from "@/lib/admin-auth";
+import { useUserAuth } from "./UserAuthContext";
 
 interface AdminAuthContextType {
   user: AdminUser | null;
@@ -48,25 +50,68 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track previous sessionRestored value to detect transition (false → true)
+  const prevSessionRestoredRef = useRef(false);
+
+  // Get session restore status from UserAuthContext
+  // CRITICAL: Must wait for sessionRestored before checking admin
+  const { sessionRestored } = useUserAuth();
+
   const isAuthenticated = user !== null;
 
   /**
-   * Initialize admin verification on mount
-   * Just check if current Supabase user is in admins table
-   * Don't sign out anyone - that's not our responsibility
+   * Initialize admin verification when session restores
+   * WAITS FOR USER SESSION TO RESTORE before checking admin status
+   * This prevents race conditions on page refresh
+   *
+   * Uses ref to detect transition: only runs when sessionRestored becomes true
+   * Includes ONE retry for edge cases where admin check fails on rapid refresh
+   *
+   * SAFETY:
+   * - Effect only triggers on sessionRestored change (prevents infinite loops)
+   * - Retry is tracked locally within effect (max 1 retry per mount)
+   * - After setLoading(false), no more retries (dashboard stays visible)
+   * - On next refresh: sessionRestored cycles, allowing new retry if needed
+   *
+   * Follows UserAuthContext pattern:
+   * - sessionRestored=false → effect skips
+   * - sessionRestored becomes true → effect runs, checks admin, retries once if needed
+   * - After setLoading=false → no more retries, stays on dashboard
+   * - On refresh: cycle starts fresh
    */
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout | null = null;
+    let retryTimeoutId: NodeJS.Timeout | null = null;
+
+    // Detect transition: sessionRestored changed from false to true
+    const sessionJustRestored =
+      !prevSessionRestoredRef.current && sessionRestored;
+    prevSessionRestoredRef.current = sessionRestored;
+
+    // Only proceed if session just restored (transition detected)
+    if (!sessionJustRestored) {
+      logger.debug(
+        "[AdminAuthContext] Waiting for session restore transition...",
+      );
+      return;
+    }
+
+    // Track retry attempts LOCALLY within this effect execution
+    // Resets on every effect run (every refresh/session restore)
+    let retryAttempt = 0;
+    const MAX_RETRIES = 1; // Only retry once
 
     const initAdmin = async () => {
       try {
-        setLoading(true);
+        logger.debug(
+          `[AdminAuthContext] Checking admin (attempt ${retryAttempt + 1}/${MAX_RETRIES + 1})...`,
+        );
 
-        // Simple timeout check
+        // Timeout guard: 10 second timeout for admin check
         const timeoutPromise = new Promise<null>((resolve) => {
           timeoutId = setTimeout(() => {
-            logger.warn("[AdminAuthContext] Admin check timeout");
+            logger.warn("[AdminAuthContext] Admin check timeout after 10s");
             resolve(null);
           }, 10000);
         });
@@ -81,17 +126,30 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
 
         if (timeoutId) clearTimeout(timeoutId);
 
-        if (isMounted) {
-          if (adminUser) {
-            logger.debug("[AdminAuthContext] Admin verified:", adminUser.email);
-            setUser(adminUser);
-          } else {
-            logger.debug("[AdminAuthContext] User is not admin");
-            setUser(null);
-          }
-          setError(null);
-          setLoading(false);
+        if (!isMounted) return;
+
+        // If check failed and we haven't retried yet, retry once
+        if (!adminUser && retryAttempt < MAX_RETRIES) {
+          logger.debug(
+            `[AdminAuthContext] Admin check returned null, retrying... (${retryAttempt + 1}/${MAX_RETRIES})`,
+          );
+          retryAttempt++; // Increment BEFORE scheduling retry
+          retryTimeoutId = setTimeout(initAdmin, 500); // Retry after 500ms
+          return; // Exit early, don't set state yet
         }
+
+        // FINAL STATE: either got admin user or exhausted retries
+        if (adminUser) {
+          logger.debug("[AdminAuthContext] Admin verified:", adminUser.email);
+          setUser(adminUser);
+        } else {
+          logger.debug(
+            "[AdminAuthContext] User is not admin (after all retries)",
+          );
+          setUser(null);
+        }
+        setError(null);
+        setLoading(false); // Dashboard visible from now on (no more retries triggered)
       } catch (err) {
         logger.error("[AdminAuthContext] Init error:", err);
         if (isMounted) {
@@ -109,8 +167,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
     return () => {
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
+      if (retryTimeoutId) clearTimeout(retryTimeoutId);
     };
-  }, []);
+  }, [sessionRestored]);
 
   /**
    * Handle admin verification pending flag

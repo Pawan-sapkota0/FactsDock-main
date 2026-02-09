@@ -25,6 +25,9 @@ import {
   saveGuestProgress,
 } from "@/lib/quiz-progress";
 import { log, error as logError } from "@/lib/logger";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { AD_SLOTS } from "@/lib/ad-spacing";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
@@ -386,8 +389,22 @@ const QuizPlayPage: React.FC = () => {
     return getQuestionsForLevel(quizQuestions, selectedLevel, 10);
   }, [selectedLevel, selectedDifficulty, quizQuestions]);
 
+  const modeLabel =
+    mode === "country"
+      ? countryName || "Quiz"
+      : mode === "fun"
+        ? "Fun"
+        : "World";
+  const pageTitle = `Play ${modeLabel} Quiz`;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOMeta
+        title={`FactsDock | ${pageTitle}`}
+        description={`Play engaging ${modeLabel.toLowerCase()} quizzes to test your knowledge. Challenge yourself with multiple difficulty levels and improve your learning.`}
+        keywords={`${modeLabel.toLowerCase()} quiz, quizzes, educational, learning challenge`}
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
 
       <main className="flex-1 py-8 md:py-12">
@@ -457,6 +474,10 @@ const QuizPlayPage: React.FC = () => {
       </main>
 
       <PreFooterCTA />
+
+      {/* Ad Slot: Before footer on quiz play page (non-interruptive) */}
+      <AdSlot slot={AD_SLOTS.QUIZ_PLAY_FOOTER} />
+
       <Footer />
 
       {/* Quiz Modal - Lazy loaded */}

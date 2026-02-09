@@ -40,6 +40,7 @@ import {
   markFactViewed,
 } from "@/lib/fact-filtering";
 import { log, debug, warn, error } from "@/lib/logger";
+import { SEOMeta } from "@/components/common/SEOMeta";
 // import { generateQuiz } from '@/lib/quiz';
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 import { Button } from "@/components/ui/button";
@@ -416,6 +417,12 @@ const FunFacts = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title="FactsDock | Fun Facts & Interesting Trivia"
+        description="Explore thousands of fun facts about animals, science, history, food, sports, and more. Discover interesting trivia from around the world."
+        keywords="fun facts, interesting facts, trivia, world facts"
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
 
       <main className="flex-1 py-12">

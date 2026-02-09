@@ -5,6 +5,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /auth
 Disallow: /api
 Disallow: /secret-admin-login
 Disallow: /*.json$
@@ -29,7 +30,7 @@ User-agent: facebookexternalhit
 Allow: /
 
 # Reference to sitemap
-Sitemap: https://worldfacts.com/sitemap.xml
+Sitemap: https://factsdock.com/sitemap.xml
 
 
 User-agent: *

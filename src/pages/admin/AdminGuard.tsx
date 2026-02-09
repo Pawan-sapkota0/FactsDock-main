@@ -58,22 +58,22 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
   }, [userLogout, navigate]);
 
   /**
-   * THREE-PHASE AUTHORIZATION CHECK
+   * THREE-PHASE AUTHORIZATION CHECK (STRICT STATE MACHINE)
    *
-   * Phase 1: Wait for cached session to restore (sessionRestored = true)
-   *   - User session loads from localStorage (~0-100ms)
-   *   - SessionRestoreLoader shows skeleton during this
-   *   - Admin checks do NOT block this phase
+   * ⏳ Phase 1: Loading - NEVER show denied message during this phase
+   *   - Checks: sessionRestored OR authLoading
+   *   - Shows: Spinner only
    *
-   * Phase 2: Session restored, check if user is admin (authLoading completes)
-   *   - Queries admins table via RLS
-   *   - Very fast if admin, returns null if not
-   *   - No flicker, no messages
+   * ❌ Phase 2: Denied - Only after loading is COMPLETELY done
+   *   - Checks: sessionRestored AND !authLoading AND !adminUser
+   *   - Shows: Access denied message
    *
-   * Phase 3: Authorization decision
-   *   - Admin + has permission → Render children
-   *   - Not admin → Show denial message (keep user logged in)
-   *   - Error → Show error message
+   * ✅ Phase 3: Authorized - Admin verified
+   *   - Checks: sessionRestored AND !authLoading AND adminUser
+   *   - Shows: Children (admin panel)
+   *
+   * CRITICAL: Never evaluate `!adminUser` before `authLoading` is false
+   * This prevents "not admin" flash on page refresh
    */
   useEffect(() => {
     let cancelled = false;
@@ -88,29 +88,26 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
       return;
     }
 
-    // STEP 1: Wait for user session to restore
-    // Don't check admin status until user session is ready
-    if (!sessionRestored) {
-      logger.debug("[AdminGuard] Waiting for user session to restore...");
+    // ⏳ PHASE 1: ALWAYS WAIT FOR LOADING TO COMPLETE
+    // Only proceed if BOTH conditions are true:
+    // - User session is restored (from localStorage)
+    // - Admin role check is complete (not still loading)
+    if (!sessionRestored || authLoading) {
+      logger.debug("[AdminGuard] ⏳ Loading - waiting for auth...", {
+        sessionRestored,
+        authLoading,
+      });
       if (!cancelled) {
         setState("loading");
       }
       return;
     }
 
-    // STEP 2: User session is ready, now check admin status
-    // Still loading admin check? Show loading
-    if (authLoading) {
-      logger.debug("[AdminGuard] User session ready, checking admin status...");
-      if (!cancelled) {
-        setState("loading");
-      }
-      return;
-    }
+    // 🎯 PHASE 2+3: LOADING DONE - Now evaluate authorization
 
-    // Error from AdminAuthContext
+    // ❌ Error state
     if (authError) {
-      logger.error("[AdminGuard] Admin auth error:", authError);
+      logger.error("[AdminGuard] ❌ Auth error:", authError);
       if (!cancelled) {
         setState("error");
         setError("Failed to verify admin status");
@@ -118,14 +115,10 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
       return;
     }
 
-    // STEP 3: User session ready + admin check done. Now evaluate authorization
-    // NOT an admin user - deny access but KEEP user logged in
+    // ❌ Access denied (not admin)
     if (!adminUser) {
       logger.debug(
-        "[AdminGuard] User not admin - access denied (user stays logged in)",
-        {
-          userEmail: userSession?.email,
-        },
+        "[AdminGuard] ❌ Not admin - access denied (user stays logged in)",
       );
       if (!cancelled) {
         setState("denied");
@@ -134,21 +127,18 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
       return;
     }
 
-    // Check permission if required
-    if (requiredPermission) {
-      const hasPermission = checkPermission(requiredPermission);
-      if (!hasPermission) {
-        logger.warn("[AdminGuard] Missing permission:", requiredPermission);
-        if (!cancelled) {
-          setState("denied");
-          setError(`Missing permission: ${requiredPermission}`);
-        }
-        return;
+    // 🔐 Check permission if required
+    if (requiredPermission && !checkPermission(requiredPermission)) {
+      logger.warn("[AdminGuard] ❌ Missing permission:", requiredPermission);
+      if (!cancelled) {
+        setState("denied");
+        setError(`Missing permission: ${requiredPermission}`);
       }
+      return;
     }
 
-    // Authorized
-    logger.debug("[AdminGuard] Admin authorized");
+    // ✅ Authorized - render children
+    logger.debug("[AdminGuard] ✅ Admin authorized");
     if (!cancelled) {
       setState("authorized");
       setError(null);
@@ -164,7 +154,6 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
     adminUser,
     requiredPermission,
     checkPermission,
-    userSession?.email,
   ]);
 
   /**
@@ -296,7 +285,12 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
   }
 
   // Authorized - render children
-  return <>{children}</>;
+  if (state === "authorized") {
+    return <>{children}</>;
+  }
+
+  // Should never reach here
+  return null;
 };
 
 export default AdminGuard;

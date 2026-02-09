@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import { SEOMeta } from "@/components/common/SEOMeta";
 // import { generateQuiz } from '@/lib/quiz';
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
@@ -386,6 +387,12 @@ const WorldFacts = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title="FactsDock | World Facts & Global Information"
+        description="Discover comprehensive facts about countries, geography, history, culture, science, and world knowledge. Educational facts for learners of all ages."
+        keywords="world facts, country facts, geography facts, global information"
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
 
       <main className="flex-1 py-12">

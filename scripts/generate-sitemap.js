@@ -37,7 +37,7 @@ const generateSitemap = () => {
   console.log(`✅ Found ${countries.length} countries`);
   
   // Base URL
-  const baseUrl = process.env.SITEMAP_URL || 'https://worldfacts.example.com';
+  const baseUrl = process.env.SITEMAP_URL || 'https://factsdock.com';
   const now = new Date().toISOString().split('T')[0];
   
   // Build XML

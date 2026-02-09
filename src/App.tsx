@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/lib/route-guards";
 import { SessionRestoreLoader } from "@/components/layout/SessionRestoreLoader";
 import { AdminAuthWrapper } from "@/components/layout/AdminAuthWrapper";
 import { AdminRoutesWrapper } from "@/components/layout/AdminRoutesWrapper";
+import { AdsProvider } from "@/components/ads/AdsProvider";
 import Index from "./pages/Index";
 import Country from "./pages/Country";
 import FunFacts from "./pages/FunFacts";
@@ -85,6 +86,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <AdsProvider />
         <SessionRestoreLoader>
           <BrowserRouter>
             <ScrollToTop />

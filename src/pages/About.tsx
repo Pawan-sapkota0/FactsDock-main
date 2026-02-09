@@ -2,10 +2,17 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Target, Users } from "lucide-react";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 const About = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title="FactsDock | About Us - Your Gateway to Global Knowledge"
+        description="Learn about FactsDock - an educational platform dedicated to making learning about the world fun, interactive, and accessible. Discover facts, quizzes, and global information."
+        keywords="about factsdock, educational platform, world knowledge, learning"
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
 
       <main className="flex-1 py-12">

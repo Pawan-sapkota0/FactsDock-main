@@ -17,6 +17,16 @@
       content="Discover fascinating facts about countries worldwide, play interactive quizzes, and explore fun facts across multiple categories."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://factsdock.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FactsDock | Global Knowledge" />
+    <meta
+      name="twitter:description"
+      content="Explore fascinating facts about countries worldwide, play interactive quizzes, and explore fun facts across multiple categories."
+    />
+    <meta name="twitter:image" content="https://factsdock.com/og-image.png" />
   </head>
 
   <body>
@@ -54,6 +64,46 @@
           // noop
         }
       })();
+
+      // Admin theme initialization: apply saved admin theme before React mounts
+      (function () {
+        try {
+          var adminKey = "admin:theme-preference";
+          var adminPref = null;
+          try {
+            adminPref = localStorage.getItem(adminKey);
+          } catch (e) {
+            /* ignore */
+          }
+
+          function getSystemPrefersDark() {
+            return (
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+          }
+
+          function applyAdmin(isDark) {
+            try {
+              var root = document.getElementById("admin-root");
+              if (!root) return; // admin-root doesn't exist yet, will be handled by useAdminTheme hook
+              if (isDark) root.classList.add("dark");
+              else root.classList.remove("dark");
+            } catch (e) {}
+          }
+
+          if (adminPref === "light") {
+            applyAdmin(false);
+          } else if (adminPref === "dark") {
+            applyAdmin(true);
+          } else if (adminPref === "system") {
+            applyAdmin(getSystemPrefersDark());
+          }
+          // If adminPref is null, useAdminTheme hook will handle initialization
+        } catch (e) {
+          // noop
+        }
+      })();
     </script>
     <div id="root"></div>
     <!-- Runtime error overlay: shows uncaught errors so a blank page can be diagnosed -->
@@ -84,8 +134,12 @@
             var el = document.getElementById("__error_overlay__");
             if (!el) return;
             el.style.display = "block";
-            el.innerText = message;
-            console.error("Runtime error overlay:", message);
+            // Sanitize error message: don't show stack traces or internal details to users
+            var sanitized =
+              "An error occurred. Please refresh the page or contact support if the problem persists.";
+            el.innerText = sanitized;
+            // Log to console for debugging in dev only
+            console.error("Runtime error (logged to console only):", message);
           } catch (e) {
             console.error(e);
           }

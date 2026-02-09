@@ -1,1256 +1,1256 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://worldfacts.example.com</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/facts</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/facts</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/quiz</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/quiz</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/fun-zone</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/fun-zone</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/about</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/about</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/contact</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/contact</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/privacy-policy</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/privacy-policy</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/terms-and-conditions</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/terms-and-conditions</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/afghanistan</loc>
+    <loc>https://factsdock.com/country/afghanistan</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/albania</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/algeria</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/andorra</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/angola</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/antigua-and-barbuda</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/argentina</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/armenia</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/australia</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/austria</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/azerbaijan</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/bahamas</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/bahrain</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/bangladesh</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/barbados</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/belarus</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/belgium</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/belize</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/benin</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/bhutan</loc>
+    <lastmod>2026-02-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://factsdock.com/country/bolivia</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/albania</loc>
+    <loc>https://factsdock.com/country/bosnia-and-herzegovina</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/algeria</loc>
+    <loc>https://factsdock.com/country/botswana</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/andorra</loc>
+    <loc>https://factsdock.com/country/brazil</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/angola</loc>
+    <loc>https://factsdock.com/country/brunei</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/antigua-and-barbuda</loc>
+    <loc>https://factsdock.com/country/bulgaria</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/argentina</loc>
+    <loc>https://factsdock.com/country/burkina-faso</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/armenia</loc>
+    <loc>https://factsdock.com/country/burundi</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/australia</loc>
+    <loc>https://factsdock.com/country/cambodia</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/austria</loc>
+    <loc>https://factsdock.com/country/cameroon</loc>
     <lastmod>2026-02-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/azerbaijan</loc>
+    <loc>https://factsdock.com/country/canada</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bahamas</loc>
+    <loc>https://factsdock.com/country/cape-verde</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bahrain</loc>
+    <loc>https://factsdock.com/country/central-african-republic</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bangladesh</loc>
+    <loc>https://factsdock.com/country/chad</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/barbados</loc>
+    <loc>https://factsdock.com/country/chile</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/belarus</loc>
+    <loc>https://factsdock.com/country/china</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/belgium</loc>
+    <loc>https://factsdock.com/country/colombia</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/belize</loc>
+    <loc>https://factsdock.com/country/comoros</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/benin</loc>
+    <loc>https://factsdock.com/country/congo</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bhutan</loc>
+    <loc>https://factsdock.com/country/costa-rica</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bolivia</loc>
+    <loc>https://factsdock.com/country/croatia</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bosnia-and-herzegovina</loc>
+    <loc>https://factsdock.com/country/cuba</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/botswana</loc>
+    <loc>https://factsdock.com/country/cyprus</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/brazil</loc>
+    <loc>https://factsdock.com/country/czech-republic</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/brunei</loc>
+    <loc>https://factsdock.com/country/denmark</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/bulgaria</loc>
+    <loc>https://factsdock.com/country/djibouti</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/burkina-faso</loc>
+    <loc>https://factsdock.com/country/dominica</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/burundi</loc>
+    <loc>https://factsdock.com/country/dominican-republic</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/cambodia</loc>
+    <loc>https://factsdock.com/country/ecuador</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/cameroon</loc>
+    <loc>https://factsdock.com/country/egypt</loc>
     <lastmod>2026-02-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/canada</loc>
+    <loc>https://factsdock.com/country/el-salvador</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/cape-verde</loc>
+    <loc>https://factsdock.com/country/equatorial-guinea</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/central-african-republic</loc>
+    <loc>https://factsdock.com/country/eritrea</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/chad</loc>
+    <loc>https://factsdock.com/country/estonia</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/chile</loc>
+    <loc>https://factsdock.com/country/ethiopia</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/china</loc>
+    <loc>https://factsdock.com/country/fiji</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/colombia</loc>
+    <loc>https://factsdock.com/country/finland</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/comoros</loc>
+    <loc>https://factsdock.com/country/france</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/congo</loc>
+    <loc>https://factsdock.com/country/gabon</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/costa-rica</loc>
+    <loc>https://factsdock.com/country/gambia</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/croatia</loc>
+    <loc>https://factsdock.com/country/georgia</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/cuba</loc>
+    <loc>https://factsdock.com/country/germany</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/cyprus</loc>
+    <loc>https://factsdock.com/country/ghana</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/czech-republic</loc>
+    <loc>https://factsdock.com/country/greece</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/denmark</loc>
+    <loc>https://factsdock.com/country/grenada</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/djibouti</loc>
+    <loc>https://factsdock.com/country/guatemala</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/dominica</loc>
+    <loc>https://factsdock.com/country/guinea</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/dominican-republic</loc>
+    <loc>https://factsdock.com/country/guinea-bissau</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/ecuador</loc>
+    <loc>https://factsdock.com/country/guyana</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/egypt</loc>
+    <loc>https://factsdock.com/country/haiti</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/el-salvador</loc>
+    <loc>https://factsdock.com/country/honduras</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/equatorial-guinea</loc>
+    <loc>https://factsdock.com/country/hungary</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/eritrea</loc>
+    <loc>https://factsdock.com/country/iceland</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/estonia</loc>
+    <loc>https://factsdock.com/country/india</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/ethiopia</loc>
+    <loc>https://factsdock.com/country/indonesia</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/fiji</loc>
+    <loc>https://factsdock.com/country/iran</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/finland</loc>
+    <loc>https://factsdock.com/country/iraq</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/france</loc>
+    <loc>https://factsdock.com/country/ireland</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/gabon</loc>
+    <loc>https://factsdock.com/country/israel</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/gambia</loc>
+    <loc>https://factsdock.com/country/italy</loc>
     <lastmod>2026-02-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/georgia</loc>
+    <loc>https://factsdock.com/country/ivory-coast</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/germany</loc>
+    <loc>https://factsdock.com/country/jamaica</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/ghana</loc>
+    <loc>https://factsdock.com/country/japan</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/greece</loc>
+    <loc>https://factsdock.com/country/jordan</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/grenada</loc>
+    <loc>https://factsdock.com/country/kazakhstan</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/guatemala</loc>
+    <loc>https://factsdock.com/country/kenya</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/guinea</loc>
+    <loc>https://factsdock.com/country/kiribati</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/guinea-bissau</loc>
+    <loc>https://factsdock.com/country/kosovo</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/guyana</loc>
+    <loc>https://factsdock.com/country/kuwait</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/haiti</loc>
+    <loc>https://factsdock.com/country/kyrgyzstan</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/honduras</loc>
+    <loc>https://factsdock.com/country/laos</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/hungary</loc>
+    <loc>https://factsdock.com/country/latvia</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/iceland</loc>
+    <loc>https://factsdock.com/country/lebanon</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/india</loc>
+    <loc>https://factsdock.com/country/lesotho</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/indonesia</loc>
+    <loc>https://factsdock.com/country/liberia</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/iran</loc>
+    <loc>https://factsdock.com/country/libya</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/iraq</loc>
+    <loc>https://factsdock.com/country/liechtenstein</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/ireland</loc>
+    <loc>https://factsdock.com/country/lithuania</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/israel</loc>
+    <loc>https://factsdock.com/country/luxembourg</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/italy</loc>
+    <loc>https://factsdock.com/country/madagascar</loc>
     <lastmod>2026-01-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/ivory-coast</loc>
+    <loc>https://factsdock.com/country/malawi</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/jamaica</loc>
+    <loc>https://factsdock.com/country/malaysia</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/japan</loc>
+    <loc>https://factsdock.com/country/maldives</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/jordan</loc>
+    <loc>https://factsdock.com/country/mali</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kazakhstan</loc>
+    <loc>https://factsdock.com/country/malta</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kenya</loc>
+    <loc>https://factsdock.com/country/marshall-islands</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kiribati</loc>
+    <loc>https://factsdock.com/country/mauritania</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kosovo</loc>
+    <loc>https://factsdock.com/country/mauritius</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kuwait</loc>
+    <loc>https://factsdock.com/country/mexico</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/kyrgyzstan</loc>
+    <loc>https://factsdock.com/country/micronesia</loc>
     <lastmod>2026-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/laos</loc>
+    <loc>https://factsdock.com/country/moldova</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/latvia</loc>
+    <loc>https://factsdock.com/country/monaco</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/lebanon</loc>
+    <loc>https://factsdock.com/country/mongolia</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/lesotho</loc>
+    <loc>https://factsdock.com/country/montenegro</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/liberia</loc>
+    <loc>https://factsdock.com/country/morocco</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/libya</loc>
+    <loc>https://factsdock.com/country/mozambique</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/liechtenstein</loc>
+    <loc>https://factsdock.com/country/myanmar</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/lithuania</loc>
+    <loc>https://factsdock.com/country/namibia</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/luxembourg</loc>
+    <loc>https://factsdock.com/country/nauru</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/madagascar</loc>
+    <loc>https://factsdock.com/country/nepal</loc>
     <lastmod>2026-01-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/malawi</loc>
+    <loc>https://factsdock.com/country/netherlands</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/malaysia</loc>
+    <loc>https://factsdock.com/country/new-zealand</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/maldives</loc>
+    <loc>https://factsdock.com/country/nicaragua</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mali</loc>
+    <loc>https://factsdock.com/country/niger</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/malta</loc>
+    <loc>https://factsdock.com/country/nigeria</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/marshall-islands</loc>
+    <loc>https://factsdock.com/country/north-korea</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mauritania</loc>
+    <loc>https://factsdock.com/country/north-macedonia</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mauritius</loc>
+    <loc>https://factsdock.com/country/norway</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mexico</loc>
+    <loc>https://factsdock.com/country/oman</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/micronesia</loc>
+    <loc>https://factsdock.com/country/pakistan</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/moldova</loc>
+    <loc>https://factsdock.com/country/palau</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/monaco</loc>
+    <loc>https://factsdock.com/country/palestine</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mongolia</loc>
+    <loc>https://factsdock.com/country/panama</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/montenegro</loc>
+    <loc>https://factsdock.com/country/papua-new-guinea</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/morocco</loc>
+    <loc>https://factsdock.com/country/paraguay</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/mozambique</loc>
+    <loc>https://factsdock.com/country/peru</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/myanmar</loc>
+    <loc>https://factsdock.com/country/philippines</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/namibia</loc>
+    <loc>https://factsdock.com/country/poland</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/nauru</loc>
+    <loc>https://factsdock.com/country/portugal</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/nepal</loc>
+    <loc>https://factsdock.com/country/qatar</loc>
     <lastmod>2026-01-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/netherlands</loc>
+    <loc>https://factsdock.com/country/romania</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/new-zealand</loc>
+    <loc>https://factsdock.com/country/russia</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/nicaragua</loc>
+    <loc>https://factsdock.com/country/rwanda</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/niger</loc>
+    <loc>https://factsdock.com/country/saint-kitts-and-nevis</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/nigeria</loc>
+    <loc>https://factsdock.com/country/saint-lucia</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/north-korea</loc>
+    <loc>https://factsdock.com/country/saint-vincent-and-the-grenadines</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/north-macedonia</loc>
+    <loc>https://factsdock.com/country/samoa</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/norway</loc>
+    <loc>https://factsdock.com/country/san-marino</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/oman</loc>
+    <loc>https://factsdock.com/country/sao-tome-and-principe</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/pakistan</loc>
+    <loc>https://factsdock.com/country/saudi-arabia</loc>
     <lastmod>2026-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/palau</loc>
+    <loc>https://factsdock.com/country/senegal</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/palestine</loc>
+    <loc>https://factsdock.com/country/serbia</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/panama</loc>
+    <loc>https://factsdock.com/country/seychelles</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/papua-new-guinea</loc>
+    <loc>https://factsdock.com/country/sierra-leone</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/paraguay</loc>
+    <loc>https://factsdock.com/country/singapore</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/peru</loc>
+    <loc>https://factsdock.com/country/slovakia</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/philippines</loc>
+    <loc>https://factsdock.com/country/slovenia</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/poland</loc>
+    <loc>https://factsdock.com/country/solomon-islands</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/portugal</loc>
+    <loc>https://factsdock.com/country/somalia</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/qatar</loc>
+    <loc>https://factsdock.com/country/south-africa</loc>
     <lastmod>2026-01-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/romania</loc>
+    <loc>https://factsdock.com/country/south-korea</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/russia</loc>
+    <loc>https://factsdock.com/country/south-sudan</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/rwanda</loc>
+    <loc>https://factsdock.com/country/spain</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/saint-kitts-and-nevis</loc>
+    <loc>https://factsdock.com/country/sri-lanka</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/saint-lucia</loc>
+    <loc>https://factsdock.com/country/sudan</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/saint-vincent-and-the-grenadines</loc>
+    <loc>https://factsdock.com/country/suriname</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/samoa</loc>
+    <loc>https://factsdock.com/country/sweden</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/san-marino</loc>
+    <loc>https://factsdock.com/country/switzerland</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/sao-tome-and-principe</loc>
+    <loc>https://factsdock.com/country/syria</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/saudi-arabia</loc>
+    <loc>https://factsdock.com/country/taiwan</loc>
     <lastmod>2026-01-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/senegal</loc>
+    <loc>https://factsdock.com/country/tajikistan</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/serbia</loc>
+    <loc>https://factsdock.com/country/tanzania</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/seychelles</loc>
+    <loc>https://factsdock.com/country/thailand</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/sierra-leone</loc>
+    <loc>https://factsdock.com/country/timor-leste</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/singapore</loc>
+    <loc>https://factsdock.com/country/togo</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/slovakia</loc>
+    <loc>https://factsdock.com/country/tonga</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/slovenia</loc>
+    <loc>https://factsdock.com/country/trinidad-and-tobago</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/solomon-islands</loc>
+    <loc>https://factsdock.com/country/tunisia</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/somalia</loc>
+    <loc>https://factsdock.com/country/turkey</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/south-africa</loc>
+    <loc>https://factsdock.com/country/turkmenistan</loc>
     <lastmod>2026-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/south-korea</loc>
+    <loc>https://factsdock.com/country/tuvalu</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/south-sudan</loc>
+    <loc>https://factsdock.com/country/uganda</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/spain</loc>
+    <loc>https://factsdock.com/country/ukraine</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/sri-lanka</loc>
+    <loc>https://factsdock.com/country/united-arab-emirates</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/sudan</loc>
+    <loc>https://factsdock.com/country/united-kingdom</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/suriname</loc>
+    <loc>https://factsdock.com/country/united-states</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/sweden</loc>
+    <loc>https://factsdock.com/country/uruguay</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/switzerland</loc>
+    <loc>https://factsdock.com/country/uzbekistan</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/syria</loc>
+    <loc>https://factsdock.com/country/vanuatu</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/taiwan</loc>
+    <loc>https://factsdock.com/country/vatican-city</loc>
     <lastmod>2026-01-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/tajikistan</loc>
+    <loc>https://factsdock.com/country/venezuela</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/tanzania</loc>
+    <loc>https://factsdock.com/country/vietnam</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/thailand</loc>
+    <loc>https://factsdock.com/country/yemen</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/timor-leste</loc>
+    <loc>https://factsdock.com/country/zambia</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/togo</loc>
+    <loc>https://factsdock.com/country/zimbabwe</loc>
     <lastmod>2026-01-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/country/tonga</loc>
-    <lastmod>2026-01-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/trinidad-and-tobago</loc>
-    <lastmod>2026-01-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/tunisia</loc>
-    <lastmod>2026-01-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/turkey</loc>
-    <lastmod>2026-01-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/turkmenistan</loc>
-    <lastmod>2026-01-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/tuvalu</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/uganda</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/ukraine</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/united-arab-emirates</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/united-kingdom</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/united-states</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/uruguay</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/uzbekistan</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/vanuatu</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/vatican-city</loc>
-    <lastmod>2026-01-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/venezuela</loc>
-    <lastmod>2026-01-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/vietnam</loc>
-    <lastmod>2026-01-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/yemen</loc>
-    <lastmod>2026-01-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/zambia</loc>
-    <lastmod>2026-01-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/country/zimbabwe</loc>
-    <lastmod>2026-01-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://worldfacts.example.com/categories/geography</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/geography</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/categories/history</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/history</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/categories/culture</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/culture</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/categories/economy</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/economy</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/categories/facts</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/facts</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://worldfacts.example.com/categories/nature</loc>
-    <lastmod>2026-02-07</lastmod>
+    <loc>https://factsdock.com/categories/nature</loc>
+    <lastmod>2026-02-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

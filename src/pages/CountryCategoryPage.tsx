@@ -20,6 +20,7 @@ import {
 import { log, debug, warn, error } from "@/lib/logger";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import LazyFactCard from "@/components/cards/LazyFactCard";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -393,8 +394,17 @@ const CountryCategoryPage: React.FC = () => {
     return () => window.removeEventListener("popstate", onPop);
   }, [pageKey]);
 
+  const countryTitle = slugToTitle(country || "");
+  const categoryTitle = slugToTitle(category || "");
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={`FactsDock | ${countryTitle} - ${categoryTitle} Facts`}
+        description={`Discover ${categoryTitle} facts about ${countryTitle}. Learn fascinating information about ${countryTitle}'s ${categoryTitle.toLowerCase()}.`}
+        keywords={`${countryTitle} facts, ${countryTitle} ${categoryTitle.toLowerCase()}, facts about ${countryTitle}`}
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">

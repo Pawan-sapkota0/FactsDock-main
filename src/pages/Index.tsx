@@ -331,7 +331,7 @@ const Index = () => {
         title={PAGE_TEMPLATES.home.title}
         description={PAGE_TEMPLATES.home.description}
         keywords={PAGE_TEMPLATES.home.keywords}
-        ogImage={`${window.location.origin}/og-image.jpg`}
+        ogImage={`${window.location.origin}/og-image.png`}
         structuredData={generateWebsiteSchema()}
       />
       <Navbar />

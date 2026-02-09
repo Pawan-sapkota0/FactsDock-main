@@ -20,6 +20,8 @@ import {
   markFactViewed,
 } from "@/lib/fact-filtering";
 import { log, debug, warn, error } from "@/lib/logger";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { AD_SLOTS } from "@/lib/ad-spacing";
 
 const Facts = () => {
   const { category } = useParams();
@@ -78,7 +80,7 @@ const Facts = () => {
         title={PAGE_TEMPLATES.facts.title}
         description={PAGE_TEMPLATES.facts.description}
         keywords={PAGE_TEMPLATES.facts.keywords}
-        ogImage={`${window.location.origin}/og-image.jpg`}
+        ogImage={`${window.location.origin}/og-image.png`}
         structuredData={generateArticleSchema({
           headline: "Facts About the World",
           description:
@@ -226,7 +228,9 @@ const Facts = () => {
             canGoNext={pagination.canGoNext}
             className="mt-8"
           />
-          {/* debug panel removed */}
+
+          {/* Ad Slot: Below facts pagination (safe placement after content) */}
+          <AdSlot slot={AD_SLOTS.FACTS_PAGE_BOTTOM} />
         </div>
       </main>
       <Footer />

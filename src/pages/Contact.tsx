@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { log, debug, warn, error } from "@/lib/logger";
+import { SEOMeta } from "@/components/common/SEOMeta";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +69,12 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title="FactsDock | Contact Us - Get in Touch"
+        description="Contact the FactsDock team with your feedback, suggestions, or questions. We'd love to hear from you about our educational platform."
+        keywords="contact factsdock, support, feedback, contact us"
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
 
       <main className="flex-1 py-12">
@@ -168,8 +175,6 @@ const Contact = () => {
                 </form>
               </CardContent>
             </Card>
-
-            
           </div>
         </div>
       </main>

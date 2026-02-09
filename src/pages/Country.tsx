@@ -40,6 +40,8 @@ import QuizButton from "@/components/country/QuizButton";
 import LazyFactCard from "@/components/cards/LazyFactCard";
 import { SEOMeta } from "@/components/common/SEOMeta";
 import { generatePlaceSchema, generateArticleSchema } from "@/lib/seo-utils";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { AD_SLOTS } from "@/lib/ad-spacing";
 
 interface CountryData {
   name: string;
@@ -768,7 +770,7 @@ const Country = () => {
         description={`Explore fascinating facts about ${countryData.name}. Learn about culture, geography, history, economy, and interesting trivia.`}
         keywords={`${countryData.name} facts, facts about ${countryData.name}, ${countryData.name} information, ${countryData.name} quiz`}
         ogImage={
-          countryData.flagImage || `${window.location.origin}/og-image.jpg`
+          countryData.flagImage || `${window.location.origin}/og-image.png`
         }
         structuredData={generatePlaceSchema({
           name: countryData.name,
@@ -944,6 +946,9 @@ const Country = () => {
             </div>
 
             <NewsSection country={countryData.name} />
+
+            {/* Ad Slot: Below news section (safe placement after content) */}
+            <AdSlot slot={AD_SLOTS.COUNTRY_FACTS_BOTTOM} />
           </div>
         </div>
       </main>

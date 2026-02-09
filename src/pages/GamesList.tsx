@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { SEOMeta } from "@/components/common/SEOMeta";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Star } from "lucide-react";
 
@@ -223,8 +224,21 @@ const GamesList = () => {
     }
   };
 
+  const categoryData = gameCategoriesData[categoryId] || {
+    title: "Games",
+    description: "Interactive Educational Games",
+    longDescription:
+      "Play interactive educational games to learn about the world.",
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOMeta
+        title={`FactsDock | ${categoryData.title}`}
+        description={categoryData.longDescription}
+        keywords={`${categoryData.title.toLowerCase()}, educational games, quizzes, learning`}
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-4">

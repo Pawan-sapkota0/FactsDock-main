@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOMeta } from "@/components/common/SEOMeta";
 import {
   Card,
   CardContent,
@@ -242,6 +243,11 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <SEOMeta
+        title="FactsDock Admin | Login"
+        description="Admin login portal"
+        robots="noindex, nofollow"
+      />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Admin Panel</CardTitle>

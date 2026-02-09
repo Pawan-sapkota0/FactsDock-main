@@ -162,7 +162,7 @@ export const generateArticleSchema = (data: {
     "@type": "Article",
     headline: data.headline,
     description: data.description,
-    image: data.image || `${window.location.origin}/og-image.jpg`,
+    image: data.image || `${window.location.origin}/og-image.png`,
     datePublished: data.datePublished || new Date().toISOString(),
     dateModified: data.dateModified || new Date().toISOString(),
     author: {

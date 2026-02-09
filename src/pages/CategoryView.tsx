@@ -16,9 +16,12 @@ import {
   markFactViewed,
 } from "@/lib/fact-filtering";
 import LazyFactCard from "@/components/cards/LazyFactCard";
+import { SEOMeta } from "@/components/common/SEOMeta";
 const QuizModal = React.lazy(() => import("../components/QuizModal"));
 import { useToast } from "@/hooks/use-toast";
 import logger from "@/lib/logger";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { AD_SLOTS } from "@/lib/ad-spacing";
 
 function slugToTitle(slug: string) {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -416,9 +419,16 @@ const CategoryView: React.FC = () => {
   const mainTitle = navState.title || (slug ? slugToTitle(slug) : "Category");
   const availableSubs: string[] = navState.subs || [];
   const title = mainTitle;
+  const displayTitle = slugToTitle(slug || "");
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={`FactsDock | ${displayTitle} Facts`}
+        description={`Explore fascinating ${displayTitle} facts and discover interesting information. Learn more about ${displayTitle} with our comprehensive fact collection.`}
+        keywords={`${displayTitle} facts, facts about ${displayTitle}, ${displayTitle} information`}
+        ogImage={`${typeof window !== "undefined" ? window.location.origin : ""}/og-image.png`}
+      />
       <Navbar />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">
@@ -607,6 +617,10 @@ const CategoryView: React.FC = () => {
       </React.Suspense>
       {/* dev-only debug panel to show resolved ids */}
       {/* ResolveDebugPanel removed */}
+
+      {/* Ad Slot: Before footer on category facts page (safe placement) */}
+      <AdSlot slot={AD_SLOTS.CATEGORY_FACTS_FOOTER} />
+
       <Footer />
     </div>
   );

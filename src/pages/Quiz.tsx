@@ -43,6 +43,8 @@ import {
   completeRandomLevel,
   canAccessLevel,
 } from "@/lib/quiz-progress";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { AD_SLOTS } from "@/lib/ad-spacing";
 
 const QuizModal = React.lazy(() => import("@/components/QuizModal"));
 
@@ -415,7 +417,7 @@ const Quiz = () => {
         title={PAGE_TEMPLATES.quizzes.title}
         description={PAGE_TEMPLATES.quizzes.description}
         keywords={PAGE_TEMPLATES.quizzes.keywords}
-        ogImage={`${window.location.origin}/og-image.jpg`}
+        ogImage={`${window.location.origin}/og-image.png`}
         structuredData={generateArticleSchema({
           headline: "Geography Quizzes",
           description:
@@ -552,6 +554,9 @@ const Quiz = () => {
                       Done
                     </Button>
                   </div>
+
+                  {/* Ad Slot: After quiz result (high-value placement) */}
+                  <AdSlot slot={AD_SLOTS.QUIZ_RESULT} className="mt-4" />
                 </div>
               )
             ) : (
@@ -1207,6 +1212,9 @@ const Quiz = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Ad Slot: After random quiz result (high-value placement) */}
+                  <AdSlot slot={AD_SLOTS.QUIZ_RESULT} className="mt-4" />
                 </div>
               )}
 

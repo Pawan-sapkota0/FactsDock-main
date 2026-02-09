@@ -78,7 +78,7 @@ const FunZone = () => {
         title={PAGE_TEMPLATES.funzone.title}
         description={PAGE_TEMPLATES.funzone.description}
         keywords={PAGE_TEMPLATES.funzone.keywords}
-        ogImage={`${window.location.origin}/og-image.jpg`}
+        ogImage={`${window.location.origin}/og-image.png`}
         structuredData={generateArticleSchema({
           headline: "Fun Zone - Educational Games & Quizzes",
           description:
