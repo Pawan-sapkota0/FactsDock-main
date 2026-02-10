@@ -7,3 +7,4 @@ name = "factsdock-prod"
 
 [build]
 command = "npm install && npm run build"
+output_dir = "dist"
