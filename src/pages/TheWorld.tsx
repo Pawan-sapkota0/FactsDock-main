@@ -140,7 +140,7 @@ const TheWorld = () => {
         <div className="container mx-auto px-4">
           {/* Hero Section */}
           <div className="max-w-4xl mx-auto text-center space-y-6 mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
               The World
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
