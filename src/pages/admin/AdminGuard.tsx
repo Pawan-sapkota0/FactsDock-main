@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import logger from "@/lib/logger";
 import { useNavigate, useLocation } from "react-router-dom";
+import NotFound from "@/pages/NotFound";
 import { Loader2, AlertCircle, LogOut } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useUserAuth } from "@/context/UserAuthContext";
@@ -36,6 +37,34 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
   const [state, setState] = useState<AuthState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Ensure admin routes are not indexed by search engines while this guard is mounted
+  useEffect(() => {
+    let meta = document.querySelector(
+      'meta[name="robots"]',
+    ) as HTMLMetaElement | null;
+    let created = false;
+    const previous = meta?.content ?? null;
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "robots";
+      document.head.appendChild(meta);
+      created = true;
+    }
+
+    // set noindex while admin UI is active
+    meta.content = "noindex";
+
+    return () => {
+      if (!meta) return;
+      if (created) {
+        meta.remove();
+      } else {
+        meta.content = previous ?? "";
+      }
+    };
+  }, []);
 
   /**
    * Handle non-admin user logout
@@ -211,6 +240,10 @@ const AdminGuard: React.FC<AdminGuardProps> = ({
 
   // Denied state - show permission denied message with user info
   if (state === "denied") {
+    // In production, render a 404 page for unauthorized admin routes
+    if (import.meta.env.PROD) {
+      return <NotFound />;
+    }
     // Check if this is a failed admin login attempt
     const wasAdminLoginAttempt =
       localStorage.getItem("wf:adminVerificationPending") === "true";
