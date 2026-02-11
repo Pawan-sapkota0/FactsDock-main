@@ -20,69 +20,31 @@ DROP POLICY IF EXISTS "Superadmins can delete admins" ON admins;
 -- Recreate clean consolidated policies
 -- ============================================================================
 
--- 1. SELECT: Users can view their own record OR superadmins can view all
---    Consolidated: "Users view own admin record" + "Superadmins view all admins"
---    Optimized with (SELECT auth.uid())
+-- 1. SELECT: Users can view their own record
+--    Simple: auth_user_id = current user
 CREATE POLICY "Admins can view records" ON admins
   FOR SELECT
   USING (
     (SELECT auth.uid()) = auth_user_id
-    OR EXISTS (
-      SELECT 1 FROM admins
-      WHERE admins.auth_user_id = (SELECT auth.uid())
-      AND admins.role = 'superadmin'
-      AND admins.is_active = true
-    )
   );
 
--- 2. UPDATE: Users can update their own record OR superadmins can update all
---    Consolidated: "Users can update own admin record" + "Superadmins manage admins" UPDATE
---    Optimized with (SELECT auth.uid())
+-- 2. UPDATE: Users can update their own record
+--    Simple: auth_user_id = current user
 CREATE POLICY "Admins can update records" ON admins
   FOR UPDATE
   USING (
     (SELECT auth.uid()) = auth_user_id
-    OR EXISTS (
-      SELECT 1 FROM admins
-      WHERE admins.auth_user_id = (SELECT auth.uid())
-      AND admins.role = 'superadmin'
-      AND admins.is_active = true
-    )
   )
   WITH CHECK (
     (SELECT auth.uid()) = auth_user_id
-    OR EXISTS (
-      SELECT 1 FROM admins
-      WHERE admins.auth_user_id = (SELECT auth.uid())
-      AND admins.role = 'superadmin'
-      AND admins.is_active = true
-    )
   );
 
--- 3. INSERT: Only superadmins
---    Optimized with (SELECT auth.uid())
-CREATE POLICY "Superadmins can insert admins" ON admins
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM admins
-      WHERE admins.auth_user_id = (SELECT auth.uid())
-      AND admins.role = 'superadmin'
-      AND admins.is_active = true
-    )
-  );
+-- 3. INSERT: Disabled (handled via Edge Function with service role)
+-- Edge functions use SUPABASE_SERVICE_KEY which bypasses RLS
+-- Regular authenticated users cannot insert
 
--- 4. DELETE: Only superadmins
---    Optimized with (SELECT auth.uid())
-CREATE POLICY "Superadmins can delete admins" ON admins
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM admins
-      WHERE admins.auth_user_id = (SELECT auth.uid())
-      AND admins.role = 'superadmin'
-      AND admins.is_active = true
-    )
-  );
+-- 4. DELETE: Disabled (handled via Edge Function with service role)
+-- Edge functions use SUPABASE_SERVICE_KEY which bypasses RLS
+-- Regular authenticated users cannot delete
 
 -- 
