@@ -173,6 +173,17 @@ const Contact = () => {
                     {isSubmitting ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
+                <div className="mt-3 text-sm text-muted-foreground">
+                  For support or if you experience issues with this form, please
+                  email us at{" "}
+                  <a
+                    href="mailto:support@factsdock.com"
+                    className="text-primary underline"
+                  >
+                    support@factsdock.com
+                  </a>
+                  .
+                </div>
               </CardContent>
             </Card>
           </div>

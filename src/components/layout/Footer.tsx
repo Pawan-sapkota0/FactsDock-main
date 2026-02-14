@@ -123,15 +123,10 @@ const Footer = () => {
 
       {/* Footer Bottom */}
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <p className="text-xs text-center text-muted-foreground">
             © {currentYear} FactsDock. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Made with knowledge and care</span>
-            <span className="text-primary">•</span>
-            <span>v1.0</span>
-          </div>
         </div>
       </div>
     </footer>
