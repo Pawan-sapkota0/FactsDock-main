@@ -15,6 +15,7 @@ import {
   LogOut,
   User,
   Globe,
+  Newspaper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -57,6 +58,7 @@ const AdminLayout: React.FC = () => {
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/facts", label: "Facts", icon: BookOpen },
+    { path: "/admin/stories", label: "Stories", icon: Newspaper },
     { path: "/admin/quizzes", label: "Quizzes", icon: HelpCircle },
     { path: "/admin/categories", label: "Categories", icon: Layers },
     { path: "/admin/country-about", label: "Country About", icon: Globe },

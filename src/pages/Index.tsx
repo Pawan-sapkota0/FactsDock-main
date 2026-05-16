@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Sparkles,
-  Globe2,
-  Brain,
-  Gamepad2,
-  BookOpen,
-  Users,
-} from "lucide-react";
+import { Sparkles, Globe2, Brain, Gamepad2, BookOpen } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PreFooterCTA from "@/components/layout/PreFooterCTA";
@@ -15,6 +8,7 @@ import SearchBar from "@/components/common/SearchBar";
 import { useNavigate, Link } from "react-router-dom";
 import CountryCard from "@/components/cards/CountryCard";
 import FeatureCard from "@/components/cards/FeatureCard";
+import FeaturedStories from "@/components/home/FeaturedStories";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { SEOMeta } from "@/components/common/SEOMeta";
@@ -108,112 +102,6 @@ const HeroSection = ({
               <span>Every Country Covered</span>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// StatsSection Component
-interface StatItemProps {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  suffix?: string;
-}
-
-const StatItem = ({ icon, value, label, suffix = "" }: StatItemProps) => {
-  const [count, setCount] = React.useState(0);
-  const [isVisible, setIsVisible] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.3 },
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  React.useEffect(() => {
-    if (!isVisible) return;
-
-    const duration = 2000;
-    const steps = 60;
-    const stepValue = value / steps;
-    let currentStep = 0;
-
-    const timer = setInterval(() => {
-      currentStep++;
-      if (currentStep >= steps) {
-        setCount(value);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(stepValue * currentStep));
-      }
-    }, duration / steps);
-
-    return () => clearInterval(timer);
-  }, [isVisible, value]);
-
-  return (
-    <div ref={ref} className="text-center group">
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
-        {icon}
-      </div>
-      <div className="text-3xl md:text-4xl font-bold font-heading mb-2 animate-count">
-        {count.toLocaleString()}
-        {suffix}
-      </div>
-      <div className="text-muted-foreground font-medium">{label}</div>
-    </div>
-  );
-};
-
-const StatsSection = () => {
-  const stats = [
-    {
-      icon: <Sparkles className="h-7 w-7" />,
-      value: 10000,
-      label: "Facts",
-      suffix: "+",
-    },
-    {
-      icon: <Brain className="h-7 w-7" />,
-      value: 500,
-      label: "Quizzes",
-      suffix: "+",
-    },
-    {
-      icon: <Globe2 className="h-7 w-7" />,
-      value: 195,
-      label: "Countries",
-      suffix: "+",
-    },
-    {
-      icon: <Users className="h-7 w-7" />,
-      value: 100000,
-      label: "Active Users",
-      suffix: "+",
-    },
-  ];
-
-  return (
-    <section className="py-16 md:py-24 bg-secondary/30">
-      <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-          {stats.map((stat, index) => (
-            <StatItem key={index} {...stat} />
-          ))}
         </div>
       </div>
     </section>
@@ -353,8 +241,8 @@ const Index = () => {
           }
         />
 
-        {/* New Stats Section Component */}
-        <StatsSection />
+        {/* Featured Stories Section */}
+        <FeaturedStories />
 
         {/* Search Section */}
         <section ref={searchRef} className="py-12 bg-card/30">

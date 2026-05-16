@@ -28,6 +28,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import Stories from "./pages/Stories";
+import StoryDetail from "./pages/StoryDetail";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -44,6 +46,8 @@ import SettingsAdmin from "./pages/admin/SettingsAdmin";
 import ReviewPending from "./pages/admin/ReviewPending";
 import ImageCacheAdmin from "./pages/admin/ImageCacheAdmin";
 import CountryAboutAdmin from "./pages/admin/CountryAboutAdmin";
+import StoriesAdmin from "./pages/admin/StoriesAdmin";
+import StoryEdit from "./pages/admin/StoryEdit";
 import UserLogin from "./pages/auth/Login";
 import UserSignup from "./pages/auth/Signup";
 import UserProfile from "./pages/auth/Profile";
@@ -102,6 +106,8 @@ const App = () => (
               <Route path="/fun-facts/:slug" element={<CategoryView />} />
               <Route path="/world-facts" element={<WorldFacts />} />
               <Route path="/world-facts/:slug" element={<CategoryView />} />
+              <Route path="/stories" element={<Stories />} />
+              <Route path="/stories/:slug" element={<StoryDetail />} />
               <Route path="/the-world" element={<TheWorld />} />
               <Route
                 path="/countries/:country/:category"
@@ -194,6 +200,9 @@ const App = () => (
               >
                 <Route index element={<Dashboard />} />
                 <Route path="facts" element={<FactsAdmin />} />
+                <Route path="stories" element={<StoriesAdmin />} />
+                <Route path="stories/new" element={<StoryEdit />} />
+                <Route path="stories/:id/edit" element={<StoryEdit />} />
                 <Route path="quizzes" element={<QuizzesAdmin />} />
                 <Route path="review/pending" element={<ReviewPending />} />
                 <Route path="categories" element={<CategoriesAdmin />} />

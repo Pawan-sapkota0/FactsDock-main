@@ -95,7 +95,7 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[verify-admin-session] User authenticated:", user.id);
+    console.log("[verify-admin-session] User authenticated");
 
     // Query admins table to verify admin role
     const { data: adminRecord, error: adminError } = await (supabase as any)
@@ -108,10 +108,7 @@ serve(async (req: Request) => {
     if (adminError) {
       // PGRST116 = no rows found (user is not an admin)
       if ((adminError as Record<string, unknown>).code === "PGRST116") {
-        console.warn(
-          "[verify-admin-session] User not in admins table:",
-          user.id
-        );
+        console.warn("[verify-admin-session] User not in admins table");
         return new Response(
           JSON.stringify({
             error: "Not an admin",
@@ -141,7 +138,7 @@ serve(async (req: Request) => {
     }
 
     if (!adminRecord) {
-      console.warn("[verify-admin-session] No admin record found:", user.id);
+      console.warn("[verify-admin-session] No admin record found");
       return new Response(
         JSON.stringify({
           error: "Not an admin",
@@ -179,7 +176,7 @@ serve(async (req: Request) => {
     // Verify user is active
     const isActive = (adminRecord as AdminRecord).is_active;
     if (!isActive) {
-      console.warn("[verify-admin-session] Admin user is inactive:", user.id);
+      console.warn("[verify-admin-session] Admin user is inactive");
       return new Response(
         JSON.stringify({
           error: "Account disabled",
@@ -193,9 +190,7 @@ serve(async (req: Request) => {
     }
 
     console.log(
-      "[verify-admin-session] Admin verified successfully:",
-      (user as Record<string, unknown>).id,
-      "role:",
+      "[verify-admin-session] Admin verified successfully: role:",
       (adminRecord as AdminRecord).role
     );
 

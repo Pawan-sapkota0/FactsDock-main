@@ -56,6 +56,9 @@ verify_jwt = false
 [functions.generate-content]
 verify_jwt = false
 
+[functions.stories-api]
+verify_jwt = false
+
 [functions.bright-api]
 enabled = true
 verify_jwt = true

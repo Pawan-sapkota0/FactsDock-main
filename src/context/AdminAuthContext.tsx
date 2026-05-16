@@ -5,7 +5,6 @@ import React, {
   useEffect,
   useState,
   useCallback,
-  useRef,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logger from "@/lib/logger";
@@ -50,9 +49,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Track previous sessionRestored value to detect transition (false → true)
-  const prevSessionRestoredRef = useRef(false);
-
   // Get session restore status from UserAuthContext
   // CRITICAL: Must wait for sessionRestored before checking admin
   const { sessionRestored } = useUserAuth();
@@ -84,16 +80,13 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({
     let timeoutId: NodeJS.Timeout | null = null;
     let retryTimeoutId: NodeJS.Timeout | null = null;
 
-    // Detect transition: sessionRestored changed from false to true
-    const sessionJustRestored =
-      !prevSessionRestoredRef.current && sessionRestored;
-    prevSessionRestoredRef.current = sessionRestored;
+    if (!sessionRestored) {
+      logger.debug("[AdminAuthContext] Waiting for session restore...");
+      return;
+    }
 
-    // Only proceed if session just restored (transition detected)
-    if (!sessionJustRestored) {
-      logger.debug(
-        "[AdminAuthContext] Waiting for session restore transition...",
-      );
+    if (!loading) {
+      logger.debug("[AdminAuthContext] Admin verification already complete");
       return;
     }
 

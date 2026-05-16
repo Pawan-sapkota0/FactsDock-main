@@ -24,7 +24,10 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -55,6 +58,7 @@ const Navbar = () => {
   const navLinks = [
     { path: "/", label: "Home" },
     { path: "/world-facts", label: "Facts" },
+    { path: "/stories", label: "Stories" },
     { path: "/quiz", label: "Quizzes" },
     { path: "/the-world", label: "The World" },
   ];
