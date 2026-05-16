@@ -5,36 +5,20 @@ import { storiesAPI, Story } from "@/lib/stories-api";
 import logger from "@/lib/logger";
 
 // Skeleton loader component
-const StorySkeleton = ({ large = false }: { large?: boolean }) => (
-  <div
-    className={
-      "rounded-[2rem] border border-border bg-card overflow-hidden " +
-      (large ? "h-[420px] md:h-[460px]" : "h-72")
-    }
-  >
+const StorySkeleton = () => (
+  <div className="rounded-[2rem] border border-border bg-card overflow-hidden h-72">
     <div className="h-full w-full bg-muted animate-pulse" />
   </div>
 );
 
-const StoryCard = ({
-  story,
-  large = false,
-}: {
-  story: Story;
-  large?: boolean;
-}) => {
+const StoryCard = ({ story }: { story: Story }) => {
   return (
     <Link
       to={`/stories/${story.slug}`}
       aria-label={story.title}
       className="group block overflow-hidden rounded-[2rem] border border-slate-200 bg-card shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
-      <div
-        className={
-          "relative overflow-hidden " +
-          (large ? "h-[420px] md:h-[460px]" : "h-72")
-        }
-      >
+      <div className="relative overflow-hidden h-72">
         <img
           src={story.cover_image}
           alt={story.title}
@@ -137,12 +121,10 @@ const FeaturedStories: React.FC = () => {
 
         {/* Show skeleton loaders while loading */}
         {loading && featuredStories.length === 0 ? (
-          <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr]">
-            <StorySkeleton large />
-            <div className="grid gap-6">
-              <StorySkeleton />
-              <StorySkeleton />
-            </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <StorySkeleton />
+            <StorySkeleton />
+            <StorySkeleton />
           </div>
         ) : loadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-8 text-center">
@@ -153,14 +135,10 @@ const FeaturedStories: React.FC = () => {
           </div>
         ) : featuredStories.length > 0 ? (
           /* Show actual stories when loaded */
-          <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr]">
-            {featuredStories[0] && (
-              <StoryCard story={featuredStories[0]} large />
-            )}
-            <div className="grid gap-6">
-              {featuredStories[1] && <StoryCard story={featuredStories[1]} />}
-              {featuredStories[2] && <StoryCard story={featuredStories[2]} />}
-            </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {featuredStories[0] && <StoryCard story={featuredStories[0]} />}
+            {featuredStories[1] && <StoryCard story={featuredStories[1]} />}
+            {featuredStories[2] && <StoryCard story={featuredStories[2]} />}
           </div>
         ) : (
           /* Show minimal empty state if no stories */
