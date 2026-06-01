@@ -467,14 +467,14 @@ const StoryEdit: React.FC = () => {
                       },
                     })
                   }
-                  placeholder="Write your story content here. You can use paragraphs, line breaks, and basic formatting. For rich text editing, this will be enhanced in a future update..."
+                  placeholder="Write your story content here using Markdown syntax for headings, bold, italics, and lists."
                   rows={20}
                   className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-sm leading-relaxed"
                   style={{ minHeight: "400px" }}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Tip: Use double line breaks for paragraphs. Rich text editor
-                  coming soon.
+                  Tip: Use Markdown headings like `## Did You Know?` and blank
+                  lines for paragraphs.
                 </p>
               </div>
 

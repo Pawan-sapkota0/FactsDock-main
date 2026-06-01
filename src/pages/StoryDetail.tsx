@@ -75,6 +75,113 @@ const StoryDetail = () => {
 
   const storyBody = story ? getBodyFromContent(story.content) : "";
 
+  const renderInlineMarkdown = (text: string) => {
+    const regex = /(\*\*(.+?)\*\*|__(.+?)__)/g;
+    const parts: Array<string | { bold: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text))) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      const inner = match[2] || match[3] || "";
+      parts.push({ bold: inner });
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.map((part, index) =>
+      typeof part === "string" ? (
+        part
+      ) : (
+        <strong key={index} className="font-semibold">
+          {part.bold}
+        </strong>
+      ),
+    );
+  };
+
+  const renderStoryBody = (body: string) => {
+    const lines = body.split(/\r?\n/);
+    const blocks: React.ReactNode[] = [];
+    let currentLines: string[] = [];
+
+    const flushParagraph = () => {
+      if (!currentLines.length) return;
+      const paragraphText = currentLines.join("\n");
+      blocks.push(
+        <p
+          key={`paragraph-${blocks.length}`}
+          className="text-base leading-8 text-muted-foreground whitespace-pre-wrap"
+        >
+          {renderInlineMarkdown(paragraphText)}
+        </p>,
+      );
+      currentLines = [];
+    };
+
+    const renderHeading = (level: number, text: string) => {
+      const content = renderInlineMarkdown(text.trim());
+      const key = `heading-${blocks.length}`;
+      switch (level) {
+        case 1:
+          return (
+            <h2 key={key} className="text-3xl font-semibold text-foreground">
+              {content}
+            </h2>
+          );
+        case 2:
+          return (
+            <h3 key={key} className="text-2xl font-semibold text-foreground">
+              {content}
+            </h3>
+          );
+        case 3:
+          return (
+            <h4 key={key} className="text-xl font-semibold text-foreground">
+              {content}
+            </h4>
+          );
+        default:
+          return (
+            <p key={key} className="text-base font-semibold text-foreground">
+              {content}
+            </p>
+          );
+      }
+    };
+
+    lines.forEach((line) => {
+      const headingMatch = line.match(/^\s*(#{1,6})\s*(.*)$/);
+      if (headingMatch && headingMatch[2].trim()) {
+        flushParagraph();
+        blocks.push(renderHeading(headingMatch[1].length, headingMatch[2]));
+        return;
+      }
+
+      if (line.trim() === "") {
+        flushParagraph();
+        blocks.push(
+          <div
+            key={`spacer-${blocks.length}`}
+            className="h-6"
+            aria-hidden="true"
+          />,
+        );
+        return;
+      }
+
+      currentLines.push(line);
+    });
+
+    flushParagraph();
+    return blocks;
+  };
+
   const storyHighlights = story
     ? typeof story.content === "string"
       ? []
@@ -197,14 +304,7 @@ const StoryDetail = () => {
               {storyBody ? (
                 <section className="space-y-6">
                   <div className="prose prose-lg max-w-none">
-                    {storyBody.split("\n\n").map((paragraph, index) => (
-                      <p
-                        key={index}
-                        className="text-base leading-8 text-muted-foreground mb-4"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
+                    {renderStoryBody(storyBody)}
                   </div>
                   {storyHighlights && storyHighlights.length > 0 && (
                     <div className="mt-8 rounded-lg border border-border bg-muted/30 p-6">
