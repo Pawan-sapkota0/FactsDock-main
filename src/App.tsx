@@ -16,6 +16,13 @@ import Country from "./pages/Country";
 import FunFacts from "./pages/FunFacts";
 import FunZone from "./pages/FunZone";
 import GamesList from "./pages/GamesList";
+import CapitalChallenge from "./pages/CapitalChallenge";
+import FlagFinder from "./pages/FlagFinder";
+import MemoryMatch from "./pages/MemoryMatch";
+import WordWizard from "./pages/WordWizard";
+import NumberNavigator from "./pages/NumberNavigator";
+import ScienceSprint from "./pages/ScienceSprint";
+import CultureQuiz from "./pages/CultureQuiz";
 import WorldFacts from "./pages/WorldFacts";
 import TheWorld from "./pages/TheWorld";
 import CategoryView from "./pages/CategoryView";
@@ -102,6 +109,19 @@ const App = () => (
               <Route path="/country/:slug" element={<Country />} />
               <Route path="/fun-facts" element={<FunFacts />} />
               <Route path="/fun-zone" element={<FunZone />} />
+              <Route path="/fun-zone/capitals" element={<CapitalChallenge />} />
+              <Route path="/fun-zone/flags" element={<FlagFinder />} />
+              <Route path="/fun-zone/culture-quiz" element={<CultureQuiz />} />
+              <Route path="/fun-zone/memory" element={<MemoryMatch />} />
+              <Route path="/fun-zone/word-wizard" element={<WordWizard />} />
+              <Route
+                path="/fun-zone/number-navigator"
+                element={<NumberNavigator />}
+              />
+              <Route
+                path="/fun-zone/science-sprint"
+                element={<ScienceSprint />}
+              />
               <Route path="/games/:categoryId" element={<GamesList />} />
               <Route path="/fun-facts/:slug" element={<CategoryView />} />
               <Route path="/world-facts" element={<WorldFacts />} />

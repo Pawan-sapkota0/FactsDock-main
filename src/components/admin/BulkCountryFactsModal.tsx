@@ -57,6 +57,7 @@ interface FactType {
 interface Category {
   id: string | number;
   name: string;
+  fact_type_id?: string | number;
 }
 
 interface Subcategory {
@@ -91,6 +92,24 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [bulkResults, setBulkResults] = useState<CountryFactsResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const countryCategories = React.useMemo(() => {
+    if (!countryFactType) return [];
+    return allCategories.filter(
+      (cat) => String(cat.fact_type_id || "") === String(countryFactType),
+    );
+  }, [allCategories, countryFactType]);
+
+  useEffect(() => {
+    if (!selectedCategoryId || countryCategories.length === 0) return;
+    const isStillValid = countryCategories.some(
+      (cat) => String(cat.id) === String(selectedCategoryId),
+    );
+    if (!isStillValid) {
+      setSelectedCategoryId("");
+      setSelectedCategory("");
+    }
+  }, [countryCategories, selectedCategoryId]);
   const [generationProgress, setGenerationProgress] = useState({
     current: 0,
     total: 0,
@@ -474,7 +493,7 @@ export const BulkCountryFactsModal: React.FC<BulkCountryFactsModalProps> = ({
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allCategories.map((cat) => (
+                    {countryCategories.map((cat) => (
                       <SelectItem key={cat.id} value={String(cat.id)}>
                         {cat.name}
                       </SelectItem>

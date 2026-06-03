@@ -29,7 +29,7 @@ import { AdSlot } from "@/components/ads/AdSlot";
 import { AD_SLOTS } from "@/lib/ad-spacing";
 import { SEOMeta } from "@/components/common/SEOMeta";
 
-const QuizModal = React.lazy(() => import("@/components/QuizModal"));
+const QuizModal = React.lazy(() => import("@/components/PremiumQuizModal"));
 
 type QuizMode = "country" | "fun" | "world";
 type DifficultyLevel = "easy" | "medium" | "hard";

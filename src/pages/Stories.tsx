@@ -4,6 +4,8 @@ import { Search, Loader2 } from "lucide-react";
 import StoryCard from "@/components/stories/StoryCard";
 import { Button } from "@/components/ui/button";
 import { SEOMeta } from "@/components/common/SEOMeta";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { PAGE_TEMPLATES } from "@/lib/seo-utils";
 import { storiesAPI, Story, StoryCategory } from "@/lib/stories-api";
 import { storyCategoriesAPI } from "@/lib/stories-api";
@@ -78,14 +80,15 @@ const Stories = () => {
   }, [query, selectedCategory, stories]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <SEOMeta
         title="Stories Worth Exploring | FactsDock"
         description="Discover fascinating stories, hidden truths, surprising history, science, cultures, and mysteries from around the world."
         keywords="stories, articles, facts, history, science, culture"
       />
+      <Navbar />
 
-      <main>
+      <main className="flex-1">
         <section className="relative overflow-hidden bg-slate-950 text-white py-20">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 opacity-95" />
           <div className="relative container mx-auto px-4 md:px-6 lg:px-8">
@@ -209,6 +212,7 @@ const Stories = () => {
             </>
           )}
         </section>
+        <Footer />
       </main>
     </div>
   );
