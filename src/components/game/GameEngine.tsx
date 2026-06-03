@@ -155,6 +155,32 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     [gameState],
   );
 
+  const progress = useMemo(() => {
+    if (gameState.gameFinished) return 100;
+
+    const answeredQuestions = gameState.isAnswered
+      ? gameState.currentQuestionIndex + 1
+      : gameState.currentQuestionIndex;
+    if (gameState.totalQuestions === 0) return 0;
+    const percent = Math.round(
+      (answeredQuestions / gameState.totalQuestions) * 100,
+    );
+    return Math.max(0, Math.min(99, percent));
+  }, [
+    gameState.currentQuestionIndex,
+    gameState.isAnswered,
+    gameState.gameFinished,
+    gameState.totalQuestions,
+  ]);
+
+  useEffect(() => {
+    if (!config.gameId) return;
+    if (gameState.gameFinished) return;
+    if (progress <= 0) return;
+
+    saveRecentlyPlayed({ id: config.gameId, progress });
+  }, [config.gameId, gameState.gameFinished, progress]);
+
   // Notify completion and persist recently played when game metadata is available
   useEffect(() => {
     if (!gameState.gameFinished) return;

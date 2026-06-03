@@ -2,6 +2,9 @@ import React, { useMemo } from "react";
 import { GameEngine } from "../GameEngine";
 import { GameConfig, GameQuestion } from "../types";
 
+const shuffleOptions = (options: string[]) =>
+  [...options].sort(() => Math.random() - 0.5);
+
 export interface FlagTemplateProps {
   title: string;
   questions: Array<{
@@ -27,7 +30,7 @@ export const FlagTemplate: React.FC<FlagTemplateProps> = ({
       questions.map((q, idx) => ({
         id: q.id || `flag-${idx}`,
         question: `Which flag belongs to ${q.country}?`,
-        options: q.options,
+        options: shuffleOptions(q.options),
         correctAnswer: q.correctFlag,
         fact: q.fact,
         image: q.image,

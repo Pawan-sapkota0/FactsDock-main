@@ -60,6 +60,7 @@ const Navbar = () => {
     { path: "/world-facts", label: "Facts" },
     { path: "/stories", label: "Stories" },
     { path: "/quiz", label: "Quizzes" },
+    { path: "/fun-zone", label: "Games" },
     { path: "/the-world", label: "The World" },
   ];
 
